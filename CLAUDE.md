@@ -10,9 +10,25 @@ ADHD Focus is a task management app designed specifically for people with ADHD. 
 
 - **Monorepo**: Turborepo
 - **Mobile/Web**: Expo (React Native) - iOS, Android, Web from single codebase
-- **Backend**: Supabase (PostgreSQL, Auth, Realtime)
+- **Backend**: Supabase (PostgreSQL, Auth, Realtime, Edge Functions)
 - **State**: Zustand (local UI state only)
 - **Language**: TypeScript everywhere
+- **Deployment**: Cloud (Supabase) or Self-hosted (Docker)
+
+## Deployment Options
+
+### Cloud (Supabase hosted)
+- Create project at supabase.com
+- Run migrations
+- Deploy Edge Functions
+- Configure `.env` with credentials
+
+### Self-Hosted (Docker)
+- Full Supabase stack in `docker/docker-compose.yml`
+- Configure `docker/.env` from `.env.example`
+- Run: `cd docker && docker compose up -d`
+- Access Studio at `http://localhost:3000`
+- API at `http://localhost:8000/rest/v1`
 
 ## Architecture
 
@@ -118,6 +134,37 @@ Based on research: [UX Collective](https://uxdesign.cc/software-accessibility-fo
 6. **Streaks** - Dopamine rewards for daily completion
 7. **Quick Capture** - Instant inbox for brain dumps
 
+## External API & Integrations
+
+### REST API (PostgREST)
+Supabase auto-generates REST API. Full docs: `docs/API.md`
+
+```bash
+# Example: Create task from CLI
+curl -X POST "$SUPABASE_URL/rest/v1/tasks" \
+  -H "apikey: $ANON_KEY" \
+  -H "Authorization: Bearer $USER_JWT" \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Buy groceries", "status": "inbox"}'
+```
+
+### Telegram Bot
+- Edge Function: `supabase/functions/telegram-webhook/`
+- Link account via profile settings
+- Send message to create task in inbox
+- Commands: `/today`, `/inbox`, `/help`
+- Syntax: `!must #low Call doctor` (priority + energy)
+
+### Google Calendar Sync
+- Edge Function: `supabase/functions/google-calendar-sync/`
+- Tasks with `scheduled_date` sync to calendar
+- Bi-directional (planned)
+
+### Webhooks (Outgoing)
+- Subscribe to events: `task.created`, `task.completed`, etc.
+- Receive POST to your URL on changes
+- HMAC signature verification
+
 ## Database Schema
 
 ### Core Tables
@@ -126,6 +173,8 @@ Based on research: [UX Collective](https://uxdesign.cc/software-accessibility-fo
 - `focus_sessions` - Pomodoro/focus tracking
 - `projects` - Optional task grouping
 - `daily_stats` - For streak calculation
+- `api_keys` - External API authentication
+- `webhooks` - Outgoing webhook subscriptions
 
 ### Task Fields (ADHD-specific)
 - `energy_required`: low | medium | high
@@ -134,18 +183,38 @@ Based on research: [UX Collective](https://uxdesign.cc/software-accessibility-fo
 - `actual_minutes`: Track real time (learn patterns)
 - `pomodoros_completed`: Focus session count
 - `streak_contribution`: Counts toward daily streak
+- `google_event_id`: Linked calendar event
+
+### Integration Fields (profiles)
+- `telegram_id`: Linked Telegram account
+- `google_calendar_token`: OAuth tokens for Calendar
 
 ## Development Commands
 
 ```bash
 # Install dependencies (from root)
-npm install
+pnpm install
 
 # Run mobile app
 cd apps/mobile && npx expo start
 
 # Run all apps in dev mode
-npm run dev
+pnpm dev
+
+# Supabase local development
+supabase start           # Start local Supabase
+supabase db push         # Apply migrations
+supabase functions serve # Run Edge Functions locally
+
+# Self-hosted (Docker)
+cd docker
+cp .env.example .env     # Configure environment
+docker compose up -d     # Start all services
+docker compose logs -f   # View logs
+
+# Deploy Edge Functions
+supabase functions deploy telegram-webhook
+supabase functions deploy google-calendar-sync
 ```
 
 ## Environment Variables
@@ -185,18 +254,32 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=xxx
 
 ## Next Steps
 
-1. [ ] Set up Supabase project (user needs to create)
-2. [ ] Run migrations (`supabase/migrations/001_initial_schema.sql`)
+### Setup
+1. [ ] Set up Supabase project (cloud or self-hosted)
+2. [ ] Run migrations (`001_initial_schema.sql`, `002_integrations.sql`)
 3. [ ] Add `.env` with Supabase credentials
 4. [ ] Test auth flow
+
+### Core Features
 5. [ ] Design UI with user input (don't assume)
-6. [ ] Implement task CRUD with real API
+6. [ ] Test task CRUD with real API
 7. [ ] Build quick capture feature
 8. [ ] Add streak tracking
 
+### Integrations
+9. [ ] Deploy Telegram bot Edge Function
+10. [ ] Set up Telegram webhook
+11. [ ] Google Calendar OAuth setup
+12. [ ] Test calendar sync
+
 ## Resources
 
+### Project Docs
+- [API Documentation](docs/API.md) - REST API, Telegram bot, Calendar sync
+
+### External
 - [Supabase Best Practices](https://www.leanware.co/insights/supabase-best-practices)
+- [Supabase Self-Hosting](https://supabase.com/docs/guides/self-hosting/docker)
 - [ADHD UX Design](https://uxdesign.cc/software-accessibility-for-users-with-attention-deficit-disorder-adhd-f32226e6037c)
 - [Expo Folder Structure](https://expo.dev/blog/expo-app-folder-structure-best-practices)
-- [React Native Clean Architecture](https://github.com/carlossalasamper/react-native-clean-architecture)
+- [PostgREST API](https://postgrest.org/en/stable/api.html)
