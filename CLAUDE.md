@@ -1,285 +1,288 @@
-# CLAUDE.md - ADHD Focus Task Manager
+# CLAUDE.md - AI Assistant Instructions
 
-## Project Overview
+> This file provides context and rules for Claude (AI assistant) when working on this project.
+> Read this first in every new session.
 
-ADHD Focus is a task management app designed specifically for people with ADHD. It reduces cognitive load, supports executive function, and makes productivity achievable.
+## Quick Context
 
-**Important:** UI design decisions should be discussed with the user. Don't make "топорный" (crude) UI - always research best practices and ask before implementing.
+**ADHD Focus** - Task management app for people with ADHD.
+
+- **Status**: Early development
+- **Owner**: @zarudesu
+- **Language**: Russian-speaking user, code/docs in English
+- **Repo**: https://github.com/zarudesu/adhd-focus
+
+## Critical Rules
+
+### DO
+- Ask before making UI design decisions
+- Research best practices before implementing
+- Use existing architecture patterns (API → Hook → Component)
+- Keep code simple and minimal
+- Write TypeScript with strict types
+- Follow ADHD UX principles (see below)
+
+### DON'T
+- Make "топорный" (crude/ugly) UI without consulting user
+- Add unnecessary features or complexity
+- Guess UI design - always ask or research
+- Break existing patterns
+- Add emojis to code/docs unless asked
+- Commit credentials or secrets
+
+## Session Start Checklist
+
+When starting a new session:
+
+1. **Read this file** (CLAUDE.md)
+2. **Check current state**: `git status`, look at recent commits
+3. **Review docs if needed**:
+   - `docs/ARCHITECTURE.md` - System design
+   - `docs/DEVELOPMENT.md` - Dev workflow
+   - `docs/API.md` - API reference
+4. **Ask user what to work on** if not clear
+
+## User Preferences
+
+- **Language**: User writes in Russian, respond in Russian
+- **UI Design**: Always discuss before implementing. User is picky about UX.
+- **Code Style**: Clean, minimal, well-typed
+- **Commits**: Conventional commits in English
+- **Documentation**: English
 
 ## Tech Stack
 
-- **Monorepo**: Turborepo
-- **Mobile/Web**: Expo (React Native) - iOS, Android, Web from single codebase
-- **Backend**: Supabase (PostgreSQL, Auth, Realtime, Edge Functions)
-- **State**: Zustand (local UI state only)
-- **Language**: TypeScript everywhere
-- **Deployment**: Cloud (Supabase) or Self-hosted (Docker)
-
-## Deployment Options
-
-### Cloud (Supabase hosted)
-- Create project at supabase.com
-- Run migrations
-- Deploy Edge Functions
-- Configure `.env` with credentials
-
-### Self-Hosted (Docker)
-- Full Supabase stack in `docker/docker-compose.yml`
-- Configure `docker/.env` from `.env.example`
-- Run: `cd docker && docker compose up -d`
-- Access Studio at `http://localhost:3000`
-- API at `http://localhost:8000/rest/v1`
+| Layer | Technology |
+|-------|------------|
+| Monorepo | Turborepo |
+| Mobile/Web | Expo (React Native) |
+| Backend | Supabase (PostgreSQL, Auth, Realtime) |
+| Functions | Edge Functions (Deno) |
+| State | Zustand (local UI only) |
+| Language | TypeScript |
 
 ## Architecture
 
-### Clean Architecture Layers
+### Project Structure
 
 ```
-apps/mobile/
-├── api/                 # Low-level Supabase API calls
-│   ├── tasks.ts         # Task CRUD operations
-│   ├── auth.ts          # Authentication
-│   ├── profile.ts       # User profile & preferences
-│   └── focusSessions.ts # Pomodoro tracking
-├── hooks/               # Business logic & state
-│   ├── useTasks.ts      # Task operations with caching
-│   ├── useAuth.ts       # Auth state management
-│   └── useFocusSession.ts # Pomodoro timer logic
-├── store/               # Local UI state only (Zustand)
-├── app/                 # Screens (Expo Router)
-├── components/          # Reusable UI components
-└── lib/                 # Utilities (supabase client, etc.)
+adhd-focus/
+├── apps/
+│   └── mobile/              # Expo app
+│       ├── api/             # Supabase API calls (pure)
+│       ├── hooks/           # Business logic
+│       ├── components/      # UI components
+│       ├── app/             # Screens (Expo Router)
+│       ├── store/           # Local UI state only
+│       └── lib/             # Utilities
+├── packages/
+│   ├── shared/              # Types, constants, utils
+│   └── ui/                  # Shared UI components
+├── supabase/
+│   ├── migrations/          # Database SQL
+│   └── functions/           # Edge Functions
+├── docker/                  # Self-hosted deployment
+└── docs/                    # Documentation
 ```
 
-### Data Flow
+### Code Layers
 
 ```
-UI Component → Hook → API → Supabase
-     ↑                        ↓
-     └────── State ←─────────┘
+Screen → Component → Hook → API → Supabase
+                       ↓
+                    State
 ```
 
-- **API layer**: Pure Supabase calls, no business logic
-- **Hooks**: Business logic, caching, optimistic updates
-- **Store**: Only for local UI state (not synced data)
+| Layer | Location | Responsibility |
+|-------|----------|----------------|
+| API | `api/*.ts` | Pure Supabase calls, no logic |
+| Hooks | `hooks/*.ts` | Business logic, state, caching |
+| Components | `components/*.tsx` | UI rendering |
+| Screens | `app/*.tsx` | Page composition |
+| Store | `store/*.ts` | LOCAL UI state only (not data) |
 
-## Supabase Best Practices
+### Pattern Examples
 
-Based on research: [Leanware](https://www.leanware.co/insights/supabase-best-practices), [Supabase Docs](https://supabase.com/docs/guides/getting-started/architecture)
-
-### Security
-- RLS (Row-Level Security) enabled on all tables
-- Never expose `service_role` key in client code
-- Use separate Supabase projects for dev/staging/prod
-
-### Performance
-- Batch, cache, and debounce API calls
-- Use realtime subscriptions selectively (only where needed)
-- Index frequently queried fields
-- Implement optimistic updates in hooks
-
-### Migrations
-- Keep schema migrations in git (`supabase/migrations/`)
-- Test migrations on staging before production
-- Never commit production credentials
-
-## ADHD UX Design Principles
-
-Based on research: [UX Collective](https://uxdesign.cc/software-accessibility-for-users-with-attention-deficit-disorder-adhd-f32226e6037c), [Din Studio](https://din-studio.com/ui-ux-for-adhd-designing-interfaces-that-actually-help-students/)
-
-### Reduce Cognitive Overload
-- **Minimal visual clutter** - every element must earn its place
-- **Progressive disclosure** - show only what's needed now
-- **Chunk content** - short text, headers, whitespace
-- **Hide complexity** - use collapsible sections, accordions
-
-### Navigation & Layout
-- Clear, logical pathways
-- Avoid unnecessary clicks
-- Strategic whitespace for "breathing room"
-- Simplified forms with minimal required fields
-
-### Sensory Considerations
-- Dark/light mode toggle (many ADHD users are light-sensitive)
-- No auto-playing videos/sounds
-- Limit animations - if used, make them subtle and purposeful
-- High contrast options
-
-### Task Initiation Help
-- Reduce friction to start tasks
-- Auto-prioritization to reduce decision fatigue
-- Show one task at a time (hide others)
-- Break large tasks into smaller steps automatically
-
-### Motivation & Accountability
-- Visual progress tracking
-- Streak maintenance (dopamine reward)
-- Satisfying completion animations
-- Achievement system
-
-### What NOT to do
-- Don't add too many options/settings
-- Don't require complex setup
-- Don't use notification spam
-- Don't make UI "busy" or cluttered
-- Don't assume users will remember things
-
-## Key ADHD Features
-
-1. **One Task Focus** - Show only current task, hide distractions
-2. **Energy Matching** - Tag tasks by energy (low/medium/high), match to current state
-3. **Must/Should/Want** - Simple 3-tier priority (not 1-5 numbers)
-4. **WIP Limit** - Max 3 tasks per day by default
-5. **Pomodoro Timer** - Built-in focus sessions with breaks
-6. **Streaks** - Dopamine rewards for daily completion
-7. **Quick Capture** - Instant inbox for brain dumps
-
-## External API & Integrations
-
-### REST API (PostgREST)
-Supabase auto-generates REST API. Full docs: `docs/API.md`
-
-```bash
-# Example: Create task from CLI
-curl -X POST "$SUPABASE_URL/rest/v1/tasks" \
-  -H "apikey: $ANON_KEY" \
-  -H "Authorization: Bearer $USER_JWT" \
-  -H "Content-Type: application/json" \
-  -d '{"title": "Buy groceries", "status": "inbox"}'
+**API Layer** (pure, no hooks):
+```typescript
+// api/tasks.ts
+export const tasksApi = {
+  async list(filters: TaskFilters): Promise<Task[]> {
+    const { data, error } = await supabase
+      .from('tasks')
+      .select('*')
+      .match(filters);
+    if (error) throw error;
+    return data;
+  },
+};
 ```
 
-### Telegram Bot
-- Edge Function: `supabase/functions/telegram-webhook/`
-- Link account via profile settings
-- Send message to create task in inbox
-- Commands: `/today`, `/inbox`, `/help`
-- Syntax: `!must #low Call doctor` (priority + energy)
+**Hook** (business logic):
+```typescript
+// hooks/useTasks.ts
+export function useTasks() {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(false);
 
-### Google Calendar Sync
-- Edge Function: `supabase/functions/google-calendar-sync/`
-- Tasks with `scheduled_date` sync to calendar
-- Bi-directional (planned)
+  const fetch = useCallback(async () => {
+    setLoading(true);
+    const data = await tasksApi.list({});
+    setTasks(data);
+    setLoading(false);
+  }, []);
 
-### Webhooks (Outgoing)
-- Subscribe to events: `task.created`, `task.completed`, etc.
-- Receive POST to your URL on changes
-- HMAC signature verification
+  return { tasks, loading, fetch };
+}
+```
+
+## ADHD UX Principles
+
+**This app is for ADHD brains. Every design decision must consider:**
+
+### Core Principles
+1. **Minimal cognitive load** - Every element must earn its place
+2. **One thing at a time** - Progressive disclosure, hide complexity
+3. **Instant feedback** - Respond to every action immediately
+4. **Reduce decisions** - Smart defaults, simple choices
+5. **Forgiveness** - Easy undo, no data loss
+
+### Key Features
+- **Energy matching** - Tasks tagged low/medium/high energy
+- **Simple priority** - Must/Should/Want (not 1-5 numbers)
+- **WIP limit** - Max 3 tasks per day default
+- **Streaks** - Dopamine rewards
+- **Quick capture** - Instant inbox, process later
+
+### Anti-Patterns (NEVER DO)
+- Busy/cluttered interfaces
+- Too many options
+- Complex setup required
+- Notification spam
+- Assuming users will remember
 
 ## Database Schema
 
-### Core Tables
-- `profiles` - User data & preferences (extends auth.users)
-- `tasks` - Tasks with ADHD-specific fields
-- `focus_sessions` - Pomodoro/focus tracking
-- `projects` - Optional task grouping
-- `daily_stats` - For streak calculation
-- `api_keys` - External API authentication
-- `webhooks` - Outgoing webhook subscriptions
+### Main Tables
+- `profiles` - User preferences, integrations
+- `tasks` - Core task data
+- `focus_sessions` - Pomodoro tracking
+- `daily_stats` - Streak calculation
+- `api_keys` - External API auth
+- `webhooks` - Outgoing notifications
 
-### Task Fields (ADHD-specific)
-- `energy_required`: low | medium | high
-- `priority`: must | should | want | someday
-- `estimated_minutes`: Time estimate practice
-- `actual_minutes`: Track real time (learn patterns)
-- `pomodoros_completed`: Focus session count
-- `streak_contribution`: Counts toward daily streak
-- `google_event_id`: Linked calendar event
+### Task-Specific Fields
+```typescript
+interface Task {
+  energy_required: 'low' | 'medium' | 'high';
+  priority: 'must' | 'should' | 'want' | 'someday';
+  status: 'inbox' | 'today' | 'in_progress' | 'done';
+  estimated_minutes?: number;
+  actual_minutes?: number;
+  pomodoros_completed: number;
+}
+```
 
-### Integration Fields (profiles)
-- `telegram_id`: Linked Telegram account
-- `google_calendar_token`: OAuth tokens for Calendar
+## Integrations
+
+### REST API
+Auto-generated by Supabase PostgREST. Docs: `docs/API.md`
+
+### Telegram Bot
+- Edge Function: `supabase/functions/telegram-webhook/`
+- User sends message → task created in inbox
+- Syntax: `!must #low Call doctor`
+
+### Google Calendar
+- Edge Function: `supabase/functions/google-calendar-sync/`
+- Tasks with scheduled_date sync to calendar
 
 ## Development Commands
 
 ```bash
-# Install dependencies (from root)
+# Install
 pnpm install
 
-# Run mobile app
+# Run app
 cd apps/mobile && npx expo start
 
-# Run all apps in dev mode
-pnpm dev
+# Supabase local
+supabase start
+supabase db push
 
-# Supabase local development
-supabase start           # Start local Supabase
-supabase db push         # Apply migrations
-supabase functions serve # Run Edge Functions locally
-
-# Self-hosted (Docker)
-cd docker
-cp .env.example .env     # Configure environment
-docker compose up -d     # Start all services
-docker compose logs -f   # View logs
-
-# Deploy Edge Functions
-supabase functions deploy telegram-webhook
-supabase functions deploy google-calendar-sync
+# Self-hosted
+cd docker && docker compose up -d
 ```
 
-## Environment Variables
+## Current State (Update This!)
 
-### Mobile App (`apps/mobile/.env`)
+### Done
+- [x] Project structure (Turborepo + Expo)
+- [x] Shared types package
+- [x] Database schema (migrations)
+- [x] API layer (tasks, auth, profile, sessions)
+- [x] Hooks layer (useTasks, useAuth, useFocusSession)
+- [x] Telegram bot Edge Function
+- [x] Google Calendar Edge Function
+- [x] Docker self-hosted setup
+- [x] API documentation
+- [x] Project documentation
+
+### In Progress
+- [ ] Set up actual Supabase project
+- [ ] Test with real database
+- [ ] Design UI (need user input)
+
+### Planned
+- [ ] Quick capture feature
+- [ ] Streak tracking UI
+- [ ] Settings screen
+- [ ] Dark mode
+- [ ] Offline support
+
+## How to Add Features
+
+1. **Types first** - Add to `packages/shared/src/types/`
+2. **Migration** - If DB change: `supabase migration new xxx`
+3. **API layer** - Add to `apps/mobile/api/`
+4. **Hook** - Add to `apps/mobile/hooks/`
+5. **Component** - Add to `apps/mobile/components/`
+6. **Screen** - Add to `apps/mobile/app/`
+
+## File Locations Quick Reference
+
+| Need | Location |
+|------|----------|
+| Types | `packages/shared/src/types/` |
+| API calls | `apps/mobile/api/` |
+| Business logic | `apps/mobile/hooks/` |
+| UI components | `apps/mobile/components/` |
+| Screens | `apps/mobile/app/` |
+| DB schema | `supabase/migrations/` |
+| Edge Functions | `supabase/functions/` |
+| Docs | `docs/` |
+
+## Commit Style
+
 ```
-EXPO_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=xxx
+feat(scope): description
+fix(scope): description
+docs: description
+refactor(scope): description
 ```
 
-## Coding Guidelines
+Scopes: `tasks`, `auth`, `timer`, `api`, `ui`, `db`
 
-### General
-- TypeScript strict mode
-- Prefer hooks over class components
-- Use optimistic updates for better UX
-- Handle offline gracefully
+## Questions to Ask User
 
-### API Layer
-- Keep API functions pure (no side effects)
-- Return typed responses
-- Handle errors consistently
-- Support pagination where needed
-
-### Hooks
-- Encapsulate business logic
-- Implement caching strategies
-- Support optimistic updates
-- Expose loading/error states
-
-### UI Components
-- **Ask user before implementing major UI changes**
-- Research best practices before designing
-- Keep components small and focused
-- Use semantic prop names
-- Support dark/light themes
-
-## Next Steps
-
-### Setup
-1. [ ] Set up Supabase project (cloud or self-hosted)
-2. [ ] Run migrations (`001_initial_schema.sql`, `002_integrations.sql`)
-3. [ ] Add `.env` with Supabase credentials
-4. [ ] Test auth flow
-
-### Core Features
-5. [ ] Design UI with user input (don't assume)
-6. [ ] Test task CRUD with real API
-7. [ ] Build quick capture feature
-8. [ ] Add streak tracking
-
-### Integrations
-9. [ ] Deploy Telegram bot Edge Function
-10. [ ] Set up Telegram webhook
-11. [ ] Google Calendar OAuth setup
-12. [ ] Test calendar sync
+Before implementing:
+- UI design choices
+- Feature prioritization
+- UX flow decisions
 
 ## Resources
 
-### Project Docs
-- [API Documentation](docs/API.md) - REST API, Telegram bot, Calendar sync
-
-### External
-- [Supabase Best Practices](https://www.leanware.co/insights/supabase-best-practices)
-- [Supabase Self-Hosting](https://supabase.com/docs/guides/self-hosting/docker)
-- [ADHD UX Design](https://uxdesign.cc/software-accessibility-for-users-with-attention-deficit-disorder-adhd-f32226e6037c)
-- [Expo Folder Structure](https://expo.dev/blog/expo-app-folder-structure-best-practices)
-- [PostgREST API](https://postgrest.org/en/stable/api.html)
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) - System design
+- [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) - Dev guide
+- [docs/API.md](docs/API.md) - API reference
+- [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution guide
