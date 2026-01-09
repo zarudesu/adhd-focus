@@ -24,7 +24,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-postgres}
     volumes:
       - db-data:/var/lib/postgresql/data
-      - ../supabase/migrations:/docker-entrypoint-initdb.d/migrations:ro
+      - ./migrations:/docker-entrypoint-initdb.d/migrations:ro
       - ./init-db.sh:/docker-entrypoint-initdb.d/99-init-db.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
@@ -150,9 +150,13 @@ services:
   # ===================
 
   functions:
-    image: supabase/edge-runtime:v1.22.4
+    image: supabase/edge-runtime:v1.69.28
     container_name: adhd-focus-functions
     restart: unless-stopped
+    command:
+      - start
+      - --main-service
+      - /home/deno/functions/main
     environment:
       JWT_SECRET: ${JWT_SECRET}
       SUPABASE_URL: http://kong:8000
