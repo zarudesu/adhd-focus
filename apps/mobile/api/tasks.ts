@@ -103,8 +103,6 @@ export const tasksApi = {
         due_date: input.due_date,
         scheduled_date: input.scheduled_date,
         project_id: input.project_id,
-        parent_task_id: input.parent_task_id,
-        tags: input.tags || [],
       })
       .select()
       .single();

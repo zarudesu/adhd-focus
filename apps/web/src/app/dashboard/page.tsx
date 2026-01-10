@@ -1,10 +1,13 @@
 'use client';
 
+import { useState } from 'react';
 import { useTasks } from '@/hooks';
 import { ENERGY_LABELS, PRIORITY_LABELS } from '@adhd-focus/shared';
 
 export default function DashboardPage() {
   const { todayTasks, loading, error, complete, moveToInbox, moveToToday, create } = useTasks();
+  const [isAdding, setIsAdding] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
 
   const handleQuickAdd = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -12,10 +15,19 @@ export default function DashboardPage() {
     const input = form.elements.namedItem('title') as HTMLInputElement;
     const title = input.value.trim();
 
-    if (title) {
+    if (!title) return;
+
+    setIsAdding(true);
+    setAddError(null);
+
+    try {
       const task = await create({ title });
       await moveToToday(task.id);
       input.value = '';
+    } catch (err) {
+      setAddError(err instanceof Error ? err.message : 'Failed to add task');
+    } finally {
+      setIsAdding(false);
     }
   };
 
@@ -45,12 +57,25 @@ export default function DashboardPage() {
       </div>
 
       <form onSubmit={handleQuickAdd} className="mb-6">
-        <input
-          name="title"
-          type="text"
-          placeholder="Add a task for today..."
-          className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900"
-        />
+        <div className="flex gap-2">
+          <input
+            name="title"
+            type="text"
+            placeholder="Add a task for today..."
+            disabled={isAdding}
+            className="flex-1 px-4 py-3 bg-white border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 disabled:opacity-50"
+          />
+          <button
+            type="submit"
+            disabled={isAdding}
+            className="px-6 py-3 bg-zinc-900 text-white font-medium rounded-lg hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isAdding ? 'Adding...' : 'Add'}
+          </button>
+        </div>
+        {addError && (
+          <div className="mt-2 text-sm text-red-600">{addError}</div>
+        )}
       </form>
 
       {todayTasks.length === 0 ? (
