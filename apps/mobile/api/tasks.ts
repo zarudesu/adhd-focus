@@ -24,7 +24,7 @@ export const tasksApi = {
     let query = supabase
       .from('tasks')
       .select('*')
-      .order('sort_order', { ascending: true })
+      .order('position', { ascending: true })
       .order('created_at', { ascending: false });
 
     // Apply filters
@@ -158,13 +158,13 @@ export const tasksApi = {
   /**
    * Batch update task order
    */
-  async reorder(updates: { id: string; sort_order: number }[]): Promise<void> {
+  async reorder(updates: { id: string; position: number }[]): Promise<void> {
     // Supabase doesn't support batch updates natively, so we use a transaction via RPC
     // For now, update one by one (can be optimized with Edge Function later)
     for (const update of updates) {
       const { error } = await supabase
         .from('tasks')
-        .update({ sort_order: update.sort_order })
+        .update({ position: update.position })
         .eq('id', update.id);
 
       if (error) throw error;
