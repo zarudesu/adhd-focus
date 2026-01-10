@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useAuth } from "@/hooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,37 +13,31 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Timer, CheckCircle2 } from "lucide-react";
+import { Timer, ArrowLeft, Mail } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
-export default function SignupPage() {
-  const { signUp, signInWithOAuth, loading } = useAuth();
+export default function ResetPasswordPage() {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setLoading(true);
 
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters");
-      return;
-    }
+    const supabase = createClient();
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/callback?next=/update-password`,
+    });
 
-    const result = await signUp(email, password);
-    if (result.error) {
-      setError(result.error.message);
+    setLoading(false);
+
+    if (error) {
+      setError(error.message);
     } else {
       setSuccess(true);
-    }
-  };
-
-  const handleOAuth = async (provider: "google" | "github") => {
-    const result = await signInWithOAuth(provider);
-    if (result.error) {
-      setError(result.error.message);
     }
   };
 
@@ -54,17 +47,20 @@ export default function SignupPage() {
         <Card className="w-full max-w-sm text-center">
           <CardHeader>
             <div className="mx-auto mb-4 rounded-full bg-primary/10 p-3 w-fit">
-              <CheckCircle2 className="h-8 w-8 text-primary" />
+              <Mail className="h-8 w-8 text-primary" />
             </div>
             <CardTitle className="text-2xl">Check your email</CardTitle>
             <CardDescription>
-              We sent a confirmation link to <strong>{email}</strong>. Click the
-              link to complete your registration.
+              We sent a password reset link to <strong>{email}</strong>. Click
+              the link to reset your password.
             </CardDescription>
           </CardHeader>
           <CardFooter className="justify-center">
             <Button variant="ghost" asChild>
-              <Link href="/login">Back to login</Link>
+              <Link href="/login">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to login
+              </Link>
             </Button>
           </CardFooter>
         </Card>
@@ -81,8 +77,11 @@ export default function SignupPage() {
 
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Create your account</CardTitle>
-          <CardDescription>Start managing tasks your way</CardDescription>
+          <CardTitle className="text-2xl">Reset password</CardTitle>
+          <CardDescription>
+            Enter your email and we&apos;ll send you a link to reset your
+            password
+          </CardDescription>
         </CardHeader>
 
         <CardContent>
@@ -105,51 +104,19 @@ export default function SignupPage() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-              />
-              <p className="text-xs text-muted-foreground">
-                At least 6 characters
-              </p>
-            </div>
-
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Creating account..." : "Create account"}
+              {loading ? "Sending..." : "Send reset link"}
             </Button>
           </form>
-
-          <div className="my-6 flex items-center">
-            <Separator className="flex-1" />
-            <span className="px-3 text-sm text-muted-foreground">
-              Or continue with
-            </span>
-            <Separator className="flex-1" />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <Button variant="outline" onClick={() => handleOAuth("google")}>
-              Google
-            </Button>
-            <Button variant="outline" onClick={() => handleOAuth("github")}>
-              GitHub
-            </Button>
-          </div>
         </CardContent>
 
         <CardFooter className="justify-center">
-          <p className="text-sm text-muted-foreground">
-            Already have an account?{" "}
-            <Link href="/login" className="font-medium hover:underline">
-              Sign in
+          <Button variant="ghost" asChild>
+            <Link href="/login">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to login
             </Link>
-          </p>
+          </Button>
         </CardFooter>
       </Card>
     </div>

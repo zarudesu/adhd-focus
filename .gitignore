@@ -58,3 +58,4 @@ coverage/
 
 # Supabase
 supabase/.temp/
+.playwright-mcp/

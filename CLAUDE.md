@@ -21,6 +21,8 @@
 - Keep code simple and minimal
 - Write TypeScript with strict types
 - Follow ADHD UX principles (see below)
+- **Write tests for new features** (Vitest for unit, Playwright for E2E)
+- **Update docs after changes** (SESSION_LOG.md, APP_STRUCTURE.md)
 
 ### DON'T
 - Make "топорный" (crude/ugly) UI without consulting user
@@ -35,12 +37,25 @@
 When starting a new session:
 
 1. **Read this file** (CLAUDE.md)
-2. **Check current state**: `git status`, look at recent commits
-3. **Review docs if needed**:
+2. **Read `docs/SESSION_LOG.md`** - Current progress and next steps
+3. **Check current state**: `git status`, look at recent commits
+4. **Review docs if needed**:
+   - `docs/APP_STRUCTURE.md` - Web app blueprint (MAIN REFERENCE)
    - `docs/ARCHITECTURE.md` - System design
    - `docs/DEVELOPMENT.md` - Dev workflow
-   - `docs/API.md` - API reference
-4. **Ask user what to work on** if not clear
+5. **Ask user what to work on** if not clear
+
+## Session End Checklist
+
+Before ending a session:
+
+1. **Update `docs/SESSION_LOG.md`** with:
+   - What was completed
+   - Current blockers or issues
+   - Next steps for next session
+2. **Commit changes** with descriptive message
+3. **Run tests** if any were added/modified
+4. **Update this file** if architecture changed
 
 ## User Preferences
 
@@ -216,29 +231,39 @@ cd docker && docker compose up -d
 
 ## Current State (Update This!)
 
+> See `docs/SESSION_LOG.md` for detailed progress tracking
+
 ### Done
-- [x] Project structure (Turborepo + Expo)
+- [x] Project structure (Turborepo + Expo + Next.js)
 - [x] Shared types package
 - [x] Database schema (migrations)
-- [x] API layer (tasks, auth, profile, sessions)
+- [x] API layer (tasks, auth, profile, projects, sessions)
 - [x] Hooks layer (useTasks, useAuth, useFocusSession)
 - [x] Telegram bot Edge Function
 - [x] Google Calendar Edge Function
 - [x] Docker self-hosted setup
-- [x] API documentation
-- [x] Project documentation
+- [x] API/Project documentation
+- [x] **Web App Skeleton** (Next.js 15 + shadcn/ui)
+  - All dashboard pages created
+  - Sidebar navigation
+  - Auth pages (login, signup, reset-password)
+  - 23 shadcn/ui components installed
 
-### In Progress
-- [ ] Set up actual Supabase project
-- [ ] Test with real database
-- [ ] Design UI (need user input)
+### Current Phase: Phase 2 - Core Tasks
+See `docs/APP_STRUCTURE.md` for full roadmap.
 
-### Planned
-- [ ] Quick capture feature
-- [ ] Streak tracking UI
-- [ ] Settings screen
-- [ ] Dark mode
-- [ ] Offline support
+Next features to implement:
+- [ ] TaskCard, TaskList components
+- [ ] Today view with real data
+- [ ] Quick Capture (Ctrl+K)
+- [ ] Inbox functionality
+
+### Planned (Phase 3-8)
+- [ ] Projects CRUD
+- [ ] Calendar/Scheduling
+- [ ] Focus Mode (Pomodoro)
+- [ ] Stats & Gamification
+- [ ] Settings & Integrations
 
 ## How to Add Features
 
@@ -251,13 +276,29 @@ cd docker && docker compose up -d
 
 ## File Locations Quick Reference
 
+### Web App (apps/web)
+| Need | Location |
+|------|----------|
+| Pages | `apps/web/src/app/` |
+| API calls | `apps/web/src/api/` |
+| Hooks | `apps/web/src/hooks/` |
+| UI components | `apps/web/src/components/ui/` |
+| Feature components | `apps/web/src/components/` |
+| Layout | `apps/web/src/components/layout/` |
+
+### Mobile App (apps/mobile)
+| Need | Location |
+|------|----------|
+| Screens | `apps/mobile/app/` |
+| API calls | `apps/mobile/api/` |
+| Hooks | `apps/mobile/hooks/` |
+| Components | `apps/mobile/components/` |
+
+### Shared
 | Need | Location |
 |------|----------|
 | Types | `packages/shared/src/types/` |
-| API calls | `apps/mobile/api/` |
-| Business logic | `apps/mobile/hooks/` |
-| UI components | `apps/mobile/components/` |
-| Screens | `apps/mobile/app/` |
+| Constants | `packages/shared/src/constants/` |
 | DB schema | `supabase/migrations/` |
 | Edge Functions | `supabase/functions/` |
 | Docs | `docs/` |
