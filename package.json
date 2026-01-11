@@ -5,6 +5,10 @@
     "apps/*",
     "packages/*"
   ],
+  "overrides": {
+    "react": "$react",
+    "react-dom": "$react-dom"
+  },
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",

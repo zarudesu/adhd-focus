@@ -26,7 +26,6 @@ export const tasksApi = {
     let query = supabase
       .from('tasks')
       .select('*')
-      .order('position', { ascending: true })
       .order('created_at', { ascending: false });
 
     // Apply filters
@@ -89,12 +88,22 @@ export const tasksApi = {
 
   /**
    * Create new task
+   * If scheduled_date is today, auto-sets status to 'today'
    */
-  async create(input: CreateTaskInput): Promise<Task> {
+  async create(input: CreateTaskInput & { status?: 'inbox' | 'today' }): Promise<Task> {
     const supabase = createClient();
 
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) throw new Error('Not authenticated');
+
+    // Determine status: explicit status > scheduled_date logic > default 'inbox'
+    let status: 'inbox' | 'today' = input.status || 'inbox';
+    if (!input.status && input.scheduled_date) {
+      const today = new Date().toISOString().split('T')[0];
+      if (input.scheduled_date === today) {
+        status = 'today';
+      }
+    }
 
     const { data, error } = await supabase
       .from('tasks')
@@ -102,7 +111,7 @@ export const tasksApi = {
         user_id: userData.user.id,
         title: input.title,
         description: input.description,
-        status: 'inbox',
+        status,
         energy_required: input.energy_required || 'medium',
         priority: input.priority || 'should',
         estimated_minutes: input.estimated_minutes,
@@ -168,13 +177,13 @@ export const tasksApi = {
   /**
    * Batch update task order
    */
-  async reorder(updates: { id: string; position: number }[]): Promise<void> {
+  async reorder(updates: { id: string; sort_order: number }[]): Promise<void> {
     const supabase = createClient();
 
     for (const update of updates) {
       const { error } = await supabase
         .from('tasks')
-        .update({ position: update.position })
+        .update({ sort_order: update.sort_order })
         .eq('id', update.id);
 
       if (error) throw error;

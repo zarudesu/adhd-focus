@@ -1,0 +1,103 @@
+'use client';
+
+import { Task } from '@adhd-focus/shared';
+import { TaskCard, TaskCardProps } from './TaskCard';
+import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
+
+export interface TaskListProps {
+  tasks: Task[];
+  loading?: boolean;
+  emptyMessage?: string;
+  emptyDescription?: string;
+  onComplete?: (id: string) => void;
+  onDelete?: (id: string) => void;
+  onMoveToToday?: (id: string) => void;
+  onMoveToInbox?: (id: string) => void;
+  onStartFocus?: (id: string) => void;
+  onTaskClick?: (task: Task) => void;
+  className?: string;
+}
+
+export function TaskList({
+  tasks,
+  loading = false,
+  emptyMessage = 'No tasks',
+  emptyDescription = 'Tasks you add will appear here',
+  onComplete,
+  onDelete,
+  onMoveToToday,
+  onMoveToInbox,
+  onStartFocus,
+  onTaskClick,
+  className,
+}: TaskListProps) {
+  // Loading state
+  if (loading) {
+    return (
+      <div className={cn('space-y-2', className)}>
+        {[1, 2, 3].map((i) => (
+          <TaskCardSkeleton key={i} />
+        ))}
+      </div>
+    );
+  }
+
+  // Empty state
+  if (tasks.length === 0) {
+    return (
+      <div className={cn('flex flex-col items-center justify-center py-12 text-center', className)}>
+        <div className="rounded-full bg-muted p-3 mb-3">
+          <svg
+            className="h-6 w-6 text-muted-foreground"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+            />
+          </svg>
+        </div>
+        <p className="text-sm font-medium text-muted-foreground">{emptyMessage}</p>
+        <p className="text-xs text-muted-foreground mt-1">{emptyDescription}</p>
+      </div>
+    );
+  }
+
+  // Task list
+  return (
+    <div className={cn('space-y-2', className)}>
+      {tasks.map((task) => (
+        <TaskCard
+          key={task.id}
+          task={task}
+          onComplete={onComplete}
+          onDelete={onDelete}
+          onMoveToToday={onMoveToToday}
+          onMoveToInbox={onMoveToInbox}
+          onStartFocus={onStartFocus}
+          onClick={onTaskClick}
+        />
+      ))}
+    </div>
+  );
+}
+
+function TaskCardSkeleton() {
+  return (
+    <div className="flex items-start gap-3 rounded-lg border bg-card p-3">
+      <Skeleton className="h-5 w-5 rounded" />
+      <div className="flex-1 space-y-2">
+        <Skeleton className="h-4 w-3/4" />
+        <div className="flex gap-2">
+          <Skeleton className="h-5 w-12 rounded-full" />
+          <Skeleton className="h-5 w-16 rounded-full" />
+        </div>
+      </div>
+    </div>
+  );
+}
