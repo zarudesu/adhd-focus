@@ -11,8 +11,8 @@ COPY package.json package-lock.json ./
 COPY apps/web/package.json ./apps/web/
 COPY packages/shared/package.json ./packages/shared/
 
-# Install all dependencies
-RUN npm ci
+# Install all dependencies (force reinstall for Linux platform)
+RUN npm ci && npm rebuild
 
 # Copy source
 COPY packages/shared ./packages/shared
@@ -23,10 +23,6 @@ ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-# Build shared package first
-WORKDIR /app/packages/shared
-RUN npm run build || true
 
 # Build Next.js app
 WORKDIR /app/apps/web
