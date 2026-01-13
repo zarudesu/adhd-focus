@@ -85,7 +85,8 @@ curl -sL "$REPO_URL/docker-compose.yml" -o docker-compose.yml
 curl -sL "$REPO_URL/Caddyfile" -o Caddyfile
 curl -sL "$REPO_URL/kong.yml" -o kong.yml
 curl -sL "$REPO_URL/init-db.sh" -o init-db.sh
-chmod +x init-db.sh
+curl -sL "$REPO_URL/startup.sh" -o startup.sh
+chmod +x init-db.sh startup.sh
 
 # Create migrations directory
 mkdir -p migrations
@@ -93,14 +94,24 @@ mkdir -p migrations
 # Download migrations
 echo "Downloading database migrations..."
 MIGRATIONS_URL="https://raw.githubusercontent.com/zarudesu/adhd-focus/main/supabase/migrations"
-# Add migration files here when available
+curl -sL "$MIGRATIONS_URL/001_initial_schema.sql" -o migrations/001_initial_schema.sql
+curl -sL "$MIGRATIONS_URL/002_integrations.sql" -o migrations/002_integrations.sql
+echo "Downloaded $(ls migrations/*.sql 2>/dev/null | wc -l) migrations"
 
 echo ""
 echo "=== Setup Complete ==="
 echo ""
 echo "Next steps:"
 echo "1. Edit .env file: nano $APP_DIR/.env"
-echo "2. Generate JWT keys using: ./setup.sh"
-echo "3. Start services: docker compose up -d"
-echo "4. Check status: docker compose ps"
+echo "   - Update DOMAIN and API_DOMAIN"
+echo "   - Update all CHANGE_ME values"
+echo ""
+echo "2. Generate JWT keys (creates ANON_KEY, SERVICE_ROLE_KEY, JWT_SECRET):"
+echo "   ./setup.sh"
+echo ""
+echo "3. Start services:"
+echo "   ./startup.sh"
+echo ""
+echo "4. Check status:"
+echo "   docker compose ps"
 echo ""

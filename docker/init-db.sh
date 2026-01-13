@@ -183,4 +183,8 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authen
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON ROUTINES TO anon, authenticated, service_role;
 EOSQL
 
+# Notify PostgREST to reload schema (it will retry until connected)
+echo "Notifying PostgREST to reload schema cache..."
+psql -v ON_ERROR_STOP=0 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" -c "NOTIFY pgrst, 'reload schema';" 2>/dev/null || true
+
 echo "=== Database initialization complete ==="

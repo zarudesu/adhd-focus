@@ -1,8 +1,8 @@
 -- ADHD Focus - Initial Database Schema
 -- Run this in Supabase SQL Editor
 
--- Enable UUID extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- Enable pgcrypto for gen_random_uuid()
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- Users table (extends Supabase auth.users)
 CREATE TABLE IF NOT EXISTS public.profiles (
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 
 -- Projects table
 CREATE TABLE IF NOT EXISTS public.projects (
-  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
 
   name TEXT NOT NULL,
@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS public.projects (
 
 -- Tasks table
 CREATE TABLE IF NOT EXISTS public.tasks (
-  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
 
   -- Core
@@ -94,7 +94,7 @@ CREATE TABLE IF NOT EXISTS public.tasks (
 
 -- Focus sessions table
 CREATE TABLE IF NOT EXISTS public.focus_sessions (
-  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
   task_id UUID REFERENCES public.tasks(id) ON DELETE SET NULL,
 
@@ -110,7 +110,7 @@ CREATE TABLE IF NOT EXISTS public.focus_sessions (
 
 -- Daily stats for streak tracking
 CREATE TABLE IF NOT EXISTS public.daily_stats (
-  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
   date DATE NOT NULL,
 
