@@ -10,6 +10,8 @@ on:
       - 'apps/web/**'
       - 'packages/shared/**'
       - 'docker/**'
+      - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/deploy-web.yml'
   workflow_dispatch:
 
