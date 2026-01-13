@@ -1,0 +1,37 @@
+# ADHD Focus - Caddy Configuration
+# Automatic HTTPS with Let's Encrypt
+
+{$DOMAIN} {
+    # Next.js Web App
+    reverse_proxy web:3000
+
+    # Headers for security
+    header {
+        X-Frame-Options "DENY"
+        X-Content-Type-Options "nosniff"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+
+    # Logging
+    log {
+        output stdout
+        format console
+    }
+}
+
+{$API_DOMAIN} {
+    # Supabase API (Kong gateway)
+    reverse_proxy kong:8000
+
+    # CORS handled by Kong, just proxy
+    log {
+        output stdout
+        format console
+    }
+}
+
+# Health check endpoint
+:80 {
+    respond /health "OK" 200
+}

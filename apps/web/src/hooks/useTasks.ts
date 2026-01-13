@@ -26,6 +26,8 @@ interface UseTasksReturn {
   deleteTask: (id: string) => Promise<void>;
   moveToToday: (id: string) => Promise<Task>;
   moveToInbox: (id: string) => Promise<Task>;
+  moveToSomeday: (id: string) => Promise<Task>;
+  scheduleTask: (id: string, date: string) => Promise<Task>;
   todayTasks: Task[];
   inboxTasks: Task[];
   currentTask: Task | null;
@@ -112,6 +114,20 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
     });
   }, [update]);
 
+  const moveToSomeday = useCallback(async (id: string): Promise<Task> => {
+    return update(id, {
+      priority: 'someday',
+      status: 'archived',
+    });
+  }, [update]);
+
+  const scheduleTask = useCallback(async (id: string, date: string): Promise<Task> => {
+    return update(id, {
+      status: 'scheduled',
+      scheduled_date: date,
+    });
+  }, [update]);
+
   const todayTasks = tasks.filter(
     (t) => t.status === 'today' || t.status === 'in_progress'
   );
@@ -131,6 +147,8 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
     deleteTask,
     moveToToday,
     moveToInbox,
+    moveToSomeday,
+    scheduleTask,
     todayTasks,
     inboxTasks,
     currentTask,

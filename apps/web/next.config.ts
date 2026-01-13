@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  output: "standalone",
+
+  // Transpile shared package
+  transpilePackages: ["@adhd-focus/shared"],
 };
 
 export default nextConfig;

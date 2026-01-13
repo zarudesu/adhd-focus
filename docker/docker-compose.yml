@@ -4,10 +4,48 @@
 # Quick start:
 # 1. Run ./setup.sh to generate secrets
 # 2. docker compose up -d
-# 3. Access Studio at http://localhost:3000
-# 4. API at http://localhost:8000
+# 3. Access app at https://your-domain.com
+# 4. Studio at http://localhost:54323 (internal only)
 
 services:
+  # ===================
+  # Reverse Proxy (Caddy)
+  # ===================
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: adhd-focus-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - web
+      - kong
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+      API_DOMAIN: ${API_DOMAIN:-api.localhost}
+
+  # ===================
+  # Next.js Web App
+  # ===================
+
+  web:
+    image: ghcr.io/zarudesu/adhd-focus-web:${WEB_VERSION:-latest}
+    container_name: adhd-focus-web
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_SUPABASE_URL: ${API_EXTERNAL_URL:-http://localhost:8000}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${ANON_KEY}
+      NEXT_PUBLIC_SITE_URL: ${SITE_URL:-http://localhost:3000}
+    depends_on:
+      - kong
+
   # ===================
   # Supabase Services
   # ===================
@@ -17,7 +55,7 @@ services:
     container_name: adhd-focus-db
     restart: unless-stopped
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -36,9 +74,8 @@ services:
     image: kong:2.8.1
     container_name: adhd-focus-kong
     restart: unless-stopped
-    ports:
-      - "${API_EXTERNAL_PORT:-8000}:8000"
-      - "${API_EXTERNAL_SSL_PORT:-8443}:8443"
+    expose:
+      - "8000"
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /var/lib/kong/kong.yml
@@ -82,7 +119,7 @@ services:
       GOTRUE_JWT_EXP: ${JWT_EXPIRY:-3600}
       GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
       GOTRUE_EXTERNAL_EMAIL_ENABLED: ${ENABLE_EMAIL_SIGNUP:-true}
-      GOTRUE_MAILER_AUTOCONFIRM: ${ENABLE_EMAIL_AUTOCONFIRM:-false}
+      GOTRUE_MAILER_AUTOCONFIRM: ${ENABLE_EMAIL_AUTOCONFIRM:-true}
       GOTRUE_SMTP_HOST: ${SMTP_HOST}
       GOTRUE_SMTP_PORT: ${SMTP_PORT:-587}
       GOTRUE_SMTP_USER: ${SMTP_USER}
@@ -172,7 +209,7 @@ services:
       - kong
 
   # ===================
-  # Studio (Admin UI)
+  # Studio (Admin UI) - Internal only
   # ===================
 
   studio:
@@ -180,7 +217,7 @@ services:
     container_name: adhd-focus-studio
     restart: unless-stopped
     ports:
-      - "${STUDIO_PORT:-3000}:3000"
+      - "127.0.0.1:${STUDIO_PORT:-54323}:3000"
     environment:
       STUDIO_PG_META_URL: http://meta:8080
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -212,6 +249,8 @@ services:
 volumes:
   db-data:
   storage-data:
+  caddy-data:
+  caddy-config:
 
 networks:
   default:
