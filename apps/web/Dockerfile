@@ -6,15 +6,17 @@ WORKDIR /app
 # Install dependencies for node-gyp (if needed)
 RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 
-# Copy entire monorepo structure for workspace resolution
-COPY package.json package-lock.json ./
+# Copy all package files for workspace resolution
+COPY package.json ./
 COPY apps/web/package.json ./apps/web/
 COPY packages/shared/package.json ./packages/shared/
 
-# Install all dependencies (use npm install to get correct platform binaries)
+# Install dependencies in the web workspace
+WORKDIR /app/apps/web
 RUN npm install --legacy-peer-deps
 
-# Copy source
+# Copy source files
+WORKDIR /app
 COPY packages/shared ./packages/shared
 COPY apps/web ./apps/web
 
