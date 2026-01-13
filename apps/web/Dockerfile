@@ -11,8 +11,8 @@ COPY package.json package-lock.json ./
 COPY apps/web/package.json ./apps/web/
 COPY packages/shared/package.json ./packages/shared/
 
-# Install all dependencies (force reinstall for Linux platform)
-RUN npm ci && npm rebuild
+# Install all dependencies (use npm install to get correct platform binaries)
+RUN npm install --legacy-peer-deps
 
 # Copy source
 COPY packages/shared ./packages/shared
