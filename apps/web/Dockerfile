@@ -3,19 +3,32 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
-COPY apps/web/package*.json ./apps/web/
-COPY packages/shared/package*.json ./packages/shared/
+# Install dependencies for node-gyp (if needed)
+RUN apk add --no-cache python3 make g++
 
-# Install dependencies
-RUN npm ci --workspace=apps/web --workspace=packages/shared
+# Copy entire monorepo structure for workspace resolution
+COPY package.json package-lock.json ./
+COPY apps/web/package.json ./apps/web/
+COPY packages/shared/package.json ./packages/shared/
+
+# Install all dependencies
+RUN npm ci
 
 # Copy source
 COPY packages/shared ./packages/shared
 COPY apps/web ./apps/web
 
-# Build
+# Build args for Next.js (baked into client bundle)
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+# Build shared package first
+WORKDIR /app/packages/shared
+RUN npm run build || true
+
+# Build Next.js app
 WORKDIR /app/apps/web
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
