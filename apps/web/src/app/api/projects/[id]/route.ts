@@ -1,22 +1,21 @@
 // ADHD Focus - Single Project API
-// GET /api/projects/[id] - Get project
+// GET /api/projects/[id] - Get project with tasks
 // PATCH /api/projects/[id] - Update project
-// DELETE /api/projects/[id] - Delete/archive project
+// DELETE /api/projects/[id] - Archive project
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { db, projects } from "@/db";
+import { db, projects, tasks } from "@/db";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
-// Update project schema
 const updateProjectSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   description: z.string().nullable().optional(),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
-  emoji: z.string().optional(),
+  emoji: z.string().max(4).optional(),
   archived: z.boolean().optional(),
 });
 
@@ -39,7 +38,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
 
-    return NextResponse.json(project);
+    // Get tasks for this project
+    const projectTasks = await db
+      .select()
+      .from(tasks)
+      .where(and(eq(tasks.projectId, id), eq(tasks.userId, session.user.id)))
+      .orderBy(tasks.sortOrder, tasks.createdAt);
+
+    return NextResponse.json({ ...project, tasks: projectTasks });
   } catch (error) {
     console.error("GET /api/projects/[id] error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -57,12 +63,19 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const body = await request.json();
     const data = updateProjectSchema.parse(body);
 
+    const updateData: Record<string, unknown> = {
+      updatedAt: new Date(),
+    };
+
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.description !== undefined) updateData.description = data.description;
+    if (data.color !== undefined) updateData.color = data.color;
+    if (data.emoji !== undefined) updateData.emoji = data.emoji;
+    if (data.archived !== undefined) updateData.archived = data.archived;
+
     const [updatedProject] = await db
       .update(projects)
-      .set({
-        ...data,
-        updatedAt: new Date(),
-      })
+      .set(updateData)
       .where(and(eq(projects.id, id), eq(projects.userId, session.user.id)))
       .returning();
 
@@ -88,30 +101,16 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     const { id } = await params;
-    const { searchParams } = new URL(request.url);
-    const hardDelete = searchParams.get("hard") === "true";
 
-    if (hardDelete) {
-      // Hard delete
-      const [deletedProject] = await db
-        .delete(projects)
-        .where(and(eq(projects.id, id), eq(projects.userId, session.user.id)))
-        .returning();
+    // Soft delete - archive
+    const [archivedProject] = await db
+      .update(projects)
+      .set({ archived: true, updatedAt: new Date() })
+      .where(and(eq(projects.id, id), eq(projects.userId, session.user.id)))
+      .returning();
 
-      if (!deletedProject) {
-        return NextResponse.json({ error: "Project not found" }, { status: 404 });
-      }
-    } else {
-      // Soft delete - archive
-      const [archivedProject] = await db
-        .update(projects)
-        .set({ archived: true, updatedAt: new Date() })
-        .where(and(eq(projects.id, id), eq(projects.userId, session.user.id)))
-        .returning();
-
-      if (!archivedProject) {
-        return NextResponse.json({ error: "Project not found" }, { status: 404 });
-      }
+    if (!archivedProject) {
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
 
     return NextResponse.json({ success: true });

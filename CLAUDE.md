@@ -1,6 +1,6 @@
 # CLAUDE.md - AI Assistant Instructions
 
-> Read this file FIRST in every new session.
+> **READ THIS FILE FIRST** in every new session or after context compaction.
 > Last updated: 2026-01-14
 
 ## Quick Context
@@ -9,55 +9,98 @@
 
 | Key | Value |
 |-----|-------|
-| Status | Active development |
+| Status | Active development - Web UI connected to API |
 | Stack | Next.js 16 + Drizzle + NextAuth + PostgreSQL |
 | Language | User: Russian, Code/Docs: English |
 | Repo | https://github.com/zarudesu/adhd-focus |
 
+## MANDATORY Workflow (Every Session!)
+
+### 1. Start of Session
+```bash
+# Check current state
+git status && git log --oneline -5
+
+# What's running?
+docker ps
+lsof -i :3000
+
+# Start if needed
+cd docker && docker compose up -d db
+cd apps/web && npm run dev
+```
+
+### 2. Before Implementing ANYTHING
+1. **Search for existing solutions** - Use WebSearch for templates, packages, patterns
+2. **Check community resources** (see section below)
+3. **Use MCP tools**: `context7` for docs, `shadcn` for components, `playwright` for testing
+4. **Only write from scratch if nothing exists**
+
+### 3. During Development
+- Use `TodoWrite` to track progress
+- Test with real database via Playwright
+- Keep code minimal
+
+### 4. End of Session
+- **Update this file** if anything changed
+- **Update "Current State" section** below
+- Commit with conventional commits
+- Note any blockers
+
 ## Critical Rules
 
 ### DO
-- **Use existing solutions first** - Check community templates, shadcn blocks, npm packages before writing from scratch
-- Use MCP tools: `context7` for docs, `playwright` for testing, `shadcn` for components
-- Follow existing patterns in codebase
-- Keep code minimal and typed
-- Test with real database before marking done
+- **Check internet first** - WebSearch for "nextjs [feature] 2026", "shadcn [component]", "drizzle [pattern]"
+- **Use existing solutions** - npm packages, shadcn blocks, community templates
+- **Use MCP tools** - context7, playwright, shadcn, github
+- **Keep this file updated** - especially Current State section
+- **Test with real data** - via Playwright MCP
 
 ### DON'T
 - Write from scratch what already exists
 - Make UI decisions without asking user
 - Add unnecessary complexity
 - Skip testing
+- Forget to update documentation
 
-## Session Workflow
+## Current State (UPDATE THIS!)
 
-### Start
-```bash
-# 1. Check what's running
-docker ps
-lsof -i :3000
+### Web App - Pages Connected to API
 
-# 2. Start database if needed
-cd docker && docker compose up -d db
+| Page | Status | Features |
+|------|--------|----------|
+| Today | **DONE** | Tasks list, complete/uncomplete, add task, move to inbox |
+| Inbox | **DONE** | Tasks list, Process All (swipe UI), Quick Add, move to today |
+| Scheduled | **DONE** | Tasks grouped by date, smart dates (Today/Tomorrow/etc) |
+| Projects | TODO | Needs API connection |
+| Focus Mode | TODO | Pomodoro timer |
+| Statistics | TODO | Streak tracking |
+| Settings | TODO | User preferences |
 
-# 3. Start dev server
-cd apps/web && npx next dev
+### Backend - API Routes
 
-# 4. Read current state
-git status && git log --oneline -5
-```
+| Route | Status |
+|-------|--------|
+| GET/POST /api/tasks | **DONE** |
+| PATCH/DELETE /api/tasks/[id] | **DONE** |
+| Auth (register/login) | **DONE** |
+| Projects CRUD | TODO |
+| Focus sessions | TODO |
 
-### End
-- Update this file if architecture changed
-- Commit with conventional commits
-- Note blockers in commit message
+### Key Files Changed Recently
+- `src/hooks/useTasks.ts` - Added scheduledTasks, uncomplete
+- `src/components/tasks/TaskCard.tsx` - Added onUncomplete
+- `src/app/(dashboard)/dashboard/scheduled/page.tsx` - Full rewrite
 
-## Tech Stack (Current)
+### Known Issues
+- None currently
+
+## Tech Stack
 
 | Layer | Technology | Docs |
 |-------|------------|------|
 | Framework | Next.js 16.1 | Use `context7` MCP |
-| Database | PostgreSQL 17 | Docker container |
+| Database | PostgreSQL 17 | Docker on port 5434 |
 | ORM | Drizzle | `npm run db:push` |
 | Auth | NextAuth v5 | JWT + Credentials |
 | UI | shadcn/ui + Tailwind | Use `shadcn` MCP |
@@ -66,60 +109,58 @@ git status && git log --oneline -5
 ## Project Structure
 
 ```
-adhd-focus/
-├── apps/web/                    # Next.js app
-│   ├── src/
-│   │   ├── app/                 # Pages (App Router)
-│   │   │   ├── (dashboard)/     # Protected routes
-│   │   │   ├── (public)/        # Public pages
-│   │   │   ├── api/             # API routes
-│   │   │   └── login, signup/   # Auth pages
-│   │   ├── components/
-│   │   │   ├── ui/              # shadcn components
-│   │   │   ├── layout/          # Header, Sidebar
-│   │   │   ├── tasks/           # TaskCard, TaskList
-│   │   │   └── inbox/           # InboxProcessor
-│   │   ├── db/
-│   │   │   ├── index.ts         # Drizzle client
-│   │   │   └── schema.ts        # Database schema
-│   │   ├── hooks/               # useTasks, useAuth, etc
-│   │   ├── lib/
-│   │   │   ├── auth.ts          # NextAuth config
-│   │   │   └── utils.ts         # cn() helper
-│   │   └── proxy.ts             # Route protection (Next.js 16)
-│   ├── drizzle.config.ts
-│   └── .env.local               # Local environment
-├── docker/
-│   ├── docker-compose.yml       # PostgreSQL + Caddy
-│   └── Caddyfile
-└── packages/shared/             # Types, constants (legacy)
+apps/web/src/
+├── app/
+│   ├── (dashboard)/dashboard/    # Protected pages
+│   │   ├── page.tsx              # Today (connected)
+│   │   ├── inbox/page.tsx        # Inbox (connected)
+│   │   ├── scheduled/page.tsx    # Scheduled (connected)
+│   │   ├── projects/page.tsx     # Projects (TODO)
+│   │   ├── focus/page.tsx        # Focus Mode (TODO)
+│   │   └── stats/page.tsx        # Statistics (TODO)
+│   ├── api/tasks/                # Tasks API
+│   └── (public)/                 # Public pages
+├── components/
+│   ├── tasks/                    # TaskCard, TaskList, AddTaskDialog
+│   ├── inbox/                    # InboxProcessor
+│   └── ui/                       # shadcn components
+├── hooks/
+│   └── useTasks.ts               # Main tasks hook
+├── db/
+│   ├── index.ts                  # Drizzle client
+│   └── schema.ts                 # Database schema
+└── proxy.ts                      # Route protection
 ```
 
-## Key Files
+## Community Resources (CHECK THESE FIRST!)
 
-| Purpose | File |
-|---------|------|
-| Database schema | `apps/web/src/db/schema.ts` |
-| Auth config | `apps/web/src/lib/auth.ts` |
-| Route protection | `apps/web/src/proxy.ts` |
-| Task hooks | `apps/web/src/hooks/useTasks.ts` |
-| API routes | `apps/web/src/app/api/tasks/route.ts` |
+### Starter Templates
+- [Vercel NextAuth + Drizzle](https://github.com/vercel/nextjs-postgres-auth-starter)
+- [Shadcn Dashboard Starter](https://github.com/Kiranism/next-shadcn-dashboard-starter)
+- [Shadcn Admin](https://github.com/satnaing/shadcn-admin)
+
+### UI Components
+- [shadcn/ui](https://ui.shadcn.com) - Base components
+- [shadcn/ui blocks](https://ui.shadcn.com/blocks) - Ready sections
+- [Magic UI](https://magicui.design) - Animations
+
+### Feature Patterns
+- [dnd-kit](https://dndkit.com) - Drag and drop for Kanban
+- [cmdk](https://cmdk.paco.me) - Command palette
+- [sonner](https://sonner.emilkowal.ski) - Toasts
 
 ## Development Commands
 
 ```bash
+# Start everything
+cd docker && docker compose up -d db
+cd apps/web && npm run dev
+
 # Database
-cd docker && docker compose up -d db     # Start PostgreSQL
-npm run db:push                           # Sync schema
-npm run db:studio                         # Visual editor
+npm run db:push     # Sync schema
+npm run db:studio   # Visual editor
 
-# Dev server
-cd apps/web && npx next dev              # Start on :3000
-
-# Type check
-npx tsc --noEmit
-
-# Add shadcn component
+# Add component
 npx shadcn@latest add [component]
 ```
 
@@ -127,142 +168,64 @@ npx shadcn@latest add [component]
 
 ```bash
 # apps/web/.env.local
-DATABASE_URL=postgres://postgres:PASSWORD@localhost:5434/postgres
+DATABASE_URL=postgres://postgres:testpassword123@localhost:5434/postgres
 AUTH_SECRET=your-secret-here
 AUTH_URL=http://localhost:3000
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
-## Community Resources (USE THESE!)
+## API Pattern (Reference)
 
-### Starter Templates
-- [Vercel NextAuth + Drizzle Starter](https://github.com/vercel/nextjs-postgres-auth-starter) - Official auth template
-- [Next.js 16 Shadcn Dashboard](https://github.com/Kiranism/next-shadcn-dashboard-starter) - Kanban + dnd-kit
-- [Shadcn Admin](https://github.com/satnaing/shadcn-admin) - Full admin dashboard
+```typescript
+// Hook usage
+const { tasks, todayTasks, inboxTasks, scheduledTasks,
+        complete, uncomplete, deleteTask, moveToToday, create } = useTasks();
 
-### UI Components
-- [shadcn/ui](https://ui.shadcn.com) - Base components
-- [shadcn/ui blocks](https://ui.shadcn.com/blocks) - Ready-made sections
-- [Magic UI](https://magicui.design) - Animated components
-
-### Task/Productivity Patterns
-- [dnd-kit](https://dndkit.com) - Drag and drop
-- [cmdk](https://cmdk.paco.me) - Command palette (Quick Capture)
-- [sonner](https://sonner.emilkowal.ski) - Toast notifications
+// Filter helper already in hook:
+// todayTasks - status: today/in_progress + done with today's date
+// inboxTasks - status: inbox
+// scheduledTasks - status: scheduled
+```
 
 ## ADHD UX Principles
 
-Every feature must consider:
-
 1. **Minimal cognitive load** - One thing at a time
-2. **Instant feedback** - Respond immediately to actions
+2. **Instant feedback** - Respond immediately
 3. **Reduce decisions** - Smart defaults
-4. **Forgiveness** - Easy undo, no data loss
+4. **Forgiveness** - Easy undo
 
-### Key Features
+### Features
 - Energy levels: low/medium/high
-- Simple priority: must/should/want/someday
-- WIP limit: max 3 tasks/day
+- Priority: must/should/want/someday
+- WIP limit: 3 tasks/day
 - Quick capture: instant inbox
-
-## Database Schema (Drizzle)
-
-```typescript
-// Key types from src/db/schema.ts
-type TaskStatus = 'inbox' | 'today' | 'scheduled' | 'in_progress' | 'done' | 'archived';
-type EnergyLevel = 'low' | 'medium' | 'high';
-type Priority = 'must' | 'should' | 'want' | 'someday';
-
-interface Task {
-  id: string;
-  userId: string;
-  title: string;
-  status: TaskStatus;
-  energyRequired: EnergyLevel;
-  priority: Priority;
-  estimatedMinutes?: number;
-  dueDate?: string;
-  scheduledDate?: string;
-  projectId?: string;
-  // ... more fields
-}
-```
-
-## API Pattern
-
-```typescript
-// API route: src/app/api/tasks/route.ts
-export async function GET(request: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const tasks = await db.select().from(tasks)
-    .where(eq(tasks.userId, session.user.id));
-
-  return NextResponse.json(tasks);
-}
-
-// Hook: src/hooks/useTasks.ts
-export function useTasks() {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  // Fetch from /api/tasks, manage state, return helpers
-  return { tasks, loading, create, update, complete, deleteTask };
-}
-```
-
-## Testing with Playwright
-
-```typescript
-// Use MCP playwright tools
-mcp__playwright__browser_navigate({ url: 'http://localhost:3000/signup' })
-mcp__playwright__browser_fill_form({ ... })
-mcp__playwright__browser_click({ ... })
-mcp__playwright__browser_snapshot()
-```
-
-## Current State
-
-### Working
-- [x] Registration + Login (email/password)
-- [x] Protected routes (proxy.ts)
-- [x] Tasks CRUD API
-- [x] PostgreSQL + Drizzle schema
-- [x] Dashboard layout + navigation
-
-### In Progress
-- [ ] Connect UI to real API
-- [ ] Quick Capture (Cmd+K)
-- [ ] Today view with tasks
-
-### Planned
-- [ ] Projects
-- [ ] Focus mode (Pomodoro)
-- [ ] Stats + streaks
-- [ ] Mobile app
 
 ## Troubleshooting
 
-### Port 3000 in use
 ```bash
+# Port 3000 in use
 lsof -ti:3000 | xargs kill -9
+
+# Check database
+docker ps
+docker logs adhd-focus-db
+
+# Playwright browser stuck (ALWAYS run before new test session!)
+rm -rf ~/Library/Caches/ms-playwright/mcp-chrome-*
+pkill -9 -f "Google Chrome for Testing"
 ```
 
-### Database connection failed
-```bash
-docker ps                          # Check if running
-docker logs adhd-focus-db          # Check logs
-docker port adhd-focus-db          # Check port (usually 5434)
-```
+## Playwright Testing Rules
 
-### Proxy deprecation warning
-Use `proxy.ts` instead of `middleware.ts` (Next.js 16)
+**IMPORTANT**: Before starting a new Playwright test:
+1. Kill existing browser: `pkill -9 -f "Google Chrome for Testing"`
+2. Use `browser_snapshot` to check current state before clicking
+3. Reuse existing tab - don't call `browser_navigate` if already on correct page
+4. Use `browser_click` with element refs from snapshot
 
 ## Commit Style
 
 ```
-feat(tasks): add quick capture dialog
-fix(auth): handle expired session
+feat(tasks): add feature
+fix(auth): fix bug
 docs: update CLAUDE.md
 ```

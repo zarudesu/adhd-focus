@@ -2,11 +2,15 @@
 
 /**
  * Projects Hook - Business logic for project operations
- * Uses Next.js API routes with fetch
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import type { Project } from '@/db/schema';
+
+interface ProjectWithCounts extends Project {
+  taskCount: number;
+  completedCount: number;
+}
 
 interface CreateProjectInput {
   name: string;
@@ -23,30 +27,16 @@ interface UpdateProjectInput {
   archived?: boolean;
 }
 
-interface UseProjectsOptions {
-  includeArchived?: boolean;
-  withTaskCount?: boolean;
-  autoFetch?: boolean;
-}
-
-interface ProjectWithCount extends Project {
-  taskCount?: number;
-}
-
 interface UseProjectsReturn {
-  projects: ProjectWithCount[];
+  projects: ProjectWithCounts[];
   loading: boolean;
   error: Error | null;
   fetch: () => Promise<void>;
-  create: (input: CreateProjectInput) => Promise<Project>;
-  update: (id: string, input: UpdateProjectInput) => Promise<Project>;
+  create: (input: CreateProjectInput) => Promise<ProjectWithCounts>;
+  update: (id: string, input: UpdateProjectInput) => Promise<ProjectWithCounts>;
   archive: (id: string) => Promise<void>;
-  unarchive: (id: string) => Promise<void>;
-  deleteProject: (id: string, hard?: boolean) => Promise<void>;
-  getById: (id: string) => ProjectWithCount | undefined;
 }
 
-// API helper
 async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, {
     headers: {
@@ -63,10 +53,8 @@ async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
   return res.json();
 }
 
-export function useProjects(options: UseProjectsOptions = {}): UseProjectsReturn {
-  const { includeArchived = false, withTaskCount = false, autoFetch = true } = options;
-
-  const [projects, setProjects] = useState<ProjectWithCount[]>([]);
+export function useProjects(): UseProjectsReturn {
+  const [projects, setProjects] = useState<ProjectWithCounts[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
@@ -74,37 +62,30 @@ export function useProjects(options: UseProjectsOptions = {}): UseProjectsReturn
     setLoading(true);
     setError(null);
     try {
-      const params = new URLSearchParams();
-      if (includeArchived) params.set('includeArchived', 'true');
-      if (withTaskCount) params.set('withTaskCount', 'true');
-
-      const url = `/api/projects${params.toString() ? `?${params}` : ''}`;
-      const data = await apiRequest<ProjectWithCount[]>(url);
+      const data = await apiRequest<ProjectWithCounts[]>('/api/projects');
       setProjects(data);
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to fetch projects'));
     } finally {
       setLoading(false);
     }
-  }, [includeArchived, withTaskCount]);
+  }, []);
 
   useEffect(() => {
-    if (autoFetch) {
-      fetch();
-    }
-  }, [fetch, autoFetch]);
+    fetch();
+  }, [fetch]);
 
-  const create = useCallback(async (input: CreateProjectInput): Promise<Project> => {
-    const newProject = await apiRequest<Project>('/api/projects', {
+  const create = useCallback(async (input: CreateProjectInput): Promise<ProjectWithCounts> => {
+    const newProject = await apiRequest<ProjectWithCounts>('/api/projects', {
       method: 'POST',
       body: JSON.stringify(input),
     });
-    setProjects((prev) => [...prev, newProject].sort((a, b) => a.name.localeCompare(b.name)));
+    setProjects((prev) => [...prev, newProject]);
     return newProject;
   }, []);
 
-  const update = useCallback(async (id: string, input: UpdateProjectInput): Promise<Project> => {
-    const updated = await apiRequest<Project>(`/api/projects/${id}`, {
+  const update = useCallback(async (id: string, input: UpdateProjectInput): Promise<ProjectWithCounts> => {
+    const updated = await apiRequest<ProjectWithCounts>(`/api/projects/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(input),
     });
@@ -115,22 +96,9 @@ export function useProjects(options: UseProjectsOptions = {}): UseProjectsReturn
   }, []);
 
   const archive = useCallback(async (id: string): Promise<void> => {
-    await update(id, { archived: true });
-  }, [update]);
-
-  const unarchive = useCallback(async (id: string): Promise<void> => {
-    await update(id, { archived: false });
-  }, [update]);
-
-  const deleteProject = useCallback(async (id: string, hard = false): Promise<void> => {
-    const url = hard ? `/api/projects/${id}?hard=true` : `/api/projects/${id}`;
-    await apiRequest(url, { method: 'DELETE' });
+    await apiRequest(`/api/projects/${id}`, { method: 'DELETE' });
     setProjects((prev) => prev.filter((p) => p.id !== id));
   }, []);
-
-  const getById = useCallback((id: string): ProjectWithCount | undefined => {
-    return projects.find((p) => p.id === id);
-  }, [projects]);
 
   return {
     projects,
@@ -140,8 +108,5 @@ export function useProjects(options: UseProjectsOptions = {}): UseProjectsReturn
     create,
     update,
     archive,
-    unarchive,
-    deleteProject,
-    getById,
   };
 }
