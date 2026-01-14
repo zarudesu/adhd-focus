@@ -13,6 +13,10 @@
 | Stack | Next.js 16 + Drizzle + NextAuth + PostgreSQL |
 | Language | User: Russian, Code/Docs: English |
 | Repo | https://github.com/zarudesu/adhd-focus |
+| **Prod Server** | `23.134.216.230` |
+| **Prod Domain** | `https://beatyour8.com` |
+| **SSH** | `ssh -i ~/.ssh/adhd-focus-deploy root@23.134.216.230` |
+| **Deploy** | `git push` triggers GitHub Actions |
 
 ## MANDATORY Workflow (Every Session!)
 
