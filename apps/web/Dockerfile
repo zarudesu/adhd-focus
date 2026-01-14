@@ -1,3 +1,6 @@
+# ADHD Focus - Web App Dockerfile
+# Next.js 16 + Drizzle ORM + NextAuth.js
+
 # Build stage
 FROM node:20-slim AS builder
 
@@ -20,11 +23,9 @@ WORKDIR /app
 COPY packages/shared ./packages/shared
 COPY apps/web ./apps/web
 
-# Build args for Next.js (baked into client bundle)
-ARG NEXT_PUBLIC_SUPABASE_URL
-ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
-ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
-ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
+# Build args for Next.js (public vars baked into client bundle)
+ARG NEXT_PUBLIC_SITE_URL
+ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
 
 # Build Next.js app
 WORKDIR /app/apps/web
@@ -54,5 +55,10 @@ EXPOSE 3000
 
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+
+# Runtime environment variables (provided at docker run):
+# - DATABASE_URL: PostgreSQL connection string
+# - AUTH_SECRET: NextAuth secret
+# - AUTH_URL: NextAuth callback URL (same as NEXT_PUBLIC_SITE_URL)
 
 CMD ["node", "apps/web/server.js"]

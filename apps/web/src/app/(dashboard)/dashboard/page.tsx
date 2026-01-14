@@ -44,7 +44,7 @@ export default function TodayPage() {
         open={showAddDialog}
         onOpenChange={setShowAddDialog}
         onSubmit={async (input) => {
-          await create({ ...input, scheduled_date: new Date().toISOString().split('T')[0] });
+          await create({ ...input, scheduledDate: new Date().toISOString().split('T')[0] });
         }}
         defaultStatus="today"
       />

@@ -1,15 +1,10 @@
-import { createClient } from '@/lib/supabase/server';
-import { NextResponse } from 'next/server';
+// ADHD Focus - OAuth Callback Route
+// NextAuth handles OAuth callbacks automatically via /api/auth/[...nextauth]
+
+import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
-  const requestUrl = new URL(request.url);
-  const code = requestUrl.searchParams.get('code');
-  const origin = requestUrl.origin;
-
-  if (code) {
-    const supabase = await createClient();
-    await supabase.auth.exchangeCodeForSession(code);
-  }
-
+  const origin = new URL(request.url).origin;
+  // Redirect to dashboard - NextAuth handles OAuth flow automatically
   return NextResponse.redirect(`${origin}/dashboard`);
 }

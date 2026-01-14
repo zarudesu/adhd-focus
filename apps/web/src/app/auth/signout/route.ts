@@ -1,9 +1,10 @@
-import { createClient } from '@/lib/supabase/server';
-import { redirect } from 'next/navigation';
-import { NextRequest } from 'next/server';
+// ADHD Focus - Sign Out Route
+// POST /auth/signout - Signs out the current user
+
+import { signOut } from "@/lib/auth";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
-  redirect('/login');
+  await signOut({ redirectTo: "/login" });
+  return NextResponse.redirect(new URL("/login", request.url));
 }

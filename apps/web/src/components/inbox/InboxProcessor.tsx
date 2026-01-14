@@ -24,7 +24,15 @@ import {
   CalendarDays,
   Archive,
 } from 'lucide-react';
-import type { Task, EnergyLevel, UpdateTaskInput } from '@adhd-focus/shared';
+import type { Task } from '@/db/schema';
+
+type EnergyLevel = 'low' | 'medium' | 'high';
+
+interface UpdateTaskInput {
+  energyRequired?: EnergyLevel;
+  estimatedMinutes?: number | null;
+  description?: string | null;
+}
 import { cn } from '@/lib/utils';
 
 interface InboxProcessorProps {
@@ -75,7 +83,7 @@ export function InboxProcessor({
   useEffect(() => {
     if (currentTask) {
       setTimeEstimate(null);
-      setEnergy(currentTask.energy_required || 'medium');
+      setEnergy(currentTask.energyRequired || 'medium');
       setFirstStep('');
     }
   }, [currentTask?.id]);
@@ -91,13 +99,13 @@ export function InboxProcessor({
     try {
       // First update task with form values
       const updates: UpdateTaskInput = {
-        energy_required: energy,
+        energyRequired: energy,
       };
 
       if (timeEstimate === 'quick') {
-        updates.estimated_minutes = 15;
+        updates.estimatedMinutes = 15;
       } else if (timeEstimate === 'long') {
-        updates.estimated_minutes = 45;
+        updates.estimatedMinutes = 45;
       }
 
       if (firstStep.trim()) {

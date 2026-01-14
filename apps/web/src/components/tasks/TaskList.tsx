@@ -1,6 +1,6 @@
 'use client';
 
-import { Task } from '@adhd-focus/shared';
+import type { Task } from '@/db/schema';
 import { TaskCard, TaskCardProps } from './TaskCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';

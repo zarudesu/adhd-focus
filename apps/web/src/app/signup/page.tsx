@@ -15,62 +15,33 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Timer, CheckCircle2 } from "lucide-react";
+import { Timer } from "lucide-react";
 
 export default function SignupPage() {
-  const { signUp, signInWithOAuth, loading } = useAuth();
+  const { signUp, signIn, loading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters");
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters");
       return;
     }
 
     const result = await signUp(email, password);
     if (result.error) {
       setError(result.error.message);
-    } else {
-      setSuccess(true);
     }
+    // signUp auto-signs in and redirects on success
   };
 
-  const handleOAuth = async (provider: "google" | "github") => {
-    const result = await signInWithOAuth(provider);
-    if (result.error) {
-      setError(result.error.message);
-    }
+  const handleOAuth = async (provider: "google") => {
+    await signIn(provider);
   };
-
-  if (success) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center px-6 py-12">
-        <Card className="w-full max-w-sm text-center">
-          <CardHeader>
-            <div className="mx-auto mb-4 rounded-full bg-primary/10 p-3 w-fit">
-              <CheckCircle2 className="h-8 w-8 text-primary" />
-            </div>
-            <CardTitle className="text-2xl">Check your email</CardTitle>
-            <CardDescription>
-              We sent a confirmation link to <strong>{email}</strong>. Click the
-              link to complete your registration.
-            </CardDescription>
-          </CardHeader>
-          <CardFooter className="justify-center">
-            <Button variant="ghost" asChild>
-              <Link href="/login">Back to login</Link>
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-6 py-12">
@@ -113,10 +84,10 @@ export default function SignupPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={6}
+                minLength={8}
               />
               <p className="text-xs text-muted-foreground">
-                At least 6 characters
+                At least 8 characters
               </p>
             </div>
 
@@ -133,14 +104,13 @@ export default function SignupPage() {
             <Separator className="flex-1" />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <Button variant="outline" onClick={() => handleOAuth("google")}>
-              Google
-            </Button>
-            <Button variant="outline" onClick={() => handleOAuth("github")}>
-              GitHub
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => handleOAuth("google")}
+          >
+            Continue with Google
+          </Button>
         </CardContent>
 
         <CardFooter className="justify-center">

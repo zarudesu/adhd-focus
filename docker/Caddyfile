@@ -2,16 +2,21 @@
 # Automatic HTTPS with Let's Encrypt
 
 {$DOMAIN} {
-    # Next.js Web App
+    # Next.js Web App (handles both frontend and API)
     reverse_proxy web:3000
 
-    # Headers for security
+    # Security headers
     header {
         X-Frame-Options "DENY"
         X-Content-Type-Options "nosniff"
         X-XSS-Protection "1; mode=block"
         Referrer-Policy "strict-origin-when-cross-origin"
+        # Enable HSTS
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
     }
+
+    # Compression
+    encode gzip zstd
 
     # Logging
     log {
@@ -20,18 +25,7 @@
     }
 }
 
-{$API_DOMAIN} {
-    # Supabase API (Kong gateway)
-    reverse_proxy kong:8000
-
-    # CORS handled by Kong, just proxy
-    log {
-        output stdout
-        format console
-    }
-}
-
-# Health check endpoint
+# Health check endpoint (plain HTTP)
 :80 {
     respond /health "OK" 200
 }

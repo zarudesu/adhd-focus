@@ -1,329 +1,268 @@
 # CLAUDE.md - AI Assistant Instructions
 
-> This file provides context and rules for Claude (AI assistant) when working on this project.
-> Read this first in every new session.
+> Read this file FIRST in every new session.
+> Last updated: 2026-01-14
 
 ## Quick Context
 
-**ADHD Focus** - Task management app for people with ADHD.
+**ADHD Focus** - Task management app optimized for ADHD brains.
 
-- **Status**: Early development
-- **Owner**: @zarudesu
-- **Language**: Russian-speaking user, code/docs in English
-- **Repo**: https://github.com/zarudesu/adhd-focus
+| Key | Value |
+|-----|-------|
+| Status | Active development |
+| Stack | Next.js 16 + Drizzle + NextAuth + PostgreSQL |
+| Language | User: Russian, Code/Docs: English |
+| Repo | https://github.com/zarudesu/adhd-focus |
 
 ## Critical Rules
 
 ### DO
-- Ask before making UI design decisions
-- Research best practices before implementing
-- Use existing architecture patterns (API → Hook → Component)
-- Keep code simple and minimal
-- Write TypeScript with strict types
-- Follow ADHD UX principles (see below)
-- **Write tests for new features** (Vitest for unit, Playwright for E2E)
-- **Update docs after changes** (SESSION_LOG.md, APP_STRUCTURE.md)
+- **Use existing solutions first** - Check community templates, shadcn blocks, npm packages before writing from scratch
+- Use MCP tools: `context7` for docs, `playwright` for testing, `shadcn` for components
+- Follow existing patterns in codebase
+- Keep code minimal and typed
+- Test with real database before marking done
 
 ### DON'T
-- Make "топорный" (crude/ugly) UI without consulting user
-- Add unnecessary features or complexity
-- Guess UI design - always ask or research
-- Break existing patterns
-- Add emojis to code/docs unless asked
-- Commit credentials or secrets
+- Write from scratch what already exists
+- Make UI decisions without asking user
+- Add unnecessary complexity
+- Skip testing
 
-## Session Start Checklist
+## Session Workflow
 
-When starting a new session:
+### Start
+```bash
+# 1. Check what's running
+docker ps
+lsof -i :3000
 
-1. **Read this file** (CLAUDE.md)
-2. **Read `docs/SESSION_LOG.md`** - Current progress and next steps
-3. **Check current state**: `git status`, look at recent commits
-4. **Review docs if needed**:
-   - `docs/APP_STRUCTURE.md` - Web app blueprint (MAIN REFERENCE)
-   - `docs/ARCHITECTURE.md` - System design
-   - `docs/DEVELOPMENT.md` - Dev workflow
-5. **Ask user what to work on** if not clear
+# 2. Start database if needed
+cd docker && docker compose up -d db
 
-## Session End Checklist
+# 3. Start dev server
+cd apps/web && npx next dev
 
-Before ending a session:
+# 4. Read current state
+git status && git log --oneline -5
+```
 
-1. **Update `docs/SESSION_LOG.md`** with:
-   - What was completed
-   - Current blockers or issues
-   - Next steps for next session
-2. **Commit changes** with descriptive message
-3. **Run tests** if any were added/modified
-4. **Update this file** if architecture changed
+### End
+- Update this file if architecture changed
+- Commit with conventional commits
+- Note blockers in commit message
 
-## User Preferences
+## Tech Stack (Current)
 
-- **Language**: User writes in Russian, respond in Russian
-- **UI Design**: Always discuss before implementing. User is picky about UX.
-- **Code Style**: Clean, minimal, well-typed
-- **Commits**: Conventional commits in English
-- **Documentation**: English
+| Layer | Technology | Docs |
+|-------|------------|------|
+| Framework | Next.js 16.1 | Use `context7` MCP |
+| Database | PostgreSQL 17 | Docker container |
+| ORM | Drizzle | `npm run db:push` |
+| Auth | NextAuth v5 | JWT + Credentials |
+| UI | shadcn/ui + Tailwind | Use `shadcn` MCP |
+| Testing | Playwright | Use `playwright` MCP |
 
-## Tech Stack
-
-| Layer | Technology |
-|-------|------------|
-| Monorepo | Turborepo |
-| Mobile/Web | Expo (React Native) |
-| Backend | Supabase (PostgreSQL, Auth, Realtime) |
-| Functions | Edge Functions (Deno) |
-| State | Zustand (local UI only) |
-| Language | TypeScript |
-
-## Architecture
-
-### Project Structure
+## Project Structure
 
 ```
 adhd-focus/
-├── apps/
-│   └── mobile/              # Expo app
-│       ├── api/             # Supabase API calls (pure)
-│       ├── hooks/           # Business logic
-│       ├── components/      # UI components
-│       ├── app/             # Screens (Expo Router)
-│       ├── store/           # Local UI state only
-│       └── lib/             # Utilities
-├── packages/
-│   ├── shared/              # Types, constants, utils
-│   └── ui/                  # Shared UI components
-├── supabase/
-│   ├── migrations/          # Database SQL
-│   └── functions/           # Edge Functions
-├── docker/                  # Self-hosted deployment
-└── docs/                    # Documentation
+├── apps/web/                    # Next.js app
+│   ├── src/
+│   │   ├── app/                 # Pages (App Router)
+│   │   │   ├── (dashboard)/     # Protected routes
+│   │   │   ├── (public)/        # Public pages
+│   │   │   ├── api/             # API routes
+│   │   │   └── login, signup/   # Auth pages
+│   │   ├── components/
+│   │   │   ├── ui/              # shadcn components
+│   │   │   ├── layout/          # Header, Sidebar
+│   │   │   ├── tasks/           # TaskCard, TaskList
+│   │   │   └── inbox/           # InboxProcessor
+│   │   ├── db/
+│   │   │   ├── index.ts         # Drizzle client
+│   │   │   └── schema.ts        # Database schema
+│   │   ├── hooks/               # useTasks, useAuth, etc
+│   │   ├── lib/
+│   │   │   ├── auth.ts          # NextAuth config
+│   │   │   └── utils.ts         # cn() helper
+│   │   └── proxy.ts             # Route protection (Next.js 16)
+│   ├── drizzle.config.ts
+│   └── .env.local               # Local environment
+├── docker/
+│   ├── docker-compose.yml       # PostgreSQL + Caddy
+│   └── Caddyfile
+└── packages/shared/             # Types, constants (legacy)
 ```
 
-### Code Layers
+## Key Files
 
-```
-Screen → Component → Hook → API → Supabase
-                       ↓
-                    State
-```
-
-| Layer | Location | Responsibility |
-|-------|----------|----------------|
-| API | `api/*.ts` | Pure Supabase calls, no logic |
-| Hooks | `hooks/*.ts` | Business logic, state, caching |
-| Components | `components/*.tsx` | UI rendering |
-| Screens | `app/*.tsx` | Page composition |
-| Store | `store/*.ts` | LOCAL UI state only (not data) |
-
-### Pattern Examples
-
-**API Layer** (pure, no hooks):
-```typescript
-// api/tasks.ts
-export const tasksApi = {
-  async list(filters: TaskFilters): Promise<Task[]> {
-    const { data, error } = await supabase
-      .from('tasks')
-      .select('*')
-      .match(filters);
-    if (error) throw error;
-    return data;
-  },
-};
-```
-
-**Hook** (business logic):
-```typescript
-// hooks/useTasks.ts
-export function useTasks() {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  const fetch = useCallback(async () => {
-    setLoading(true);
-    const data = await tasksApi.list({});
-    setTasks(data);
-    setLoading(false);
-  }, []);
-
-  return { tasks, loading, fetch };
-}
-```
-
-## ADHD UX Principles
-
-**This app is for ADHD brains. Every design decision must consider:**
-
-### Core Principles
-1. **Minimal cognitive load** - Every element must earn its place
-2. **One thing at a time** - Progressive disclosure, hide complexity
-3. **Instant feedback** - Respond to every action immediately
-4. **Reduce decisions** - Smart defaults, simple choices
-5. **Forgiveness** - Easy undo, no data loss
-
-### Key Features
-- **Energy matching** - Tasks tagged low/medium/high energy
-- **Simple priority** - Must/Should/Want (not 1-5 numbers)
-- **WIP limit** - Max 3 tasks per day default
-- **Streaks** - Dopamine rewards
-- **Quick capture** - Instant inbox, process later
-
-### Anti-Patterns (NEVER DO)
-- Busy/cluttered interfaces
-- Too many options
-- Complex setup required
-- Notification spam
-- Assuming users will remember
-
-## Database Schema
-
-### Main Tables
-- `profiles` - User preferences, integrations
-- `tasks` - Core task data
-- `focus_sessions` - Pomodoro tracking
-- `daily_stats` - Streak calculation
-- `api_keys` - External API auth
-- `webhooks` - Outgoing notifications
-
-### Task-Specific Fields
-```typescript
-interface Task {
-  energy_required: 'low' | 'medium' | 'high';
-  priority: 'must' | 'should' | 'want' | 'someday';
-  status: 'inbox' | 'today' | 'in_progress' | 'done';
-  estimated_minutes?: number;
-  actual_minutes?: number;
-  pomodoros_completed: number;
-}
-```
-
-## Integrations
-
-### REST API
-Auto-generated by Supabase PostgREST. Docs: `docs/API.md`
-
-### Telegram Bot
-- Edge Function: `supabase/functions/telegram-webhook/`
-- User sends message → task created in inbox
-- Syntax: `!must #low Call doctor`
-
-### Google Calendar
-- Edge Function: `supabase/functions/google-calendar-sync/`
-- Tasks with scheduled_date sync to calendar
+| Purpose | File |
+|---------|------|
+| Database schema | `apps/web/src/db/schema.ts` |
+| Auth config | `apps/web/src/lib/auth.ts` |
+| Route protection | `apps/web/src/proxy.ts` |
+| Task hooks | `apps/web/src/hooks/useTasks.ts` |
+| API routes | `apps/web/src/app/api/tasks/route.ts` |
 
 ## Development Commands
 
 ```bash
-# Install
-pnpm install
+# Database
+cd docker && docker compose up -d db     # Start PostgreSQL
+npm run db:push                           # Sync schema
+npm run db:studio                         # Visual editor
 
-# Run app
-cd apps/mobile && npx expo start
+# Dev server
+cd apps/web && npx next dev              # Start on :3000
 
-# Supabase local
-supabase start
-supabase db push
+# Type check
+npx tsc --noEmit
 
-# Self-hosted
-cd docker && docker compose up -d
+# Add shadcn component
+npx shadcn@latest add [component]
 ```
 
-## Current State (Update This!)
+## Environment Variables
 
-> See `docs/SESSION_LOG.md` for detailed progress tracking
+```bash
+# apps/web/.env.local
+DATABASE_URL=postgres://postgres:PASSWORD@localhost:5434/postgres
+AUTH_SECRET=your-secret-here
+AUTH_URL=http://localhost:3000
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+```
 
-### Done
-- [x] Project structure (Turborepo + Expo + Next.js)
-- [x] Shared types package
-- [x] Database schema (migrations)
-- [x] API layer (tasks, auth, profile, projects, sessions)
-- [x] Hooks layer (useTasks, useAuth, useFocusSession)
-- [x] Telegram bot Edge Function
-- [x] Google Calendar Edge Function
-- [x] Docker self-hosted setup
-- [x] API/Project documentation
-- [x] **Web App Skeleton** (Next.js 15 + shadcn/ui)
-  - All dashboard pages created
-  - Sidebar navigation
-  - Auth pages (login, signup, reset-password)
-  - 23 shadcn/ui components installed
+## Community Resources (USE THESE!)
 
-### Current Phase: Phase 2 - Core Tasks
-See `docs/APP_STRUCTURE.md` for full roadmap.
+### Starter Templates
+- [Vercel NextAuth + Drizzle Starter](https://github.com/vercel/nextjs-postgres-auth-starter) - Official auth template
+- [Next.js 16 Shadcn Dashboard](https://github.com/Kiranism/next-shadcn-dashboard-starter) - Kanban + dnd-kit
+- [Shadcn Admin](https://github.com/satnaing/shadcn-admin) - Full admin dashboard
 
-Next features to implement:
-- [ ] TaskCard, TaskList components
-- [ ] Today view with real data
-- [ ] Quick Capture (Ctrl+K)
-- [ ] Inbox functionality
+### UI Components
+- [shadcn/ui](https://ui.shadcn.com) - Base components
+- [shadcn/ui blocks](https://ui.shadcn.com/blocks) - Ready-made sections
+- [Magic UI](https://magicui.design) - Animated components
 
-### Planned (Phase 3-8)
-- [ ] Projects CRUD
-- [ ] Calendar/Scheduling
-- [ ] Focus Mode (Pomodoro)
-- [ ] Stats & Gamification
-- [ ] Settings & Integrations
+### Task/Productivity Patterns
+- [dnd-kit](https://dndkit.com) - Drag and drop
+- [cmdk](https://cmdk.paco.me) - Command palette (Quick Capture)
+- [sonner](https://sonner.emilkowal.ski) - Toast notifications
 
-## How to Add Features
+## ADHD UX Principles
 
-1. **Types first** - Add to `packages/shared/src/types/`
-2. **Migration** - If DB change: `supabase migration new xxx`
-3. **API layer** - Add to `apps/mobile/api/`
-4. **Hook** - Add to `apps/mobile/hooks/`
-5. **Component** - Add to `apps/mobile/components/`
-6. **Screen** - Add to `apps/mobile/app/`
+Every feature must consider:
 
-## File Locations Quick Reference
+1. **Minimal cognitive load** - One thing at a time
+2. **Instant feedback** - Respond immediately to actions
+3. **Reduce decisions** - Smart defaults
+4. **Forgiveness** - Easy undo, no data loss
 
-### Web App (apps/web)
-| Need | Location |
-|------|----------|
-| Pages | `apps/web/src/app/` |
-| API calls | `apps/web/src/api/` |
-| Hooks | `apps/web/src/hooks/` |
-| UI components | `apps/web/src/components/ui/` |
-| Feature components | `apps/web/src/components/` |
-| Layout | `apps/web/src/components/layout/` |
+### Key Features
+- Energy levels: low/medium/high
+- Simple priority: must/should/want/someday
+- WIP limit: max 3 tasks/day
+- Quick capture: instant inbox
 
-### Mobile App (apps/mobile)
-| Need | Location |
-|------|----------|
-| Screens | `apps/mobile/app/` |
-| API calls | `apps/mobile/api/` |
-| Hooks | `apps/mobile/hooks/` |
-| Components | `apps/mobile/components/` |
+## Database Schema (Drizzle)
 
-### Shared
-| Need | Location |
-|------|----------|
-| Types | `packages/shared/src/types/` |
-| Constants | `packages/shared/src/constants/` |
-| DB schema | `supabase/migrations/` |
-| Edge Functions | `supabase/functions/` |
-| Docs | `docs/` |
+```typescript
+// Key types from src/db/schema.ts
+type TaskStatus = 'inbox' | 'today' | 'scheduled' | 'in_progress' | 'done' | 'archived';
+type EnergyLevel = 'low' | 'medium' | 'high';
+type Priority = 'must' | 'should' | 'want' | 'someday';
+
+interface Task {
+  id: string;
+  userId: string;
+  title: string;
+  status: TaskStatus;
+  energyRequired: EnergyLevel;
+  priority: Priority;
+  estimatedMinutes?: number;
+  dueDate?: string;
+  scheduledDate?: string;
+  projectId?: string;
+  // ... more fields
+}
+```
+
+## API Pattern
+
+```typescript
+// API route: src/app/api/tasks/route.ts
+export async function GET(request: NextRequest) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const tasks = await db.select().from(tasks)
+    .where(eq(tasks.userId, session.user.id));
+
+  return NextResponse.json(tasks);
+}
+
+// Hook: src/hooks/useTasks.ts
+export function useTasks() {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  // Fetch from /api/tasks, manage state, return helpers
+  return { tasks, loading, create, update, complete, deleteTask };
+}
+```
+
+## Testing with Playwright
+
+```typescript
+// Use MCP playwright tools
+mcp__playwright__browser_navigate({ url: 'http://localhost:3000/signup' })
+mcp__playwright__browser_fill_form({ ... })
+mcp__playwright__browser_click({ ... })
+mcp__playwright__browser_snapshot()
+```
+
+## Current State
+
+### Working
+- [x] Registration + Login (email/password)
+- [x] Protected routes (proxy.ts)
+- [x] Tasks CRUD API
+- [x] PostgreSQL + Drizzle schema
+- [x] Dashboard layout + navigation
+
+### In Progress
+- [ ] Connect UI to real API
+- [ ] Quick Capture (Cmd+K)
+- [ ] Today view with tasks
+
+### Planned
+- [ ] Projects
+- [ ] Focus mode (Pomodoro)
+- [ ] Stats + streaks
+- [ ] Mobile app
+
+## Troubleshooting
+
+### Port 3000 in use
+```bash
+lsof -ti:3000 | xargs kill -9
+```
+
+### Database connection failed
+```bash
+docker ps                          # Check if running
+docker logs adhd-focus-db          # Check logs
+docker port adhd-focus-db          # Check port (usually 5434)
+```
+
+### Proxy deprecation warning
+Use `proxy.ts` instead of `middleware.ts` (Next.js 16)
 
 ## Commit Style
 
 ```
-feat(scope): description
-fix(scope): description
-docs: description
-refactor(scope): description
+feat(tasks): add quick capture dialog
+fix(auth): handle expired session
+docs: update CLAUDE.md
 ```
-
-Scopes: `tasks`, `auth`, `timer`, `api`, `ui`, `db`
-
-## Questions to Ask User
-
-Before implementing:
-- UI design choices
-- Feature prioritization
-- UX flow decisions
-
-## Resources
-
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) - System design
-- [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) - Dev guide
-- [docs/API.md](docs/API.md) - API reference
-- [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution guide

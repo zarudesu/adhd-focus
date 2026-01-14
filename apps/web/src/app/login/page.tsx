@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,8 +18,7 @@ import { Separator } from "@/components/ui/separator";
 import { Timer } from "lucide-react";
 
 export default function LoginPage() {
-  const router = useRouter();
-  const { signIn, signInWithOAuth, loading } = useAuth();
+  const { signInWithCredentials, signIn, loading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -29,19 +27,16 @@ export default function LoginPage() {
     e.preventDefault();
     setError(null);
 
-    const result = await signIn(email, password);
+    const result = await signInWithCredentials(email, password);
     if (result.error) {
       setError(result.error.message);
-    } else {
-      router.push("/dashboard");
     }
+    // signInWithCredentials handles redirect on success
   };
 
-  const handleOAuth = async (provider: "google" | "github") => {
-    const result = await signInWithOAuth(provider);
-    if (result.error) {
-      setError(result.error.message);
-    }
+  const handleOAuth = async (provider: "google") => {
+    await signIn(provider);
+    // signIn handles redirect
   };
 
   return (
@@ -109,14 +104,13 @@ export default function LoginPage() {
             <Separator className="flex-1" />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <Button variant="outline" onClick={() => handleOAuth("google")}>
-              Google
-            </Button>
-            <Button variant="outline" onClick={() => handleOAuth("github")}>
-              GitHub
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => handleOAuth("google")}
+          >
+            Continue with Google
+          </Button>
         </CardContent>
 
         <CardFooter className="justify-center">

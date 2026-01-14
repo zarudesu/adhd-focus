@@ -1,131 +1,84 @@
 'use client';
 
 /**
- * Auth Hook - Authentication state and operations
+ * Auth Hook - NextAuth session management
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { authApi, profileApi } from '@/api';
-import type { User } from '@adhd-focus/shared';
-import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
+import { useSession, signIn, signOut } from 'next-auth/react';
+import { useCallback } from 'react';
 
 interface UseAuthReturn {
-  user: SupabaseUser | null;
-  profile: User | null;
-  session: Session | null;
+  user: {
+    id: string;
+    email: string;
+    name?: string | null;
+    image?: string | null;
+  } | null;
   loading: boolean;
-  isAuthenticated: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signIn: (provider?: string) => Promise<void>;
+  signInWithCredentials: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signInWithMagicLink: (email: string) => Promise<{ error: Error | null }>;
-  signInWithOAuth: (provider: 'google' | 'github') => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
-  refreshProfile: () => Promise<void>;
+  isAuthenticated: boolean;
 }
 
 export function useAuth(): UseAuthReturn {
-  const [user, setUser] = useState<SupabaseUser | null>(null);
-  const [profile, setProfile] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: session, status } = useSession();
+  const loading = status === 'loading';
+  const isAuthenticated = status === 'authenticated';
 
-  useEffect(() => {
-    const initAuth = async () => {
-      try {
-        const currentSession = await authApi.getSession();
-        setSession(currentSession);
-        setUser(currentSession?.user || null);
+  const handleSignIn = useCallback(async (provider = 'google') => {
+    await signIn(provider, { callbackUrl: '/dashboard' });
+  }, []);
 
-        if (currentSession?.user) {
-          const userProfile = await profileApi.get();
-          setProfile(userProfile);
-        }
-      } catch (err) {
-        console.error('Auth init error:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    initAuth();
-
-    const { data: subscription } = authApi.onAuthStateChange(async (event, newSession) => {
-      setSession(newSession);
-      setUser(newSession?.user || null);
-
-      if (newSession?.user) {
-        const userProfile = await profileApi.get();
-        setProfile(userProfile);
-      } else {
-        setProfile(null);
-      }
+  const handleSignInWithCredentials = useCallback(async (email: string, password: string) => {
+    const result = await signIn('credentials', {
+      email,
+      password,
+      redirect: false,
     });
 
-    return () => {
-      subscription.subscription.unsubscribe();
-    };
+    if (result?.error) {
+      return { error: new Error(result.error) };
+    }
+
+    // Redirect on success
+    window.location.href = '/dashboard';
+    return { error: null };
   }, []);
 
-  const signIn = useCallback(async (email: string, password: string) => {
-    setLoading(true);
+  const handleSignUp = useCallback(async (email: string, password: string) => {
+    // Call registration API
     try {
-      const result = await authApi.signIn(email, password);
-      if (result.user) {
-        const userProfile = await profileApi.get();
-        setProfile(userProfile);
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        return { error: new Error(data.error || 'Registration failed') };
       }
-      return { error: result.error };
-    } finally {
-      setLoading(false);
+
+      // Auto sign-in after registration
+      return handleSignInWithCredentials(email, password);
+    } catch (err) {
+      return { error: err instanceof Error ? err : new Error('Registration failed') };
     }
-  }, []);
+  }, [handleSignInWithCredentials]);
 
-  const signUp = useCallback(async (email: string, password: string) => {
-    setLoading(true);
-    try {
-      const result = await authApi.signUp(email, password);
-      return { error: result.error };
-    } finally {
-      setLoading(false);
-    }
+  const handleSignOut = useCallback(async () => {
+    await signOut({ callbackUrl: '/' });
   }, []);
-
-  const signInWithMagicLink = useCallback(async (email: string) => {
-    return authApi.signInWithMagicLink(email);
-  }, []);
-
-  const signInWithOAuth = useCallback(async (provider: 'google' | 'github') => {
-    return authApi.signInWithOAuth(provider);
-  }, []);
-
-  const signOut = useCallback(async () => {
-    setLoading(true);
-    try {
-      await authApi.signOut();
-      setProfile(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const refreshProfile = useCallback(async () => {
-    if (user) {
-      const userProfile = await profileApi.get();
-      setProfile(userProfile);
-    }
-  }, [user]);
 
   return {
-    user,
-    profile,
-    session,
+    user: session?.user ?? null,
     loading,
-    isAuthenticated: !!session,
-    signIn,
-    signUp,
-    signInWithMagicLink,
-    signInWithOAuth,
-    signOut,
-    refreshProfile,
+    signIn: handleSignIn,
+    signInWithCredentials: handleSignInWithCredentials,
+    signUp: handleSignUp,
+    signOut: handleSignOut,
+    isAuthenticated,
   };
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Task, EnergyLevel, Priority } from '@adhd-focus/shared';
+import type { Task } from '@/db/schema';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,9 @@ import {
   Play,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+type EnergyLevel = 'low' | 'medium' | 'high';
+type Priority = 'must' | 'should' | 'want' | 'someday';
 
 // Energy level config
 const ENERGY_CONFIG: Record<EnergyLevel, { label: string; className: string }> = {
@@ -95,7 +98,9 @@ export function TaskCard({
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-  const isOverdue = task.due_date && new Date(task.due_date) < new Date() && !isCompleted;
+  const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && !isCompleted;
+  const energyRequired = task.energyRequired || 'medium';
+  const priority = task.priority || 'should';
 
   return (
     <div
@@ -139,31 +144,31 @@ export function TaskCard({
           {/* Energy badge */}
           <Badge
             variant="secondary"
-            className={cn('text-xs px-1.5 py-0', ENERGY_CONFIG[task.energy_required].className)}
+            className={cn('text-xs px-1.5 py-0', ENERGY_CONFIG[energyRequired].className)}
           >
-            {ENERGY_CONFIG[task.energy_required].label}
+            {ENERGY_CONFIG[energyRequired].label}
           </Badge>
 
           {/* Priority badge (only show must/should) */}
-          {(task.priority === 'must' || task.priority === 'should') && (
+          {(priority === 'must' || priority === 'should') && (
             <Badge
               variant="secondary"
-              className={cn('text-xs px-1.5 py-0', PRIORITY_CONFIG[task.priority].className)}
+              className={cn('text-xs px-1.5 py-0', PRIORITY_CONFIG[priority].className)}
             >
-              {PRIORITY_CONFIG[task.priority].label}
+              {PRIORITY_CONFIG[priority].label}
             </Badge>
           )}
 
           {/* Estimated time */}
-          {task.estimated_minutes && (
+          {task.estimatedMinutes && (
             <span className="flex items-center gap-1 text-xs text-muted-foreground">
               <Clock className="h-3 w-3" />
-              {task.estimated_minutes}m
+              {task.estimatedMinutes}m
             </span>
           )}
 
           {/* Due date */}
-          {task.due_date && (
+          {task.dueDate && (
             <span
               className={cn(
                 'flex items-center gap-1 text-xs',
@@ -171,14 +176,14 @@ export function TaskCard({
               )}
             >
               <Calendar className="h-3 w-3" />
-              {formatDueDate(task.due_date)}
+              {formatDueDate(task.dueDate)}
             </span>
           )}
 
           {/* Pomodoros completed */}
-          {task.pomodoros_completed > 0 && (
+          {task.pomodorosCompleted && task.pomodorosCompleted > 0 && (
             <span className="text-xs text-muted-foreground">
-              {task.pomodoros_completed} pom
+              {task.pomodorosCompleted} pom
             </span>
           )}
         </div>

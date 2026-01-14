@@ -1,17 +1,15 @@
-# ADHD Focus - Self-Hosted Deployment
-# Based on Supabase self-hosted: https://supabase.com/docs/guides/self-hosting/docker
+# ADHD Focus - Minimal Self-Hosted Stack
+# PostgreSQL + Next.js + Caddy
 #
 # Quick start:
-# 1. Run ./setup.sh to generate secrets
+# 1. cp .env.example .env && edit .env
 # 2. docker compose up -d
 # 3. Access app at https://your-domain.com
-# 4. Studio at http://localhost:54323 (internal only)
 
 services:
   # ===================
   # Reverse Proxy (Caddy)
   # ===================
-
   caddy:
     image: caddy:2-alpine
     container_name: adhd-focus-caddy
@@ -26,32 +24,35 @@ services:
       - caddy-config:/config
     depends_on:
       - web
-      - kong
     environment:
       DOMAIN: ${DOMAIN:-localhost}
-      API_DOMAIN: ${API_DOMAIN:-api.localhost}
 
   # ===================
-  # Next.js Web App
+  # Next.js Web App (Full-Stack)
   # ===================
-
   web:
     image: ghcr.io/zarudesu/adhd-focus-web:${WEB_VERSION:-latest}
     container_name: adhd-focus-web
     restart: unless-stopped
     environment:
-      NEXT_PUBLIC_SUPABASE_URL: ${API_EXTERNAL_URL:-http://localhost:8000}
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${ANON_KEY}
+      # Database
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-adhd_focus}
+
+      # Auth
+      AUTH_SECRET: ${AUTH_SECRET}
+      AUTH_URL: ${SITE_URL:-http://localhost:3000}
+
+      # Public
       NEXT_PUBLIC_SITE_URL: ${SITE_URL:-http://localhost:3000}
     depends_on:
-      - kong
+      db:
+        condition: service_healthy
 
   # ===================
-  # Supabase Services
+  # PostgreSQL Database
   # ===================
-
   db:
-    image: supabase/postgres:15.1.0.117
+    image: postgres:17-alpine
     container_name: adhd-focus-db
     restart: unless-stopped
     ports:
@@ -59,197 +60,17 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-adhd_focus}
     volumes:
       - db-data:/var/lib/postgresql/data
-      - ./migrations:/docker-entrypoint-initdb.d/migrations:ro
-      - ./init-db.sh:/docker-entrypoint-initdb.d/99-init-db.sh:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres && psql -U postgres -d postgres -c 'SELECT 1 FROM public.profiles LIMIT 1' 2>/dev/null || exit 1"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ${POSTGRES_DB:-adhd_focus}"]
       interval: 5s
       timeout: 5s
-      retries: 30
-      start_period: 30s
-
-  kong:
-    image: kong:2.8.1
-    container_name: adhd-focus-kong
-    restart: unless-stopped
-    expose:
-      - "8000"
-    environment:
-      KONG_DATABASE: "off"
-      KONG_DECLARATIVE_CONFIG: /var/lib/kong/kong.yml
-      KONG_DNS_ORDER: LAST,A,CNAME
-      KONG_PLUGINS: request-transformer,cors,key-auth,acl
-    volumes:
-      - ./kong.yml:/var/lib/kong/kong.yml:ro
-    depends_on:
-      - rest
-      - auth
-      - realtime
-
-  rest:
-    image: postgrest/postgrest:v11.1.0
-    container_name: adhd-focus-rest
-    restart: unless-stopped
-    environment:
-      PGRST_DB_URI: postgres://authenticator:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-postgres}
-      PGRST_DB_SCHEMAS: ${PGRST_DB_SCHEMAS:-public,storage}
-      PGRST_DB_ANON_ROLE: anon
-      PGRST_JWT_SECRET: ${JWT_SECRET}
-      PGRST_DB_USE_LEGACY_GUCS: "false"
-    depends_on:
-      db:
-        condition: service_healthy
-
-  auth:
-    image: supabase/gotrue:v2.99.0
-    container_name: adhd-focus-auth
-    restart: unless-stopped
-    environment:
-      GOTRUE_API_HOST: 0.0.0.0
-      GOTRUE_API_PORT: 9999
-      API_EXTERNAL_URL: ${API_EXTERNAL_URL:-http://localhost:8000}
-      GOTRUE_DB_DRIVER: postgres
-      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-postgres}?search_path=auth
-      GOTRUE_SITE_URL: ${SITE_URL:-http://localhost:3000}
-      GOTRUE_URI_ALLOW_LIST: ${ADDITIONAL_REDIRECT_URLS}
-      GOTRUE_DISABLE_SIGNUP: ${DISABLE_SIGNUP:-false}
-      GOTRUE_JWT_SECRET: ${JWT_SECRET}
-      GOTRUE_JWT_EXP: ${JWT_EXPIRY:-3600}
-      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
-      GOTRUE_EXTERNAL_EMAIL_ENABLED: ${ENABLE_EMAIL_SIGNUP:-true}
-      GOTRUE_MAILER_AUTOCONFIRM: ${ENABLE_EMAIL_AUTOCONFIRM:-true}
-      GOTRUE_SMTP_HOST: ${SMTP_HOST}
-      GOTRUE_SMTP_PORT: ${SMTP_PORT:-587}
-      GOTRUE_SMTP_USER: ${SMTP_USER}
-      GOTRUE_SMTP_PASS: ${SMTP_PASS}
-      GOTRUE_SMTP_ADMIN_EMAIL: ${SMTP_ADMIN_EMAIL}
-      GOTRUE_SMTP_MAX_FREQUENCY: 1ns
-      GOTRUE_MAILER_URLPATHS_INVITE: /auth/v1/verify
-      GOTRUE_MAILER_URLPATHS_CONFIRMATION: /auth/v1/verify
-      GOTRUE_MAILER_URLPATHS_RECOVERY: /auth/v1/verify
-      GOTRUE_MAILER_URLPATHS_EMAIL_CHANGE: /auth/v1/verify
-    depends_on:
-      db:
-        condition: service_healthy
-
-  realtime:
-    image: supabase/realtime:v2.25.35
-    container_name: adhd-focus-realtime
-    restart: unless-stopped
-    environment:
-      PORT: 4000
-      DB_HOST: db
-      DB_PORT: 5432
-      DB_USER: supabase_admin
-      DB_PASSWORD: ${POSTGRES_PASSWORD}
-      DB_NAME: ${POSTGRES_DB:-postgres}
-      DB_AFTER_CONNECT_QUERY: 'SET search_path TO _realtime'
-      DB_ENC_KEY: supabaserealtime
-      API_JWT_SECRET: ${JWT_SECRET}
-      FLY_ALLOC_ID: fly123
-      FLY_APP_NAME: realtime
-      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
-      ERL_AFLAGS: -proto_dist inet_tcp
-      ENABLE_TAILSCALE: "false"
-      DNS_NODES: "''"
-    depends_on:
-      db:
-        condition: service_healthy
-
-  storage:
-    image: supabase/storage-api:v0.40.4
-    container_name: adhd-focus-storage
-    restart: unless-stopped
-    environment:
-      ANON_KEY: ${ANON_KEY}
-      SERVICE_KEY: ${SERVICE_ROLE_KEY}
-      POSTGREST_URL: http://rest:3000
-      PGRST_JWT_SECRET: ${JWT_SECRET}
-      DATABASE_URL: postgres://supabase_storage_admin:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-postgres}
-      FILE_SIZE_LIMIT: 52428800
-      STORAGE_BACKEND: file
-      FILE_STORAGE_BACKEND_PATH: /var/lib/storage
-      TENANT_ID: stub
-      REGION: stub
-      GLOBAL_S3_BUCKET: stub
-    volumes:
-      - storage-data:/var/lib/storage
-    depends_on:
-      db:
-        condition: service_healthy
-      rest:
-        condition: service_started
-
-  # ===================
-  # Edge Functions (Deno)
-  # ===================
-
-  functions:
-    image: supabase/edge-runtime:v1.69.28
-    container_name: adhd-focus-functions
-    restart: unless-stopped
-    command:
-      - start
-      - --main-service
-      - /home/deno/functions/main
-    environment:
-      JWT_SECRET: ${JWT_SECRET}
-      SUPABASE_URL: http://kong:8000
-      SUPABASE_ANON_KEY: ${ANON_KEY}
-      SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
-      SUPABASE_DB_URL: postgres://postgres:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-postgres}
-      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
-    volumes:
-      - ../supabase/functions:/home/deno/functions:ro
-    depends_on:
-      - kong
-
-  # ===================
-  # Studio (Admin UI) - Internal only
-  # ===================
-
-  studio:
-    image: supabase/studio:20231123-64a766a
-    container_name: adhd-focus-studio
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:${STUDIO_PORT:-54323}:3000"
-    environment:
-      STUDIO_PG_META_URL: http://meta:8080
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      DEFAULT_ORGANIZATION_NAME: ${STUDIO_DEFAULT_ORGANIZATION:-ADHD Focus}
-      DEFAULT_PROJECT_NAME: ${STUDIO_DEFAULT_PROJECT:-adhd-focus}
-      SUPABASE_URL: http://kong:8000
-      SUPABASE_PUBLIC_URL: ${API_EXTERNAL_URL:-http://localhost:8000}
-      SUPABASE_ANON_KEY: ${ANON_KEY}
-      SUPABASE_SERVICE_KEY: ${SERVICE_ROLE_KEY}
-    depends_on:
-      - kong
-      - meta
-
-  meta:
-    image: supabase/postgres-meta:v0.68.0
-    container_name: adhd-focus-meta
-    restart: unless-stopped
-    environment:
-      PG_META_PORT: 8080
-      PG_META_DB_HOST: db
-      PG_META_DB_PORT: 5432
-      PG_META_DB_NAME: ${POSTGRES_DB:-postgres}
-      PG_META_DB_USER: supabase_admin
-      PG_META_DB_PASSWORD: ${POSTGRES_PASSWORD}
-    depends_on:
-      db:
-        condition: service_healthy
+      retries: 10
 
 volumes:
   db-data:
-  storage-data:
   caddy-data:
   caddy-config:
 
