@@ -212,7 +212,7 @@ export default function ProjectsPage() {
                           className="h-full rounded-full transition-all"
                           style={{
                             width: `${(project.completedCount / project.taskCount) * 100}%`,
-                            backgroundColor: project.color,
+                            backgroundColor: project.color || '#6366f1',
                           }}
                         />
                       </div>
