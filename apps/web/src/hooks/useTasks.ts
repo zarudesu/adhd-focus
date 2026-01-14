@@ -205,8 +205,10 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
     });
   }, [update]);
 
+  const today = new Date().toISOString().split('T')[0];
   const todayTasks = tasks.filter(
-    (t) => t.status === 'today' || t.status === 'in_progress'
+    (t) => t.status === 'today' || t.status === 'in_progress' ||
+      (t.status === 'done' && t.scheduledDate === today)
   );
 
   const inboxTasks = tasks.filter((t) => t.status === 'inbox');

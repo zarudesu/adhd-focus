@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { TaskList, AddTaskDialog } from "@/components/tasks";
 import { useTasks } from "@/hooks/useTasks";
 import { Plus } from "lucide-react";
-import { MAX_DAILY_TASKS } from "@adhd-focus/shared";
+
+const MAX_DAILY_TASKS = 3;
 
 export default function TodayPage() {
   const [showAddDialog, setShowAddDialog] = useState(false);

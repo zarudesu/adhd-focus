@@ -1,7 +1,19 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { EnergyLevel, Priority, CreateTaskInput } from '@adhd-focus/shared';
+
+type EnergyLevel = 'low' | 'medium' | 'high';
+type Priority = 'must' | 'should' | 'want' | 'someday';
+
+interface CreateTaskInput {
+  title: string;
+  description?: string;
+  energyRequired?: EnergyLevel;
+  priority?: Priority;
+  estimatedMinutes?: number;
+  scheduledDate?: string;
+  status?: 'inbox' | 'today' | 'scheduled';
+}
 import {
   Dialog,
   DialogContent,
@@ -69,10 +81,10 @@ export function AddTaskDialog({
       await onSubmit({
         title: title.trim(),
         description: description.trim() || undefined,
-        energy_required: energy,
+        energyRequired: energy,
         priority,
-        estimated_minutes: estimatedMinutes,
-        scheduled_date: defaultStatus === 'today' ? new Date().toISOString().split('T')[0] : undefined,
+        estimatedMinutes,
+        scheduledDate: defaultStatus === 'today' ? new Date().toISOString().split('T')[0] : undefined,
       });
       resetForm();
       onOpenChange(false);

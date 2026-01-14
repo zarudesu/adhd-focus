@@ -66,13 +66,30 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const body = await request.json();
     const data = updateTaskSchema.parse(body);
 
-    // Auto-set completedAt when marking as done
+    // Build update data with proper date conversion
     const updateData: Record<string, unknown> = {
-      ...data,
       updatedAt: new Date(),
     };
 
-    if (data.status === "done" && !data.completedAt) {
+    // Copy fields, converting date strings to Date objects
+    if (data.title !== undefined) updateData.title = data.title;
+    if (data.description !== undefined) updateData.description = data.description;
+    if (data.status !== undefined) updateData.status = data.status;
+    if (data.energyRequired !== undefined) updateData.energyRequired = data.energyRequired;
+    if (data.priority !== undefined) updateData.priority = data.priority;
+    if (data.estimatedMinutes !== undefined) updateData.estimatedMinutes = data.estimatedMinutes;
+    if (data.actualMinutes !== undefined) updateData.actualMinutes = data.actualMinutes;
+    if (data.pomodorosCompleted !== undefined) updateData.pomodorosCompleted = data.pomodorosCompleted;
+    if (data.dueDate !== undefined) updateData.dueDate = data.dueDate;
+    if (data.scheduledDate !== undefined) updateData.scheduledDate = data.scheduledDate;
+    if (data.projectId !== undefined) updateData.projectId = data.projectId;
+    if (data.tags !== undefined) updateData.tags = data.tags;
+    if (data.sortOrder !== undefined) updateData.sortOrder = data.sortOrder;
+
+    // Handle completedAt - convert string to Date
+    if (data.completedAt !== undefined) {
+      updateData.completedAt = data.completedAt ? new Date(data.completedAt) : null;
+    } else if (data.status === "done") {
       updateData.completedAt = new Date();
     }
 
