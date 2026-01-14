@@ -44,6 +44,7 @@ const PRIORITY_CONFIG: Record<Priority, { label: string; className: string }> = 
 export interface TaskCardProps {
   task: Task;
   onComplete?: (id: string) => void;
+  onUncomplete?: (id: string) => void;
   onDelete?: (id: string) => void;
   onMoveToToday?: (id: string) => void;
   onMoveToInbox?: (id: string) => void;
@@ -55,6 +56,7 @@ export interface TaskCardProps {
 export function TaskCard({
   task,
   onComplete,
+  onUncomplete,
   onDelete,
   onMoveToToday,
   onMoveToInbox,
@@ -79,8 +81,12 @@ export function TaskCard({
   };
 
   const handleCheckboxChange = () => {
-    if (!onComplete || isCompleting) return;
-    onComplete(task.id);
+    if (isCompleting) return;
+    if (isCompleted) {
+      onUncomplete?.(task.id);
+    } else {
+      onComplete?.(task.id);
+    }
   };
 
   const formatDueDate = (dateStr: string) => {

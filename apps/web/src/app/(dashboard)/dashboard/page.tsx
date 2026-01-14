@@ -16,6 +16,7 @@ export default function TodayPage() {
     loading,
     error,
     complete,
+    uncomplete,
     deleteTask,
     moveToInbox,
     create,
@@ -62,6 +63,7 @@ export default function TodayPage() {
           emptyMessage="No tasks for today"
           emptyDescription="Add tasks from Inbox or create new ones"
           onComplete={complete}
+          onUncomplete={uncomplete}
           onDelete={deleteTask}
           onMoveToInbox={moveToInbox}
         />
@@ -74,6 +76,7 @@ export default function TodayPage() {
             </h3>
             <TaskList
               tasks={todayTasks.filter(t => t.status === 'done')}
+              onUncomplete={uncomplete}
               onDelete={deleteTask}
             />
           </div>

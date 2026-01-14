@@ -7,8 +7,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { TaskList, AddTaskDialog } from "@/components/tasks";
 import { InboxProcessor } from "@/components/inbox";
 import { useTasks } from "@/hooks/useTasks";
-import { Plus, Sparkles, AlertTriangle, Clock } from "lucide-react";
-import { MAX_INBOX_BEFORE_WARNING } from "@adhd-focus/shared";
+import { Plus, Sparkles, AlertTriangle } from "lucide-react";
+
+const MAX_INBOX_BEFORE_WARNING = 10;
 
 export default function InboxPage() {
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -18,6 +19,7 @@ export default function InboxPage() {
     loading,
     error,
     complete,
+    uncomplete,
     deleteTask,
     moveToToday,
     moveToSomeday,
@@ -124,6 +126,7 @@ export default function InboxPage() {
             emptyMessage="Inbox is empty"
             emptyDescription="Quick capture ideas here, process them later"
             onComplete={complete}
+            onUncomplete={uncomplete}
             onDelete={deleteTask}
             onMoveToToday={moveToToday}
           />

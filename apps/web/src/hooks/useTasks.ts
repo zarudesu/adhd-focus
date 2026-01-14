@@ -61,6 +61,7 @@ interface UseTasksReturn {
   create: (input: CreateTaskInput) => Promise<Task>;
   update: (id: string, input: UpdateTaskInput) => Promise<Task>;
   complete: (id: string) => Promise<Task>;
+  uncomplete: (id: string) => Promise<Task>;
   deleteTask: (id: string) => Promise<void>;
   moveToToday: (id: string) => Promise<Task>;
   moveToInbox: (id: string) => Promise<Task>;
@@ -164,6 +165,13 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
     });
   }, [update]);
 
+  const uncomplete = useCallback(async (id: string): Promise<Task> => {
+    return update(id, {
+      status: 'today',
+      completedAt: null,
+    });
+  }, [update]);
+
   const deleteTask = useCallback(async (id: string): Promise<void> => {
     // Optimistic delete
     setTasks((prev) => prev.filter((t) => t.id !== id));
@@ -223,6 +231,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
     create,
     update,
     complete,
+    uncomplete,
     deleteTask,
     moveToToday,
     moveToInbox,

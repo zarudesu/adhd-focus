@@ -11,6 +11,7 @@ export interface TaskListProps {
   emptyMessage?: string;
   emptyDescription?: string;
   onComplete?: (id: string) => void;
+  onUncomplete?: (id: string) => void;
   onDelete?: (id: string) => void;
   onMoveToToday?: (id: string) => void;
   onMoveToInbox?: (id: string) => void;
@@ -25,6 +26,7 @@ export function TaskList({
   emptyMessage = 'No tasks',
   emptyDescription = 'Tasks you add will appear here',
   onComplete,
+  onUncomplete,
   onDelete,
   onMoveToToday,
   onMoveToInbox,
@@ -76,6 +78,7 @@ export function TaskList({
           key={task.id}
           task={task}
           onComplete={onComplete}
+          onUncomplete={onUncomplete}
           onDelete={onDelete}
           onMoveToToday={onMoveToToday}
           onMoveToInbox={onMoveToInbox}
