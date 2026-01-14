@@ -1,3 +1,7 @@
+'use client';
+
+import { useState } from 'react';
+import { signOut } from 'next-auth/react';
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -5,15 +9,86 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { useProfile } from "@/hooks/useProfile";
 import Link from "next/link";
-import { ChevronRight, Bell, Palette, Timer, Zap } from "lucide-react";
+import {
+  ChevronRight,
+  Bell,
+  Palette,
+  Timer,
+  Zap,
+  Loader2,
+  LogOut,
+  Save,
+  Moon,
+  Sun,
+  Monitor,
+} from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function SettingsPage() {
+  const { profile, loading, error, saving, update, updatePreference } = useProfile();
+  const [name, setName] = useState<string>('');
+  const [nameInitialized, setNameInitialized] = useState(false);
+
+  // Initialize name when profile loads
+  if (profile && !nameInitialized) {
+    setName(profile.name || '');
+    setNameInitialized(true);
+  }
+
+  const handleSaveName = async () => {
+    if (!name.trim()) return;
+    await update({ name: name.trim() });
+  };
+
+  const handleLogout = () => {
+    signOut({ callbackUrl: '/login' });
+  };
+
+  if (loading) {
+    return (
+      <>
+        <PageHeader title="Settings" description="Customize your experience" />
+        <main className="flex-1 p-4">
+          <div className="text-center py-8 text-muted-foreground">Loading...</div>
+        </main>
+      </>
+    );
+  }
+
+  if (error) {
+    return (
+      <>
+        <PageHeader title="Settings" description="Customize your experience" />
+        <main className="flex-1 p-4">
+          <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-lg">
+            {error.message}
+          </div>
+        </main>
+      </>
+    );
+  }
+
+  const prefs = profile?.preferences;
+
   return (
     <>
       <PageHeader
         title="Settings"
         description="Customize your experience"
+        actions={
+          <Button variant="outline" onClick={handleLogout}>
+            <LogOut className="h-4 w-4 mr-2" />
+            Logout
+          </Button>
+        }
       />
       <main className="flex-1 p-4">
         <div className="max-w-2xl space-y-6">
@@ -24,16 +99,37 @@ export default function SettingsPage() {
               <CardDescription>Your personal information</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* TODO: Profile form */}
               <div className="space-y-2">
                 <Label htmlFor="name">Name</Label>
-                <Input id="name" placeholder="Your name" />
+                <div className="flex gap-2">
+                  <Input
+                    id="name"
+                    placeholder="Your name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                  <Button
+                    onClick={handleSaveName}
+                    disabled={saving || name === profile?.name}
+                  >
+                    {saving ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="email@example.com" disabled />
+                <Input
+                  id="email"
+                  type="email"
+                  value={profile?.email || ''}
+                  disabled
+                  className="bg-muted"
+                />
               </div>
-              <Button>Save Changes</Button>
             </CardContent>
           </Card>
 
@@ -44,6 +140,7 @@ export default function SettingsPage() {
               <CardDescription>Customize how the app works for you</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* Pomodoro Duration */}
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label className="flex items-center gap-2">
@@ -51,12 +148,24 @@ export default function SettingsPage() {
                     Pomodoro Duration
                   </Label>
                   <p className="text-sm text-muted-foreground">
-                    Default: 25 minutes
+                    Focus session length in minutes
                   </p>
                 </div>
-                <Input type="number" className="w-20" defaultValue={25} />
+                <Input
+                  type="number"
+                  className="w-20"
+                  min={1}
+                  max={120}
+                  value={prefs?.defaultPomodoroMinutes || 25}
+                  onChange={(e) =>
+                    updatePreference('defaultPomodoroMinutes', parseInt(e.target.value) || 25)
+                  }
+                />
               </div>
+
               <Separator />
+
+              {/* Daily WIP Limit */}
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label className="flex items-center gap-2">
@@ -64,25 +173,69 @@ export default function SettingsPage() {
                     Daily WIP Limit
                   </Label>
                   <p className="text-sm text-muted-foreground">
-                    Maximum tasks per day
+                    Maximum tasks per day (ADHD friendly!)
                   </p>
                 </div>
-                <Input type="number" className="w-20" defaultValue={3} />
+                <Input
+                  type="number"
+                  className="w-20"
+                  min={1}
+                  max={20}
+                  value={prefs?.maxDailyTasks || 3}
+                  onChange={(e) =>
+                    updatePreference('maxDailyTasks', parseInt(e.target.value) || 3)
+                  }
+                />
               </div>
+
               <Separator />
+
+              {/* Theme */}
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label className="flex items-center gap-2">
                     <Palette className="h-4 w-4" />
-                    Dark Mode
+                    Theme
                   </Label>
                   <p className="text-sm text-muted-foreground">
-                    Use dark theme
+                    Choose your preferred appearance
                   </p>
                 </div>
-                <Switch />
+                <Select
+                  value={prefs?.theme || 'system'}
+                  onValueChange={(value: 'light' | 'dark' | 'system') =>
+                    updatePreference('theme', value)
+                  }
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="light">
+                      <div className="flex items-center gap-2">
+                        <Sun className="h-4 w-4" />
+                        Light
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="dark">
+                      <div className="flex items-center gap-2">
+                        <Moon className="h-4 w-4" />
+                        Dark
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="system">
+                      <div className="flex items-center gap-2">
+                        <Monitor className="h-4 w-4" />
+                        System
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
+
               <Separator />
+
+              {/* Notifications */}
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label className="flex items-center gap-2">
@@ -93,7 +246,12 @@ export default function SettingsPage() {
                     Break reminders and alerts
                   </p>
                 </div>
-                <Switch defaultChecked />
+                <Switch
+                  checked={prefs?.enableNotifications ?? true}
+                  onCheckedChange={(checked) =>
+                    updatePreference('enableNotifications', checked)
+                  }
+                />
               </div>
             </CardContent>
           </Card>
@@ -111,6 +269,34 @@ export default function SettingsPage() {
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </Link>
+            </CardContent>
+          </Card>
+
+          {/* Stats */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Statistics</CardTitle>
+              <CardDescription>Your productivity overview</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4 text-center">
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-2xl font-bold">{profile?.currentStreak || 0}</p>
+                  <p className="text-sm text-muted-foreground">Current Streak</p>
+                </div>
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-2xl font-bold">{profile?.longestStreak || 0}</p>
+                  <p className="text-sm text-muted-foreground">Longest Streak</p>
+                </div>
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-2xl font-bold">{profile?.totalTasksCompleted || 0}</p>
+                  <p className="text-sm text-muted-foreground">Tasks Completed</p>
+                </div>
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-2xl font-bold">{profile?.totalPomodoros || 0}</p>
+                  <p className="text-sm text-muted-foreground">Pomodoros</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
 

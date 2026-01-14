@@ -72,10 +72,10 @@ cd apps/web && npm run dev
 | Today | **DONE** | Tasks list, complete/uncomplete, add task, move to inbox |
 | Inbox | **DONE** | Tasks list, Process All (swipe UI), Quick Add, move to today |
 | Scheduled | **DONE** | Tasks grouped by date, smart dates (Today/Tomorrow/etc) |
-| Projects | TODO | Needs API connection |
+| Projects | **DONE** | Project cards, create with emoji/color, task count, progress bar |
+| Settings | **DONE** | Profile, preferences (pomodoro, WIP limit, theme, notifications), logout |
 | Focus Mode | TODO | Pomodoro timer |
 | Statistics | TODO | Streak tracking |
-| Settings | TODO | User preferences |
 
 ### Backend - API Routes
 
@@ -84,13 +84,15 @@ cd apps/web && npm run dev
 | GET/POST /api/tasks | **DONE** |
 | PATCH/DELETE /api/tasks/[id] | **DONE** |
 | Auth (register/login) | **DONE** |
-| Projects CRUD | TODO |
+| GET/POST /api/projects | **DONE** |
+| PATCH/DELETE /api/projects/[id] | **DONE** |
+| GET/PATCH /api/profile | **DONE** |
 | Focus sessions | TODO |
 
 ### Key Files Changed Recently
-- `src/hooks/useTasks.ts` - Added scheduledTasks, uncomplete
-- `src/components/tasks/TaskCard.tsx` - Added onUncomplete
-- `src/app/(dashboard)/dashboard/scheduled/page.tsx` - Full rewrite
+- `src/app/api/profile/route.ts` - Profile API (GET, PATCH)
+- `src/hooks/useProfile.ts` - Profile hook with preferences
+- `src/app/(dashboard)/dashboard/settings/page.tsx` - Settings UI connected to API
 
 ### Known Issues
 - None currently
