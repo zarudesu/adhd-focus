@@ -69,6 +69,7 @@ interface UseTasksReturn {
   scheduleTask: (id: string, date: string) => Promise<Task>;
   todayTasks: Task[];
   inboxTasks: Task[];
+  scheduledTasks: Task[];
   currentTask: Task | null;
 }
 
@@ -221,6 +222,8 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
 
   const inboxTasks = tasks.filter((t) => t.status === 'inbox');
 
+  const scheduledTasks = tasks.filter((t) => t.status === 'scheduled');
+
   const currentTask = todayTasks.find((t) => t.status === 'in_progress') || todayTasks[0] || null;
 
   return {
@@ -239,6 +242,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
     scheduleTask,
     todayTasks,
     inboxTasks,
+    scheduledTasks,
     currentTask,
   };
 }
