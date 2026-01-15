@@ -1,7 +1,17 @@
 # CLAUDE.md - AI Assistant Instructions
 
 > **READ THIS FILE FIRST** in every new session or after context compaction.
-> Last updated: 2026-01-14
+> Last updated: 2026-01-15
+
+## CRITICAL: When Fixing Bugs
+
+**STOP. Google BEFORE writing code.**
+- Search "[tech] [error]" first
+- One fix at a time, test after each
+- Ask before creating new files
+- After 3 fails: "застрял, нужна помощь"
+
+---
 
 ## Quick Context
 
