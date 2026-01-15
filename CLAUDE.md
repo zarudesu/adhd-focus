@@ -11,6 +11,8 @@
 - Ask before creating new files
 - After 3 fails: "застрял, нужна помощь"
 
+**When user says "погугли" / "стоп" / "хватит" - IMMEDIATELY stop and do what they say. No "one more try".**
+
 ---
 
 ## Quick Context
