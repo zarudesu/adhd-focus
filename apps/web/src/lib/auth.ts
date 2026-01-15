@@ -1,5 +1,4 @@
 // ADHD Focus - NextAuth Configuration
-// Full config with bcrypt (Node.js only, not Edge)
 
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
@@ -9,15 +8,12 @@ import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
-import { authConfig } from "./auth.config";
 
-// Validation schema
 const credentialsSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
 });
 
-// Helper to get user by email
 async function getUser(email: string) {
   const [user] = await db
     .select()
@@ -28,32 +24,32 @@ async function getUser(email: string) {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  ...authConfig,
+  trustHost: true,
+
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+
+  pages: {
+    signIn: "/login",
+    error: "/login",
+  },
+
   providers: [
-    // Email/Password credentials
     Credentials({
       async authorize(credentials) {
         const parsed = credentialsSchema.safeParse(credentials);
-        if (!parsed.success) {
-          console.log("[Auth] Invalid credentials format");
-          return null;
-        }
+        if (!parsed.success) return null;
 
         const { email, password } = parsed.data;
         const user = await getUser(email);
 
-        if (!user || !user.passwordHash) {
-          console.log("[Auth] User not found or no password");
-          return null;
-        }
+        if (!user?.passwordHash) return null;
 
-        const passwordsMatch = await bcrypt.compare(password, user.passwordHash);
-        if (!passwordsMatch) {
-          console.log("[Auth] Password mismatch");
-          return null;
-        }
+        const valid = await bcrypt.compare(password, user.passwordHash);
+        if (!valid) return null;
 
-        console.log("[Auth] Login successful for:", email);
         return {
           id: user.id,
           email: user.email,
@@ -63,7 +59,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
 
-    // Google OAuth (optional)
     ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
       ? [
           Google({
@@ -73,9 +68,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         ]
       : []),
   ],
+
+  callbacks: {
+    jwt({ token, user }) {
+      if (user) token.id = user.id;
+      return token;
+    },
+    session({ session, token }) {
+      if (session.user && token.id) {
+        session.user.id = token.id as string;
+      }
+      return session;
+    },
+  },
 });
 
-// Type augmentation
 declare module "next-auth" {
   interface Session {
     user: {
