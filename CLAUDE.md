@@ -45,7 +45,22 @@ cd apps/web && npm run dev
 - Test with real database via Playwright
 - Keep code minimal
 
-### 4. End of Session
+### 4. When Something Breaks (MANDATORY)
+**STOP. Do NOT immediately write code.**
+
+1. **Google first** - search "[technology] [error message]" (e.g. "nextjs standalone bcryptjs")
+2. **Check existing code** - maybe solution already exists in project
+3. **One change at a time** - change, test, then next change
+4. **Ask user before adding files** - "хочу добавить X, ок?"
+5. **3 failed attempts = STOP** - tell user "застрял, нужна помощь"
+
+**NEVER:**
+- Add multiple fixes at once
+- Create new files without asking
+- Guess solutions without researching
+- Keep trying after 3 failures
+
+### 5. End of Session
 - **Update this file** if anything changed
 - **Update "Current State" section** below
 - Commit with conventional commits
