@@ -1,11 +1,12 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import Link from "next/link";
-import { useAuth } from "@/hooks";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Suspense, useActionState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { register, type AuthState } from '@/app/actions/auth';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Card,
   CardContent,
@@ -13,35 +14,18 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Timer } from "lucide-react";
+} from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Timer, Loader2, AlertCircle } from 'lucide-react';
 
-export default function SignupPage() {
-  const { signUp, signIn, loading } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+function SignupForm() {
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters");
-      return;
-    }
-
-    const result = await signUp(email, password);
-    if (result.error) {
-      setError(result.error.message);
-    }
-    // signUp auto-signs in and redirects on success
-  };
-
-  const handleOAuth = async (provider: "google") => {
-    await signIn(provider);
-  };
+  const [state, formAction, isPending] = useActionState<AuthState | undefined, FormData>(
+    register,
+    undefined
+  );
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-6 py-12">
@@ -57,22 +41,26 @@ export default function SignupPage() {
         </CardHeader>
 
         <CardContent>
-          {error && (
-            <div className="mb-4 p-3 text-sm text-destructive bg-destructive/10 rounded-lg">
-              {error}
+          {state?.error && (
+            <div className="mb-4 p-3 text-sm text-destructive bg-destructive/10 rounded-lg flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 flex-shrink-0" />
+              {state.error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form action={formAction} className="space-y-4">
+            <input type="hidden" name="redirectTo" value={callbackUrl} />
+
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
+                name="email"
                 type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
                 placeholder="email@example.com"
                 required
+                autoComplete="email"
+                disabled={isPending}
               />
             </div>
 
@@ -80,19 +68,27 @@ export default function SignupPage() {
               <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
+                name="password"
                 type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
                 required
+                autoComplete="new-password"
                 minLength={8}
+                disabled={isPending}
               />
               <p className="text-xs text-muted-foreground">
                 At least 8 characters
               </p>
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Creating account..." : "Create account"}
+            <Button type="submit" className="w-full" disabled={isPending}>
+              {isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating account...
+                </>
+              ) : (
+                'Create account'
+              )}
             </Button>
           </form>
 
@@ -104,18 +100,17 @@ export default function SignupPage() {
             <Separator className="flex-1" />
           </div>
 
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => handleOAuth("google")}
-          >
-            Continue with Google
-          </Button>
+          <form action="/api/auth/signin/google" method="POST">
+            <input type="hidden" name="callbackUrl" value={callbackUrl} />
+            <Button variant="outline" className="w-full" type="submit">
+              Continue with Google
+            </Button>
+          </form>
         </CardContent>
 
         <CardFooter className="justify-center">
           <p className="text-sm text-muted-foreground">
-            Already have an account?{" "}
+            Already have an account?{' '}
             <Link href="/login" className="font-medium hover:underline">
               Sign in
             </Link>
@@ -123,5 +118,17 @@ export default function SignupPage() {
         </CardFooter>
       </Card>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    }>
+      <SignupForm />
+    </Suspense>
   );
 }
