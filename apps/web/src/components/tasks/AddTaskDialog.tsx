@@ -25,7 +25,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { cn } from '@/lib/utils';
 import { Loader2, Zap, Battery, BatteryLow, ChevronDown, ChevronUp } from 'lucide-react';
 
 const ENERGY_OPTIONS: { value: EnergyLevel; label: string; icon: React.ReactNode }[] = [
@@ -131,12 +130,9 @@ export function AddTaskDialog({
                   <Button
                     key={option.value}
                     type="button"
-                    variant="outline"
+                    variant={energy === option.value ? 'default' : 'outline'}
                     size="sm"
-                    className={cn(
-                      'flex-1 gap-1',
-                      energy === option.value && 'border-primary bg-primary/5'
-                    )}
+                    className="flex-1 gap-1"
                     onClick={() => setEnergy(option.value)}
                   >
                     {option.icon}
@@ -154,12 +150,9 @@ export function AddTaskDialog({
                   <Button
                     key={option.value}
                     type="button"
-                    variant="outline"
+                    variant={priority === option.value ? 'default' : 'outline'}
                     size="sm"
-                    className={cn(
-                      'flex-1',
-                      priority === option.value && 'border-primary bg-primary/5'
-                    )}
+                    className="flex-1"
                     onClick={() => setPriority(option.value)}
                   >
                     {option.label}
@@ -177,12 +170,9 @@ export function AddTaskDialog({
                 <Button
                   key={mins}
                   type="button"
-                  variant="outline"
+                  variant={estimatedMinutes === mins ? 'default' : 'outline'}
                   size="sm"
-                  className={cn(
-                    'flex-1',
-                    estimatedMinutes === mins && 'border-primary bg-primary/5'
-                  )}
+                  className="flex-1"
                   onClick={() => setEstimatedMinutes(estimatedMinutes === mins ? undefined : mins)}
                 >
                   {mins}m
