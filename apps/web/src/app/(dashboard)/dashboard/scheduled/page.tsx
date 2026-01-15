@@ -5,10 +5,12 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { TaskList, AddTaskDialog } from "@/components/tasks";
 import { useTasks } from "@/hooks/useTasks";
+import type { Task } from "@/db/schema";
 import { Plus, Calendar } from "lucide-react";
 
 export default function ScheduledPage() {
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const {
     scheduledTasks,
     loading,
@@ -19,6 +21,7 @@ export default function ScheduledPage() {
     moveToToday,
     moveToInbox,
     create,
+    update,
   } = useTasks();
 
   // Group tasks by scheduled date
@@ -66,12 +69,26 @@ export default function ScheduledPage() {
         }
       />
 
+      {/* Add Task Dialog */}
       <AddTaskDialog
         open={showAddDialog}
         onOpenChange={setShowAddDialog}
         onSubmit={async (input) => {
           await create({ ...input, status: 'scheduled' });
         }}
+        defaultStatus="inbox"
+      />
+
+      {/* Edit Task Dialog */}
+      <AddTaskDialog
+        open={!!editingTask}
+        onOpenChange={(open) => !open && setEditingTask(null)}
+        onSubmit={async (input) => {
+          if (editingTask) {
+            await update(editingTask.id, input);
+          }
+        }}
+        task={editingTask}
         defaultStatus="inbox"
       />
 
@@ -109,6 +126,7 @@ export default function ScheduledPage() {
                 onDelete={deleteTask}
                 onMoveToToday={moveToToday}
                 onMoveToInbox={moveToInbox}
+                onTaskClick={setEditingTask}
               />
             </div>
           ))

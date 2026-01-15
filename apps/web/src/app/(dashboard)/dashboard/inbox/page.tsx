@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { TaskList, AddTaskDialog } from "@/components/tasks";
 import { InboxProcessor } from "@/components/inbox";
 import { useTasks } from "@/hooks/useTasks";
+import type { Task } from "@/db/schema";
 import { Plus, Sparkles, AlertTriangle } from "lucide-react";
 
 const MAX_INBOX_BEFORE_WARNING = 10;
@@ -14,6 +15,7 @@ const MAX_INBOX_BEFORE_WARNING = 10;
 export default function InboxPage() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showProcessor, setShowProcessor] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const {
     inboxTasks,
     loading,
@@ -58,12 +60,26 @@ export default function InboxPage() {
         }
       />
 
+      {/* Add Task Dialog */}
       <AddTaskDialog
         open={showAddDialog}
         onOpenChange={setShowAddDialog}
         onSubmit={async (input) => {
           await create(input);
         }}
+        defaultStatus="inbox"
+      />
+
+      {/* Edit Task Dialog */}
+      <AddTaskDialog
+        open={!!editingTask}
+        onOpenChange={(open) => !open && setEditingTask(null)}
+        onSubmit={async (input) => {
+          if (editingTask) {
+            await update(editingTask.id, input);
+          }
+        }}
+        task={editingTask}
         defaultStatus="inbox"
       />
 
@@ -129,6 +145,7 @@ export default function InboxPage() {
             onUncomplete={uncomplete}
             onDelete={deleteTask}
             onMoveToToday={moveToToday}
+            onTaskClick={setEditingTask}
           />
         </div>
       </main>
