@@ -5,7 +5,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db, projects, tasks } from "@/db";
-import { eq, and, count } from "drizzle-orm";
+import { eq, and, count, sql } from "drizzle-orm";
 import { z } from "zod";
 
 const createProjectSchema = z.object({
@@ -25,8 +25,8 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const includeArchived = searchParams.get("includeArchived") === "true";
 
-    // Get projects with task count
-    const projectList = await db
+    // Get projects with task counts using a single aggregation query
+    const projectsWithCounts = await db
       .select({
         id: projects.id,
         userId: projects.userId,
@@ -37,41 +37,21 @@ export async function GET(request: NextRequest) {
         archived: projects.archived,
         createdAt: projects.createdAt,
         updatedAt: projects.updatedAt,
+        taskCount: sql<number>`cast(count(${tasks.id}) as int)`,
+        completedCount: sql<number>`cast(count(case when ${tasks.status} = 'done' then 1 end) as int)`,
       })
       .from(projects)
+      .leftJoin(
+        tasks,
+        and(eq(tasks.projectId, projects.id), eq(tasks.userId, session.user.id))
+      )
       .where(
         includeArchived
           ? eq(projects.userId, session.user.id)
           : and(eq(projects.userId, session.user.id), eq(projects.archived, false))
       )
+      .groupBy(projects.id)
       .orderBy(projects.createdAt);
-
-    // Get task counts for each project
-    const projectsWithCounts = await Promise.all(
-      projectList.map(async (project) => {
-        const [taskCount] = await db
-          .select({ count: count() })
-          .from(tasks)
-          .where(and(eq(tasks.projectId, project.id), eq(tasks.userId, session.user.id)));
-
-        const [completedCount] = await db
-          .select({ count: count() })
-          .from(tasks)
-          .where(
-            and(
-              eq(tasks.projectId, project.id),
-              eq(tasks.userId, session.user.id),
-              eq(tasks.status, "done")
-            )
-          );
-
-        return {
-          ...project,
-          taskCount: taskCount?.count || 0,
-          completedCount: completedCount?.count || 0,
-        };
-      })
-    );
 
     return NextResponse.json(projectsWithCounts);
   } catch (error) {

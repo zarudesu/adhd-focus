@@ -5,7 +5,7 @@
  * Uses Next.js API routes with fetch
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Task } from '@/db/schema';
 
 interface TaskFilters {
@@ -215,16 +215,32 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
   }, [update]);
 
   const today = new Date().toISOString().split('T')[0];
-  const todayTasks = tasks.filter(
-    (t) => t.status === 'today' || t.status === 'in_progress' ||
-      (t.status === 'done' && t.scheduledDate === today)
+
+  const todayTasks = useMemo(
+    () =>
+      tasks.filter(
+        (t) =>
+          t.status === 'today' ||
+          t.status === 'in_progress' ||
+          (t.status === 'done' && t.scheduledDate === today)
+      ),
+    [tasks, today]
   );
 
-  const inboxTasks = tasks.filter((t) => t.status === 'inbox');
+  const inboxTasks = useMemo(
+    () => tasks.filter((t) => t.status === 'inbox'),
+    [tasks]
+  );
 
-  const scheduledTasks = tasks.filter((t) => t.status === 'scheduled');
+  const scheduledTasks = useMemo(
+    () => tasks.filter((t) => t.status === 'scheduled'),
+    [tasks]
+  );
 
-  const currentTask = todayTasks.find((t) => t.status === 'in_progress') || todayTasks[0] || null;
+  const currentTask = useMemo(
+    () => todayTasks.find((t) => t.status === 'in_progress') || todayTasks[0] || null,
+    [todayTasks]
+  );
 
   return {
     tasks,

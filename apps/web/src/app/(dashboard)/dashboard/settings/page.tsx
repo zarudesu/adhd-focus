@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { signOut } from 'next-auth/react';
 import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,13 +35,13 @@ import {
 export default function SettingsPage() {
   const { profile, loading, error, saving, update, updatePreference } = useProfile();
   const [name, setName] = useState<string>('');
-  const [nameInitialized, setNameInitialized] = useState(false);
 
   // Initialize name when profile loads
-  if (profile && !nameInitialized) {
-    setName(profile.name || '');
-    setNameInitialized(true);
-  }
+  useEffect(() => {
+    if (profile?.name) {
+      setName(profile.name);
+    }
+  }, [profile?.name]);
 
   const handleSaveName = async () => {
     if (!name.trim()) return;

@@ -119,6 +119,7 @@ export default function ProjectsPage() {
                   <button
                     key={color}
                     type="button"
+                    aria-label={`Select color ${color}`}
                     className={cn(
                       'w-8 h-8 rounded-full transition-all',
                       newColor === color && 'ring-2 ring-offset-2 ring-primary'

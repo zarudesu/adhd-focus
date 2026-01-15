@@ -260,7 +260,7 @@ export function InboxProcessor({
 
                 {/* Time estimate */}
                 <div className="space-y-2">
-                  <label className="text-sm text-muted-foreground flex items-center gap-2">
+                  <label htmlFor="time-estimate-quick" className="text-sm text-muted-foreground flex items-center gap-2">
                     <Clock className="h-4 w-4" />
                     Quick or Long?
                   </label>
@@ -286,7 +286,7 @@ export function InboxProcessor({
 
                 {/* Energy level */}
                 <div className="space-y-2">
-                  <label className="text-sm text-muted-foreground flex items-center gap-2">
+                  <label htmlFor="energy-low" className="text-sm text-muted-foreground flex items-center gap-2">
                     <BatteryMedium className="h-4 w-4" />
                     Energy needed?
                   </label>
@@ -329,10 +329,11 @@ export function InboxProcessor({
 
                 {/* First step */}
                 <div className="space-y-2">
-                  <label className="text-sm text-muted-foreground">
-                    🎯 What's the first tiny step?
+                  <label htmlFor="first-step-input" className="text-sm text-muted-foreground">
+                    What's the first tiny step?
                   </label>
                   <Input
+                    id="first-step-input"
                     value={firstStep}
                     onChange={(e) => setFirstStep(e.target.value)}
                     placeholder="e.g., Open the app..."

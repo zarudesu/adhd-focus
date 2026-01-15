@@ -284,3 +284,14 @@ feat(tasks): add feature
 fix(auth): fix bug
 docs: update CLAUDE.md
 ```
+
+## Recent Fixes (2026-01-15)
+
+### Code Review Improvements
+- **Security**: Rate limiting on `/api/auth/register` (5 req/15 min)
+- **Performance**: `useMemo` for filtered task lists in `useTasks.ts`
+- **Performance**: Fixed N+1 query in `/api/projects/route.ts` (aggregation)
+- **Code Quality**: Fixed useEffect anti-pattern in settings page
+- **Code Quality**: Removed self-HTTP-call in auth actions
+- **Accessibility**: Added `htmlFor`/`aria-label` to form inputs
+- **Dependencies**: Fixed Zod version (^3.23.8)

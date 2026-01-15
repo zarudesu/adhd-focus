@@ -8,6 +8,7 @@
 import { signIn, signOut } from '@/lib/auth';
 import { AuthError } from 'next-auth';
 import { isRedirectError } from 'next/dist/client/components/redirect-error';
+import { registerUser } from '@/app/api/auth/register/route';
 
 export type AuthState = {
   error?: string;
@@ -26,8 +27,6 @@ export async function authenticate(
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
     const redirectTo = formData.get('redirectTo') as string || '/dashboard';
-
-    console.log('[Auth] Attempting login for:', email);
 
     await signIn('credentials', {
       email,
@@ -79,22 +78,13 @@ export async function register(
     const password = formData.get('password') as string;
     const redirectTo = formData.get('redirectTo') as string || '/dashboard';
 
-    console.log('[Auth] Attempting registration for:', email);
+    // Call registration logic directly (no HTTP call)
+    const result = await registerUser({ email, password });
 
-    // Call registration API
-    const res = await fetch(`${process.env.AUTH_URL || 'http://localhost:3000'}/api/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-
-    if (!res.ok) {
-      const data = await res.json();
-      console.error('[Auth] Registration failed:', data);
-      return { error: data.error || 'Registration failed' };
+    if (!result.success) {
+      console.error('[Auth] Registration failed:', result.error);
+      return { error: result.error };
     }
-
-    console.log('[Auth] Registration successful, signing in...');
 
     // Auto sign-in after registration
     await signIn('credentials', {
