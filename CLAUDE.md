@@ -285,7 +285,11 @@ fix(auth): fix bug
 docs: update CLAUDE.md
 ```
 
-## Recent Fixes (2026-01-15)
+## Recent Changes (2026-01-15)
+
+### New Features
+- **Task Editing**: Click on task to open edit dialog with pre-filled values
+- **Responsive AddTaskDialog**: Form stacks vertically on mobile (320px+)
 
 ### Code Review Improvements
 - **Security**: Rate limiting on `/api/auth/register` (5 req/15 min)
@@ -295,3 +299,7 @@ docs: update CLAUDE.md
 - **Code Quality**: Removed self-HTTP-call in auth actions
 - **Accessibility**: Added `htmlFor`/`aria-label` to form inputs
 - **Dependencies**: Fixed Zod version (^3.23.8)
+
+### UI Fixes
+- **Button Styles**: Unified selection styles in AddTaskDialog (`variant="default"`)
+- **Mobile Overflow**: Fixed buttons overflowing on narrow screens
