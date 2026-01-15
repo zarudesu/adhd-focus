@@ -18,6 +18,7 @@ const credentialsSchema = z.object({
 });
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  trustHost: true, // Required for reverse proxy (Caddy)
   adapter: DrizzleAdapter(db),
 
   session: {
