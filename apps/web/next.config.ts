@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
 
   // Transpile shared package
   transpilePackages: ["@adhd-focus/shared"],
+
+  // Ensure bcryptjs is included in standalone output
+  serverExternalPackages: ["bcryptjs"],
 };
 
 export default nextConfig;
