@@ -19,10 +19,12 @@ const credentialsSchema = z.object({
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true, // Required for reverse proxy (Caddy)
-  adapter: DrizzleAdapter(db),
+  // NOTE: Credentials provider doesn't work with database adapter
+  // adapter: DrizzleAdapter(db),
 
   session: {
     strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
 
   pages: {
