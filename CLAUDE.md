@@ -125,8 +125,28 @@ cd apps/web && npm run dev
 - `src/hooks/useProfile.ts` - Profile hook with preferences
 - `src/app/(dashboard)/dashboard/settings/page.tsx` - Settings UI connected to API
 
-### Known Issues
-- None currently
+### Known Issues (Code Review 2026-01-15)
+
+**Security (High):**
+- [ ] No rate limiting on `/api/auth/register` - vulnerable to brute force
+- [ ] Email logging in auth.ts - PII in production logs
+
+**Performance (Medium):**
+- [ ] No `useMemo` in useTasks.ts - filters run every render
+- [ ] N+1 queries in projects listing
+
+**Code Quality (Medium):**
+- [ ] State set during render in settings/page.tsx - anti-pattern
+- [ ] Type duplication - not using @adhd-focus/shared
+- [ ] Self-HTTP-call in registration action
+
+**Accessibility:**
+- [ ] Labels not associated with inputs in InboxProcessor
+- [ ] Color picker buttons missing aria-labels
+
+**Dependencies:**
+- [ ] Zod version 4.x doesn't exist - check package.json
+- [ ] NextAuth beta in production
 
 ## Tech Stack
 
@@ -162,7 +182,9 @@ apps/web/src/
 ├── db/
 │   ├── index.ts                  # Drizzle client
 │   └── schema.ts                 # Database schema
-└── proxy.ts                      # Route protection
+└── lib/
+    ├── auth.ts                   # NextAuth config
+    └── utils.ts                  # Utilities
 ```
 
 ## Community Resources (CHECK THESE FIRST!)
