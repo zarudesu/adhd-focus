@@ -49,6 +49,9 @@ COPY --from=builder /app/apps/web/.next/standalone ./
 COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
 COPY --from=builder /app/apps/web/public ./apps/web/public
 
+# Install bcryptjs for password hashing (not traced by Next.js standalone)
+RUN npm install --prefix /app/node_modules bcryptjs@2.4.3
+
 USER nextjs
 
 EXPOSE 3000
