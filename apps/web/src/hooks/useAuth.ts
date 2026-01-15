@@ -32,19 +32,18 @@ export function useAuth(): UseAuthReturn {
   }, []);
 
   const handleSignInWithCredentials = useCallback(async (email: string, password: string) => {
-    const result = await signIn('credentials', {
-      email,
-      password,
-      redirect: false,
-    });
-
-    if (result?.error) {
-      return { error: new Error(result.error) };
+    try {
+      // Use NextAuth's built-in redirect for proper cookie handling
+      await signIn('credentials', {
+        email,
+        password,
+        callbackUrl: '/dashboard',
+        redirect: true,
+      });
+      return { error: null };
+    } catch {
+      return { error: new Error('Authentication failed') };
     }
-
-    // Redirect on success
-    window.location.href = '/dashboard';
-    return { error: null };
   }, []);
 
   const handleSignUp = useCallback(async (email: string, password: string) => {
