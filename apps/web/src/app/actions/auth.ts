@@ -7,6 +7,7 @@
 
 import { signIn, signOut } from '@/lib/auth';
 import { AuthError } from 'next-auth';
+import { isRedirectError } from 'next/dist/client/components/redirect-error';
 
 export type AuthState = {
   error?: string;
@@ -37,6 +38,11 @@ export async function authenticate(
     // signIn will redirect on success, this line won't execute
     return { success: true };
   } catch (error) {
+    // NEXT_REDIRECT is thrown by signIn on success - rethrow immediately
+    if (isRedirectError(error)) {
+      throw error;
+    }
+
     console.error('[Auth] Login error:', error);
 
     if (error instanceof AuthError) {
@@ -50,8 +56,7 @@ export async function authenticate(
       }
     }
 
-    // NEXT_REDIRECT is thrown by signIn on success - rethrow it
-    throw error;
+    return { error: 'An unexpected error occurred' };
   }
 }
 
@@ -100,13 +105,17 @@ export async function register(
 
     return { success: true };
   } catch (error) {
+    // NEXT_REDIRECT is thrown by signIn on success - rethrow immediately
+    if (isRedirectError(error)) {
+      throw error;
+    }
+
     console.error('[Auth] Registration error:', error);
 
     if (error instanceof AuthError) {
       return { error: 'Failed to sign in after registration' };
     }
 
-    // NEXT_REDIRECT - rethrow
-    throw error;
+    return { error: 'An unexpected error occurred' };
   }
 }
