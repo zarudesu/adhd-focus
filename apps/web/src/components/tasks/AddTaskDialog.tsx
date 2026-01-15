@@ -121,9 +121,9 @@ export function AddTaskDialog({
           </div>
 
           {/* Quick options row */}
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
             {/* Energy selector */}
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <Label className="text-xs text-muted-foreground mb-1.5 block">Energy</Label>
               <div className="flex gap-1">
                 {ENERGY_OPTIONS.map((option) => (
@@ -132,18 +132,18 @@ export function AddTaskDialog({
                     type="button"
                     variant={energy === option.value ? 'default' : 'outline'}
                     size="sm"
-                    className="flex-1 gap-1"
+                    className="flex-1 gap-1 px-2 sm:px-3"
                     onClick={() => setEnergy(option.value)}
                   >
                     {option.icon}
-                    <span className="hidden sm:inline">{option.label}</span>
+                    <span className="text-xs">{option.label}</span>
                   </Button>
                 ))}
               </div>
             </div>
 
             {/* Priority selector */}
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <Label className="text-xs text-muted-foreground mb-1.5 block">Priority</Label>
               <div className="flex gap-1">
                 {PRIORITY_OPTIONS.map((option) => (
@@ -152,10 +152,10 @@ export function AddTaskDialog({
                     type="button"
                     variant={priority === option.value ? 'default' : 'outline'}
                     size="sm"
-                    className="flex-1"
+                    className="flex-1 px-2 sm:px-3"
                     onClick={() => setPriority(option.value)}
                   >
-                    {option.label}
+                    <span className="text-xs">{option.label}</span>
                   </Button>
                 ))}
               </div>
@@ -172,10 +172,10 @@ export function AddTaskDialog({
                   type="button"
                   variant={estimatedMinutes === mins ? 'default' : 'outline'}
                   size="sm"
-                  className="flex-1"
+                  className="flex-1 px-2 sm:px-3"
                   onClick={() => setEstimatedMinutes(estimatedMinutes === mins ? undefined : mins)}
                 >
-                  {mins}m
+                  <span className="text-xs">{mins}m</span>
                 </Button>
               ))}
             </div>
