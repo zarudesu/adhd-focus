@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import type { Task } from '@/db/schema';
 
 type EnergyLevel = 'low' | 'medium' | 'high';
 type Priority = 'must' | 'should' | 'want' | 'someday';
 
-interface CreateTaskInput {
+interface TaskInput {
   title: string;
   description?: string;
   energyRequired?: EnergyLevel;
@@ -44,8 +45,10 @@ const TIME_PRESETS = [5, 15, 25, 45];
 export interface AddTaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (input: CreateTaskInput) => Promise<void>;
+  onSubmit: (input: TaskInput) => Promise<void>;
   defaultStatus?: 'inbox' | 'today';
+  /** Task to edit - if provided, dialog works in edit mode */
+  task?: Task | null;
 }
 
 export function AddTaskDialog({
@@ -53,7 +56,9 @@ export function AddTaskDialog({
   onOpenChange,
   onSubmit,
   defaultStatus = 'inbox',
+  task,
 }: AddTaskDialogProps) {
+  const isEditMode = !!task;
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [energy, setEnergy] = useState<EnergyLevel>('medium');
@@ -61,6 +66,18 @@ export function AddTaskDialog({
   const [estimatedMinutes, setEstimatedMinutes] = useState<number | undefined>();
   const [showMore, setShowMore] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Populate form when editing
+  useEffect(() => {
+    if (task && open) {
+      setTitle(task.title);
+      setDescription(task.description || '');
+      setEnergy((task.energyRequired as EnergyLevel) || 'medium');
+      setPriority((task.priority as Priority) || 'should');
+      setEstimatedMinutes(task.estimatedMinutes || undefined);
+      setShowMore(!!task.description);
+    }
+  }, [task, open]);
 
   const resetForm = useCallback(() => {
     setTitle('');
@@ -83,9 +100,12 @@ export function AddTaskDialog({
         energyRequired: energy,
         priority,
         estimatedMinutes,
-        scheduledDate: defaultStatus === 'today' ? new Date().toISOString().split('T')[0] : undefined,
+        // Only set scheduledDate when creating new task for today
+        scheduledDate: !isEditMode && defaultStatus === 'today'
+          ? new Date().toISOString().split('T')[0]
+          : undefined,
       });
-      resetForm();
+      if (!isEditMode) resetForm();
       onOpenChange(false);
     } finally {
       setLoading(false);
@@ -104,7 +124,11 @@ export function AddTaskDialog({
       <DialogContent className="sm:max-w-md" onKeyDown={handleKeyDown}>
         <DialogHeader>
           <DialogTitle>
-            {defaultStatus === 'today' ? 'Add Task for Today' : 'Quick Capture'}
+            {isEditMode
+              ? 'Edit Task'
+              : defaultStatus === 'today'
+                ? 'Add Task for Today'
+                : 'Quick Capture'}
           </DialogTitle>
         </DialogHeader>
 
@@ -219,7 +243,7 @@ export function AddTaskDialog({
               type="button"
               variant="ghost"
               onClick={() => {
-                resetForm();
+                if (!isEditMode) resetForm();
                 onOpenChange(false);
               }}
               disabled={loading}
@@ -228,7 +252,7 @@ export function AddTaskDialog({
             </Button>
             <Button type="submit" disabled={!title.trim() || loading}>
               {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Add Task
+              {isEditMode ? 'Save' : 'Add Task'}
             </Button>
           </DialogFooter>
         </form>
