@@ -2,11 +2,12 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import type { Task } from '@/db/schema';
+import { useProjects } from '@/hooks/useProjects';
 
 type EnergyLevel = 'low' | 'medium' | 'high';
 type Priority = 'must' | 'should' | 'want' | 'someday';
 
-interface TaskInput {
+export interface TaskInput {
   title: string;
   description?: string;
   energyRequired?: EnergyLevel;
@@ -14,6 +15,7 @@ interface TaskInput {
   estimatedMinutes?: number;
   scheduledDate?: string;
   status?: 'inbox' | 'today' | 'scheduled';
+  projectId?: string;
 }
 import {
   Dialog,
@@ -22,11 +24,18 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Loader2, Zap, Battery, BatteryLow, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, Zap, Battery, BatteryLow, ChevronDown, ChevronUp, FolderOpen } from 'lucide-react';
 
 const ENERGY_OPTIONS: { value: EnergyLevel; label: string; icon: React.ReactNode }[] = [
   { value: 'low', label: 'Low', icon: <BatteryLow className="h-4 w-4" /> },
@@ -47,6 +56,8 @@ export interface AddTaskDialogProps {
   onOpenChange: (open: boolean) => void;
   onSubmit: (input: TaskInput) => Promise<void>;
   defaultStatus?: 'inbox' | 'today';
+  /** Default project ID when creating task from project page */
+  defaultProjectId?: string;
   /** Task to edit - if provided, dialog works in edit mode */
   task?: Task | null;
 }
@@ -56,14 +67,17 @@ export function AddTaskDialog({
   onOpenChange,
   onSubmit,
   defaultStatus = 'inbox',
+  defaultProjectId,
   task,
 }: AddTaskDialogProps) {
   const isEditMode = !!task;
+  const { projects } = useProjects();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [energy, setEnergy] = useState<EnergyLevel>('medium');
   const [priority, setPriority] = useState<Priority>('should');
   const [estimatedMinutes, setEstimatedMinutes] = useState<number | undefined>();
+  const [projectId, setProjectId] = useState<string | undefined>(defaultProjectId);
   const [showMore, setShowMore] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -75,9 +89,13 @@ export function AddTaskDialog({
       setEnergy((task.energyRequired as EnergyLevel) || 'medium');
       setPriority((task.priority as Priority) || 'should');
       setEstimatedMinutes(task.estimatedMinutes || undefined);
-      setShowMore(!!task.description);
+      setProjectId(task.projectId || undefined);
+      setShowMore(!!task.description || !!task.projectId);
+    } else if (open && !task) {
+      // Reset to default when opening for new task
+      setProjectId(defaultProjectId);
     }
-  }, [task, open]);
+  }, [task, open, defaultProjectId]);
 
   const resetForm = useCallback(() => {
     setTitle('');
@@ -85,8 +103,9 @@ export function AddTaskDialog({
     setEnergy('medium');
     setPriority('should');
     setEstimatedMinutes(undefined);
+    setProjectId(defaultProjectId);
     setShowMore(false);
-  }, []);
+  }, [defaultProjectId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,6 +119,7 @@ export function AddTaskDialog({
         energyRequired: energy,
         priority,
         estimatedMinutes,
+        projectId,
         // Only set scheduledDate when creating new task for today
         scheduledDate: !isEditMode && defaultStatus === 'today'
           ? new Date().toISOString().split('T')[0]
@@ -227,14 +247,58 @@ export function AddTaskDialog({
           </Button>
 
           {showMore && (
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Description (optional)</Label>
-              <Textarea
-                placeholder="Add notes or context..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-              />
+            <div className="space-y-4">
+              {/* Project selector */}
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Project</Label>
+                <Select
+                  value={projectId || 'none'}
+                  onValueChange={(value) => setProjectId(value === 'none' ? undefined : value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="No project (Inbox)">
+                      {projectId ? (
+                        <span className="flex items-center gap-2">
+                          {projects.find(p => p.id === projectId)?.emoji}
+                          {projects.find(p => p.id === projectId)?.name}
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-2 text-muted-foreground">
+                          <FolderOpen className="h-4 w-4" />
+                          No project (Inbox)
+                        </span>
+                      )}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">
+                      <span className="flex items-center gap-2">
+                        <FolderOpen className="h-4 w-4" />
+                        No project (Inbox)
+                      </span>
+                    </SelectItem>
+                    {projects.map((project) => (
+                      <SelectItem key={project.id} value={project.id}>
+                        <span className="flex items-center gap-2">
+                          {project.emoji && <span>{project.emoji}</span>}
+                          {project.name}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Description */}
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Description (optional)</Label>
+                <Textarea
+                  placeholder="Add notes or context..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={3}
+                />
+              </div>
             </div>
           )}
 

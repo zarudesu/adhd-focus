@@ -10,7 +10,7 @@ import type { Task } from '@/db/schema';
 
 interface TaskFilters {
   status?: string | string[];
-  projectId?: string;
+  projectId?: string | null; // UUID, "null" for no project, or null to not filter
   scheduledDate?: string;
   dueDateBefore?: string;
   energyRequired?: 'low' | 'medium' | 'high';
@@ -105,7 +105,9 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
       if (filters.status) {
         params.set('status', Array.isArray(filters.status) ? filters.status.join(',') : filters.status);
       }
-      if (filters.projectId) params.set('projectId', filters.projectId);
+      if (filters.projectId !== undefined) {
+        params.set('projectId', filters.projectId === null ? 'null' : filters.projectId);
+      }
       if (filters.scheduledDate) params.set('scheduledDate', filters.scheduledDate);
       if (filters.dueDateBefore) params.set('dueDateBefore', filters.dueDateBefore);
       if (filters.energyRequired) params.set('energyRequired', filters.energyRequired);
@@ -228,7 +230,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
   );
 
   const inboxTasks = useMemo(
-    () => tasks.filter((t) => t.status === 'inbox'),
+    () => tasks.filter((t) => t.status === 'inbox' && !t.projectId),
     [tasks]
   );
 

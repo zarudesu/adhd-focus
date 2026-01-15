@@ -75,9 +75,10 @@ export default function ProjectDetailPage() {
         open={showAddDialog}
         onOpenChange={setShowAddDialog}
         onSubmit={async (input) => {
-          await create({ ...input, projectId });
+          await create(input);
         }}
         defaultStatus="inbox"
+        defaultProjectId={projectId}
       />
 
       {/* Edit Task Dialog */}

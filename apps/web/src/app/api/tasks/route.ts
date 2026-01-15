@@ -5,13 +5,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db, tasks, type NewTask } from "@/db";
-import { eq, and, inArray, lte, desc } from "drizzle-orm";
+import { eq, and, inArray, lte, desc, isNull } from "drizzle-orm";
 import { z } from "zod";
 
 // Query params schema
 const querySchema = z.object({
   status: z.string().optional(),
-  projectId: z.string().uuid().optional(),
+  projectId: z.string().optional(), // UUID or "null" for tasks without project
   scheduledDate: z.string().optional(),
   dueDateBefore: z.string().optional(),
   energyRequired: z.enum(["low", "medium", "high"]).optional(),
@@ -56,7 +56,12 @@ export async function GET(request: NextRequest) {
     }
 
     if (params.projectId) {
-      conditions.push(eq(tasks.projectId, params.projectId));
+      if (params.projectId === "null") {
+        // Filter for tasks without a project (inbox tasks)
+        conditions.push(isNull(tasks.projectId));
+      } else {
+        conditions.push(eq(tasks.projectId, params.projectId));
+      }
     }
 
     if (params.scheduledDate) {
