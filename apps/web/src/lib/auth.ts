@@ -1,70 +1,59 @@
 // ADHD Focus - NextAuth Configuration
-// Authentication with Drizzle adapter
+// Full config with bcrypt (Node.js only, not Edge)
 
 import NextAuth from "next-auth";
-import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { compare } from "bcryptjs";
+import bcrypt from "bcryptjs";
+import { authConfig } from "./auth.config";
 
-// Validation schema for credentials
+// Validation schema
 const credentialsSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
 });
 
+// Helper to get user by email
+async function getUser(email: string) {
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
+  return user;
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  trustHost: true, // Required for reverse proxy (Caddy)
-  // NOTE: Credentials provider doesn't work with database adapter
-  // adapter: DrizzleAdapter(db),
-
-  session: {
-    strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
-  },
-
-  pages: {
-    signIn: "/login",
-    error: "/login",
-  },
-
+  ...authConfig,
   providers: [
     // Email/Password credentials
     Credentials({
-      name: "credentials",
-      credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
-      },
       async authorize(credentials) {
         const parsed = credentialsSchema.safeParse(credentials);
         if (!parsed.success) {
+          console.log("[Auth] Invalid credentials format");
           return null;
         }
 
         const { email, password } = parsed.data;
-
-        // Find user by email
-        const [user] = await db
-          .select()
-          .from(users)
-          .where(eq(users.email, email))
-          .limit(1);
+        const user = await getUser(email);
 
         if (!user || !user.passwordHash) {
+          console.log("[Auth] User not found or no password");
           return null;
         }
 
-        // Verify password
-        const isValid = await compare(password, user.passwordHash);
-        if (!isValid) {
+        const passwordsMatch = await bcrypt.compare(password, user.passwordHash);
+        if (!passwordsMatch) {
+          console.log("[Auth] Password mismatch");
           return null;
         }
 
+        console.log("[Auth] Login successful for:", email);
         return {
           id: user.id,
           email: user.email,
@@ -84,33 +73,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         ]
       : []),
   ],
-
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-      }
-      return token;
-    },
-
-    async session({ session, token }) {
-      if (session.user && token.id) {
-        session.user.id = token.id as string;
-      }
-      return session;
-    },
-
-    async redirect({ url, baseUrl }) {
-      // Redirect to dashboard after sign in
-      if (url.startsWith(baseUrl)) {
-        return url;
-      }
-      return baseUrl + "/dashboard";
-    },
-  },
 });
 
-// Type augmentation for session
+// Type augmentation
 declare module "next-auth" {
   interface Session {
     user: {

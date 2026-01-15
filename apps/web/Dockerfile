@@ -1,6 +1,11 @@
 # ADHD Focus - Web App Dockerfile
 # Next.js 16 + Drizzle ORM + NextAuth.js
 
+# Stage to install bcryptjs (needed for auth, not traced by Next.js)
+FROM node:20-slim AS deps
+WORKDIR /deps
+RUN npm init -y && npm install bcryptjs@2.4.3
+
 # Build stage
 FROM node:20-slim AS builder
 
@@ -49,8 +54,8 @@ COPY --from=builder /app/apps/web/.next/standalone ./
 COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
 COPY --from=builder /app/apps/web/public ./apps/web/public
 
-# Install bcryptjs for password hashing (not traced by Next.js standalone)
-RUN npm install --prefix /app/node_modules bcryptjs@2.4.3
+# Copy bcryptjs from deps stage (not traced by Next.js standalone)
+COPY --from=deps /deps/node_modules/bcryptjs /app/node_modules/bcryptjs
 
 USER nextjs
 
