@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -38,6 +39,7 @@ const COLOR_OPTIONS = [
 const EMOJI_OPTIONS = ["📁", "🎯", "💼", "🏠", "💡", "🎨", "📚", "🚀", "⭐"];
 
 export default function ProjectsPage() {
+  const router = useRouter();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [newName, setNewName] = useState('');
   const [newColor, setNewColor] = useState(COLOR_OPTIONS[0]);
@@ -165,7 +167,11 @@ export default function ProjectsPage() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {projects.map((project) => (
-              <Card key={project.id} className="group relative hover:shadow-md transition-shadow">
+              <Card
+                key={project.id}
+                className="group relative hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => router.push(`/dashboard/projects/${project.id}`)}
+              >
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
@@ -189,13 +195,17 @@ export default function ProjectsPage() {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => e.stopPropagation()}
                         >
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
-                          onClick={() => archive(project.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            archive(project.id);
+                          }}
                           className="text-destructive focus:text-destructive"
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
