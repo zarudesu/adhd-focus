@@ -36,7 +36,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Zap, Battery, BatteryLow, ChevronDown, ChevronUp, FolderOpen, Sun } from 'lucide-react';
+import { Loader2, Zap, Battery, BatteryLow, ChevronDown, ChevronUp, FolderOpen, Sun, Check } from 'lucide-react';
 
 const ENERGY_OPTIONS: { value: EnergyLevel; label: string; icon: React.ReactNode }[] = [
   { value: 'low', label: 'Low', icon: <BatteryLow className="h-4 w-4" /> },
@@ -82,6 +82,7 @@ export function AddTaskDialog({
   const [forToday, setForToday] = useState(false);
   const [showMore, setShowMore] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [addedCount, setAddedCount] = useState(0);
 
   // Populate form when editing
   useEffect(() => {
@@ -98,6 +99,7 @@ export function AddTaskDialog({
       // Reset to default when opening for new task
       setProjectId(defaultProjectId);
       setForToday(false);
+      setAddedCount(0);
     }
   }, [task, open, defaultProjectId]);
 
@@ -131,15 +133,32 @@ export function AddTaskDialog({
         // Set scheduledDate when forToday is enabled
         scheduledDate: forToday ? today : undefined,
       });
-      if (!isEditMode) resetForm();
-      onOpenChange(false);
+      if (isEditMode) {
+        // Edit mode: close dialog after saving
+        onOpenChange(false);
+      } else {
+        // Create mode: keep dialog open for quick adding
+        setTitle('');
+        setDescription('');
+        setAddedCount((c) => c + 1);
+        // Keep energy, priority, time, project settings for similar tasks
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Cmd+Enter always submits
     if (e.key === 'Enter' && e.metaKey) {
+      e.preventDefault();
+      handleSubmit(e);
+    }
+  };
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Enter on title field submits in create mode (quick add)
+    if (e.key === 'Enter' && !e.shiftKey && !isEditMode) {
       e.preventDefault();
       handleSubmit(e);
     }
@@ -166,6 +185,7 @@ export function AddTaskDialog({
               placeholder="What needs to be done?"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              onKeyDown={handleTitleKeyDown}
               className="text-base"
             />
           </div>
@@ -324,6 +344,13 @@ export function AddTaskDialog({
           )}
 
           <DialogFooter className="gap-2 sm:gap-0">
+            {/* Show added count badge in create mode */}
+            {!isEditMode && addedCount > 0 && (
+              <div className="flex items-center gap-1.5 text-sm text-muted-foreground mr-auto">
+                <Check className="h-4 w-4 text-green-500" />
+                <span>{addedCount} added</span>
+              </div>
+            )}
             <Button
               type="button"
               variant="ghost"
@@ -333,11 +360,11 @@ export function AddTaskDialog({
               }}
               disabled={loading}
             >
-              Cancel
+              {!isEditMode && addedCount > 0 ? 'Done' : 'Cancel'}
             </Button>
             <Button type="submit" disabled={!title.trim() || loading}>
               {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {isEditMode ? 'Save' : 'Add Task'}
+              {isEditMode ? 'Save' : 'Add'}
             </Button>
           </DialogFooter>
         </form>
