@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Calendar,
   ChartBar,
+  CheckCircle2,
   Folder,
   Inbox,
   Settings,
@@ -55,6 +56,11 @@ const mainNavItems = [
     title: "Projects",
     url: "/dashboard/projects",
     icon: Folder,
+  },
+  {
+    title: "Completed",
+    url: "/dashboard/completed",
+    icon: CheckCircle2,
   },
 ];
 
