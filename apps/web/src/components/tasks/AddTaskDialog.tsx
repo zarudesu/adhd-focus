@@ -35,7 +35,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Loader2, Zap, Battery, BatteryLow, ChevronDown, ChevronUp, FolderOpen } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Loader2, Zap, Battery, BatteryLow, ChevronDown, ChevronUp, FolderOpen, Sun } from 'lucide-react';
 
 const ENERGY_OPTIONS: { value: EnergyLevel; label: string; icon: React.ReactNode }[] = [
   { value: 'low', label: 'Low', icon: <BatteryLow className="h-4 w-4" /> },
@@ -78,6 +79,7 @@ export function AddTaskDialog({
   const [priority, setPriority] = useState<Priority>('should');
   const [estimatedMinutes, setEstimatedMinutes] = useState<number | undefined>();
   const [projectId, setProjectId] = useState<string | undefined>(defaultProjectId);
+  const [forToday, setForToday] = useState(false);
   const [showMore, setShowMore] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -90,10 +92,12 @@ export function AddTaskDialog({
       setPriority((task.priority as Priority) || 'should');
       setEstimatedMinutes(task.estimatedMinutes || undefined);
       setProjectId(task.projectId || undefined);
+      setForToday(task.status === 'today' || task.status === 'in_progress');
       setShowMore(!!task.description || !!task.projectId);
     } else if (open && !task) {
       // Reset to default when opening for new task
       setProjectId(defaultProjectId);
+      setForToday(false);
     }
   }, [task, open, defaultProjectId]);
 
@@ -104,6 +108,7 @@ export function AddTaskDialog({
     setPriority('should');
     setEstimatedMinutes(undefined);
     setProjectId(defaultProjectId);
+    setForToday(false);
     setShowMore(false);
   }, [defaultProjectId]);
 
@@ -113,6 +118,7 @@ export function AddTaskDialog({
 
     setLoading(true);
     try {
+      const today = new Date().toISOString().split('T')[0];
       await onSubmit({
         title: title.trim(),
         description: description.trim() || undefined,
@@ -120,10 +126,10 @@ export function AddTaskDialog({
         priority,
         estimatedMinutes,
         projectId,
-        // Only set scheduledDate when creating new task for today
-        scheduledDate: !isEditMode && defaultStatus === 'today'
-          ? new Date().toISOString().split('T')[0]
-          : undefined,
+        // Set status based on forToday toggle
+        status: forToday ? 'today' : 'inbox',
+        // Set scheduledDate when forToday is enabled
+        scheduledDate: forToday ? today : undefined,
       });
       if (!isEditMode) resetForm();
       onOpenChange(false);
@@ -161,6 +167,21 @@ export function AddTaskDialog({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="text-base"
+            />
+          </div>
+
+          {/* For Today toggle */}
+          <div className="flex items-center justify-between rounded-lg border p-3">
+            <div className="flex items-center gap-2">
+              <Sun className="h-4 w-4 text-amber-500" />
+              <Label htmlFor="for-today" className="text-sm font-medium cursor-pointer">
+                For Today
+              </Label>
+            </div>
+            <Switch
+              id="for-today"
+              checked={forToday}
+              onCheckedChange={setForToday}
             />
           </div>
 
