@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import type { Task } from '@/db/schema';
 import { TaskCard, TaskCardProps } from './TaskCard';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -10,6 +11,7 @@ export interface TaskListProps {
   loading?: boolean;
   emptyMessage?: string;
   emptyDescription?: string;
+  emptyAction?: ReactNode;
   onComplete?: (id: string) => void;
   onUncomplete?: (id: string) => void;
   onDelete?: (id: string) => void;
@@ -25,6 +27,7 @@ export function TaskList({
   loading = false,
   emptyMessage = 'No tasks',
   emptyDescription = 'Tasks you add will appear here',
+  emptyAction,
   onComplete,
   onUncomplete,
   onDelete,
@@ -66,6 +69,7 @@ export function TaskList({
         </div>
         <p className="text-sm font-medium text-muted-foreground">{emptyMessage}</p>
         <p className="text-xs text-muted-foreground mt-1">{emptyDescription}</p>
+        {emptyAction}
       </div>
     );
   }

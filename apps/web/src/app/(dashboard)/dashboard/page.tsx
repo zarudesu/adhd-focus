@@ -1,17 +1,17 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { TaskList, AddTaskDialog } from "@/components/tasks";
 import { useTasks } from "@/hooks/useTasks";
 import type { Task } from "@/db/schema";
-import { Plus } from "lucide-react";
+import { Inbox } from "lucide-react";
 
 const MAX_DAILY_TASKS = 3;
 
 export default function TodayPage() {
-  const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const {
     todayTasks,
@@ -21,7 +21,6 @@ export default function TodayPage() {
     uncomplete,
     deleteTask,
     moveToInbox,
-    create,
     update,
   } = useTasks();
 
@@ -33,26 +32,6 @@ export default function TodayPage() {
       <PageHeader
         title="Today"
         description={`Focus on what matters most (${activeCount}/${MAX_DAILY_TASKS} tasks)`}
-        actions={
-          <Button
-            size="sm"
-            disabled={activeCount >= MAX_DAILY_TASKS}
-            onClick={() => setShowAddDialog(true)}
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            Add Task
-          </Button>
-        }
-      />
-
-      {/* Add Task Dialog */}
-      <AddTaskDialog
-        open={showAddDialog}
-        onOpenChange={setShowAddDialog}
-        onSubmit={async (input) => {
-          await create({ ...input, scheduledDate: new Date().toISOString().split('T')[0] });
-        }}
-        defaultStatus="today"
       />
 
       {/* Edit Task Dialog */}
@@ -79,7 +58,15 @@ export default function TodayPage() {
           tasks={todayTasks.filter(t => t.status !== 'done')}
           loading={loading}
           emptyMessage="No tasks for today"
-          emptyDescription="Add tasks from Inbox or create new ones"
+          emptyDescription="Move tasks from Inbox or Scheduled"
+          emptyAction={
+            <Button asChild variant="outline" size="sm" className="mt-3">
+              <Link href="/dashboard/inbox">
+                <Inbox className="h-4 w-4 mr-2" />
+                Go to Inbox
+              </Link>
+            </Button>
+          }
           onComplete={complete}
           onUncomplete={uncomplete}
           onDelete={deleteTask}
