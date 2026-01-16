@@ -1,7 +1,7 @@
 # CLAUDE.md - AI Assistant Instructions
 
 > **READ THIS FILE FIRST** in every new session or after context compaction.
-> Last updated: 2026-01-15
+> Last updated: 2026-01-16
 
 ## CRITICAL: When Fixing Bugs
 
@@ -100,10 +100,12 @@ cd apps/web && npm run dev
 
 | Page | Status | Features |
 |------|--------|----------|
-| Today | **DONE** | Tasks list, complete/uncomplete, add task, move to inbox |
-| Inbox | **DONE** | Tasks list, Process All (swipe UI), Quick Add, move to today |
-| Scheduled | **DONE** | Tasks grouped by date, smart dates (Today/Tomorrow/etc) |
-| Projects | **DONE** | Project cards, create with emoji/color, task count, progress bar |
+| Today | **DONE** | Tasks list, complete/uncomplete, add task, edit on click, completed section |
+| Inbox | **DONE** | Tasks WITHOUT project, Process All, Quick Add, move to today |
+| Scheduled | **DONE** | Tasks grouped by date, smart dates (Today/Tomorrow/etc), edit on click |
+| Projects | **DONE** | Clickable project cards, create with emoji/color, task count, progress bar |
+| Project Detail | **DONE** | Task list for project, add/edit tasks, completed section |
+| Completed | **DONE** | All finished tasks grouped by date, uncomplete to return |
 | Settings | **DONE** | Profile, preferences (pomodoro, WIP limit, theme, notifications), logout |
 | Focus Mode | TODO | Pomodoro timer |
 | Statistics | TODO | Streak tracking |
@@ -285,21 +287,22 @@ fix(auth): fix bug
 docs: update CLAUDE.md
 ```
 
-## Recent Changes (2026-01-15)
+## Recent Changes (2026-01-16)
 
 ### New Features
-- **Task Editing**: Click on task to open edit dialog with pre-filled values
-- **Responsive AddTaskDialog**: Form stacks vertically on mobile (320px+)
+- **Completed Page**: New `/dashboard/completed` showing all finished tasks grouped by completion date
+- **Project Selector**: AddTaskDialog has project dropdown in "More options"
+- **Clickable Projects**: Project cards navigate to project detail page
+- **Project Detail Page**: Full task list with add/edit, completed section
+- **Task Editing Everywhere**: Click any task to edit (Today, Inbox, Scheduled, Projects)
 
-### Code Review Improvements
+### Architecture Changes
+- **Inbox Filter**: Shows only tasks WITHOUT a project (`projectId=null`)
+- **API Filter**: `/api/tasks?projectId=null` returns tasks without project
+- **Today Completed Fix**: Shows tasks completed today (checks `completedAt` date)
+
+### Previous (2026-01-15)
+- **Responsive AddTaskDialog**: Form stacks vertically on mobile (320px+)
 - **Security**: Rate limiting on `/api/auth/register` (5 req/15 min)
 - **Performance**: `useMemo` for filtered task lists in `useTasks.ts`
-- **Performance**: Fixed N+1 query in `/api/projects/route.ts` (aggregation)
-- **Code Quality**: Fixed useEffect anti-pattern in settings page
-- **Code Quality**: Removed self-HTTP-call in auth actions
-- **Accessibility**: Added `htmlFor`/`aria-label` to form inputs
-- **Dependencies**: Fixed Zod version (^3.23.8)
-
-### UI Fixes
-- **Button Styles**: Unified selection styles in AddTaskDialog (`variant="default"`)
-- **Mobile Overflow**: Fixed buttons overflowing on narrow screens
+- **Button Styles**: Unified selection styles in AddTaskDialog

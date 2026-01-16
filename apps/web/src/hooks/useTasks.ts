@@ -224,7 +224,10 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
         (t) =>
           t.status === 'today' ||
           t.status === 'in_progress' ||
-          (t.status === 'done' && t.scheduledDate === today)
+          (t.status === 'done' && (
+            t.scheduledDate === today ||
+            (t.completedAt !== null && new Date(t.completedAt).toISOString().startsWith(today))
+          ))
       ),
     [tasks, today]
   );
