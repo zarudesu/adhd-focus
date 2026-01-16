@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { TaskList, AddTaskDialog } from "@/components/tasks";
-import { InboxProcessor } from "@/components/inbox";
 import { useTasks } from "@/hooks/useTasks";
 import type { Task } from "@/db/schema";
 import { Plus, Sparkles, AlertTriangle } from "lucide-react";
@@ -13,8 +13,8 @@ import { Plus, Sparkles, AlertTriangle } from "lucide-react";
 const MAX_INBOX_BEFORE_WARNING = 10;
 
 export default function InboxPage() {
+  const router = useRouter();
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [showProcessor, setShowProcessor] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const {
     inboxTasks,
@@ -24,8 +24,6 @@ export default function InboxPage() {
     uncomplete,
     deleteTask,
     moveToToday,
-    moveToSomeday,
-    scheduleTask,
     update,
     create,
   } = useTasks();
@@ -33,19 +31,9 @@ export default function InboxPage() {
   const showWarning = inboxTasks.length >= MAX_INBOX_BEFORE_WARNING;
   const estimatedMinutes = Math.ceil(inboxTasks.length * 0.5); // ~30 sec per task
 
-  if (showProcessor && inboxTasks.length > 0) {
-    return (
-      <InboxProcessor
-        tasks={inboxTasks}
-        onMoveToToday={async (id) => { await moveToToday(id); }}
-        onMoveToSomeday={async (id) => { await moveToSomeday(id); }}
-        onSchedule={async (id, date) => { await scheduleTask(id, date); }}
-        onDelete={async (id) => { await deleteTask(id); }}
-        onUpdate={async (id, input) => { await update(id, input); }}
-        onClose={() => setShowProcessor(false)}
-      />
-    );
-  }
+  const handleStartProcessing = () => {
+    router.push('/dashboard/inbox/process');
+  };
 
   return (
     <>
@@ -106,7 +94,7 @@ export default function InboxPage() {
                 </div>
                 <Button
                   size="lg"
-                  onClick={() => setShowProcessor(true)}
+                  onClick={handleStartProcessing}
                   className="w-full sm:w-auto"
                 >
                   <Sparkles className="h-4 w-4 mr-2" />
