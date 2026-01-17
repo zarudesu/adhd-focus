@@ -4,13 +4,14 @@
  * Gamification Provider
  * Provides context for gamification events (level up, achievements, creatures)
  * Phase 2: Now includes visual reward animations
+ * Also manages gamification state centrally for sidebar updates
  */
 
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import { LevelUpModal } from './LevelUpModal';
 import { RewardAnimation } from './RewardAnimation';
+import { useGamification, type RewardRarity } from '@/hooks/useGamification';
 import type { Achievement, Creature } from '@/db/schema';
-import type { RewardRarity } from '@/hooks/useGamification';
 
 interface GamificationEvent {
   levelUp?: {
@@ -26,9 +27,24 @@ interface GamificationEvent {
   creature?: Creature | null;
 }
 
+// Shared gamification state for sidebar
+interface GamificationState {
+  xp: number;
+  level: number;
+  currentStreak: number;
+  longestStreak: number;
+  totalTasksCompleted: number;
+  totalCreatures: number;
+}
+
 interface GamificationContextType {
   showLevelUp: (newLevel: number, unlockedFeatures?: string[]) => void;
   handleTaskComplete: (event: GamificationEvent) => void;
+  // Shared state
+  state: GamificationState | null;
+  loading: boolean;
+  levelProgress: { currentLevel: number; xpInLevel: number; xpNeeded: number; progress: number };
+  refresh: () => Promise<void>;
 }
 
 const GamificationContext = createContext<GamificationContextType | null>(null);
@@ -46,6 +62,9 @@ interface GamificationProviderProps {
 }
 
 export function GamificationProvider({ children }: GamificationProviderProps) {
+  // Centralized gamification state
+  const { state, loading, levelProgress, refresh } = useGamification();
+
   const [levelUpModal, setLevelUpModal] = useState<{
     open: boolean;
     newLevel: number;
@@ -84,12 +103,15 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
   const handleRewardComplete = useCallback(() => {
     setRewardAnimation((prev) => ({ ...prev, visible: false }));
 
+    // Refresh stats after animation completes
+    refresh();
+
     // Show pending level up after reward animation
     if (pendingLevelUp) {
       showLevelUp(pendingLevelUp.newLevel, pendingLevelUp.unlockedFeatures);
       setPendingLevelUp(null);
     }
-  }, [pendingLevelUp, showLevelUp]);
+  }, [pendingLevelUp, showLevelUp, refresh]);
 
   const handleTaskComplete = useCallback((event: GamificationEvent) => {
     // Phase 2: Show visual reward first
@@ -110,14 +132,15 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
     } else if (event.levelUp) {
       // No reward, show level up immediately
       showLevelUp(event.levelUp.newLevel, event.levelUp.unlockedFeatures);
+      refresh();
     }
 
     // TODO: Handle new achievements toast (Phase 3)
     // TODO: Handle creature caught animation (Phase 4)
-  }, [showLevelUp]);
+  }, [showLevelUp, refresh]);
 
   return (
-    <GamificationContext.Provider value={{ showLevelUp, handleTaskComplete }}>
+    <GamificationContext.Provider value={{ showLevelUp, handleTaskComplete, state, loading, levelProgress, refresh }}>
       {children}
 
       {/* Phase 2: Reward Animation */}

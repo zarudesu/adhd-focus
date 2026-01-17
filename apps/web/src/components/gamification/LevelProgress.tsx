@@ -3,9 +3,10 @@
 /**
  * Level Progress Component
  * Shows current level and XP progress bar
+ * Uses shared state from GamificationProvider
  */
 
-import { useGamification } from '@/hooks/useGamification';
+import { useGamificationEvents } from './GamificationProvider';
 import { Progress } from '@/components/ui/progress';
 import { Sparkles } from 'lucide-react';
 
@@ -14,7 +15,7 @@ interface LevelProgressProps {
 }
 
 export function LevelProgress({ compact = false }: LevelProgressProps) {
-  const { state, levelProgress, loading } = useGamification();
+  const { state, levelProgress, loading } = useGamificationEvents();
 
   if (loading) {
     return (
