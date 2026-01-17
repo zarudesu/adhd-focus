@@ -45,8 +45,8 @@ import { cn } from '@/lib/utils';
 type SortMode = 'random' | 'priority' | 'project' | 'energy';
 
 const QUICK_TASK_THRESHOLD = 5; // minutes
-const WARNING_TIME = 5; // 5 seconds for testing (was 5 * 60)
-const OVERTIME_TIME = 8; // 8 seconds for testing (was 8 * 60)
+const WARNING_TIME = 5 * 60; // 5 minutes in seconds
+const OVERTIME_TIME = 8 * 60; // 8 minutes in seconds
 
 export default function QuickActionsPage() {
   const router = useRouter();
