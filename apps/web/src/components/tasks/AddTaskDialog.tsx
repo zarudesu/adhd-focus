@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { Task } from '@/db/schema';
 import { useProjects } from '@/hooks/useProjects';
+import { format } from 'date-fns';
 
 type EnergyLevel = 'low' | 'medium' | 'high';
 type Priority = 'must' | 'should' | 'want' | 'someday';
@@ -31,12 +32,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Zap, Battery, BatteryLow, ChevronDown, ChevronUp, FolderOpen, Sun, Check } from 'lucide-react';
+import { Loader2, Zap, Battery, BatteryLow, ChevronDown, ChevronUp, FolderOpen, Sun, Check, CalendarIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const ENERGY_OPTIONS: { value: EnergyLevel; label: string; icon: React.ReactNode }[] = [
   { value: 'low', label: 'Low', icon: <BatteryLow className="h-4 w-4" /> },
@@ -61,6 +69,8 @@ export interface AddTaskDialogProps {
   defaultProjectId?: string;
   /** Task to edit - if provided, dialog works in edit mode */
   task?: Task | null;
+  /** Show date picker for scheduling instead of "For Today" toggle */
+  forScheduled?: boolean;
 }
 
 export function AddTaskDialog({
@@ -70,6 +80,7 @@ export function AddTaskDialog({
   defaultStatus = 'inbox',
   defaultProjectId,
   task,
+  forScheduled = false,
 }: AddTaskDialogProps) {
   const isEditMode = !!task;
   const { projects } = useProjects();
@@ -80,6 +91,7 @@ export function AddTaskDialog({
   const [estimatedMinutes, setEstimatedMinutes] = useState<number | undefined>();
   const [projectId, setProjectId] = useState<string | undefined>(defaultProjectId);
   const [forToday, setForToday] = useState(false);
+  const [scheduledDate, setScheduledDate] = useState<Date | undefined>();
   const [showMore, setShowMore] = useState(false);
   const [loading, setLoading] = useState(false);
   const [addedCount, setAddedCount] = useState(0);
@@ -94,14 +106,23 @@ export function AddTaskDialog({
       setEstimatedMinutes(task.estimatedMinutes || undefined);
       setProjectId(task.projectId || undefined);
       setForToday(task.status === 'today' || task.status === 'in_progress');
+      setScheduledDate(task.scheduledDate ? new Date(task.scheduledDate + 'T00:00:00') : undefined);
       setShowMore(!!task.description || !!task.projectId);
     } else if (open && !task) {
       // Reset to default when opening for new task
       setProjectId(defaultProjectId);
       setForToday(false);
+      // Default to tomorrow for scheduled tasks
+      if (forScheduled) {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        setScheduledDate(tomorrow);
+      } else {
+        setScheduledDate(undefined);
+      }
       setAddedCount(0);
     }
-  }, [task, open, defaultProjectId]);
+  }, [task, open, defaultProjectId, forScheduled]);
 
   const resetForm = useCallback(() => {
     setTitle('');
@@ -111,8 +132,12 @@ export function AddTaskDialog({
     setEstimatedMinutes(undefined);
     setProjectId(defaultProjectId);
     setForToday(false);
+    // Keep the scheduled date for quick adding multiple scheduled tasks
+    if (!forScheduled) {
+      setScheduledDate(undefined);
+    }
     setShowMore(false);
-  }, [defaultProjectId]);
+  }, [defaultProjectId, forScheduled]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,6 +146,19 @@ export function AddTaskDialog({
     setLoading(true);
     try {
       const today = new Date().toISOString().split('T')[0];
+
+      // Determine status and scheduled date
+      let status: 'inbox' | 'today' | 'scheduled' = 'inbox';
+      let schedDate: string | undefined;
+
+      if (forScheduled && scheduledDate) {
+        status = 'scheduled';
+        schedDate = format(scheduledDate, 'yyyy-MM-dd');
+      } else if (forToday) {
+        status = 'today';
+        schedDate = today;
+      }
+
       await onSubmit({
         title: title.trim(),
         description: description.trim() || undefined,
@@ -128,10 +166,8 @@ export function AddTaskDialog({
         priority,
         estimatedMinutes,
         projectId,
-        // Set status based on forToday toggle
-        status: forToday ? 'today' : 'inbox',
-        // Set scheduledDate when forToday is enabled
-        scheduledDate: forToday ? today : undefined,
+        status,
+        scheduledDate: schedDate,
       });
       if (isEditMode) {
         // Edit mode: close dialog after saving
@@ -171,9 +207,11 @@ export function AddTaskDialog({
           <DialogTitle>
             {isEditMode
               ? 'Edit Task'
-              : defaultStatus === 'today'
-                ? 'Add Task for Today'
-                : 'Quick Capture'}
+              : forScheduled
+                ? 'Schedule Task'
+                : defaultStatus === 'today'
+                  ? 'Add Task for Today'
+                  : 'Quick Capture'}
           </DialogTitle>
         </DialogHeader>
 
@@ -190,20 +228,49 @@ export function AddTaskDialog({
             />
           </div>
 
-          {/* For Today toggle */}
-          <div className="flex items-center justify-between rounded-lg border p-3">
-            <div className="flex items-center gap-2">
-              <Sun className="h-4 w-4 text-amber-500" />
-              <Label htmlFor="for-today" className="text-sm font-medium cursor-pointer">
-                For Today
-              </Label>
+          {/* For Today toggle OR Date picker for scheduled */}
+          {forScheduled ? (
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Schedule for</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      'w-full justify-start text-left font-normal',
+                      !scheduledDate && 'text-muted-foreground'
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {scheduledDate ? format(scheduledDate, 'PPP') : 'Pick a date'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={scheduledDate}
+                    onSelect={setScheduledDate}
+                    disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
-            <Switch
-              id="for-today"
-              checked={forToday}
-              onCheckedChange={setForToday}
-            />
-          </div>
+          ) : (
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div className="flex items-center gap-2">
+                <Sun className="h-4 w-4 text-amber-500" />
+                <Label htmlFor="for-today" className="text-sm font-medium cursor-pointer">
+                  For Today
+                </Label>
+              </div>
+              <Switch
+                id="for-today"
+                checked={forToday}
+                onCheckedChange={setForToday}
+              />
+            </div>
+          )}
 
           {/* Quick options row */}
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">

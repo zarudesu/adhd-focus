@@ -93,9 +93,9 @@ export default function ScheduledPage() {
         open={showAddDialog}
         onOpenChange={setShowAddDialog}
         onSubmit={async (input) => {
-          await create({ ...input, status: 'scheduled' });
+          await create(input);
         }}
-        defaultStatus="inbox"
+        forScheduled
       />
 
       {/* Edit Task Dialog */}
