@@ -162,8 +162,8 @@ cd apps/web && npm run dev
 - [ ] Self-HTTP-call in registration action
 
 **Accessibility:**
-- [ ] Labels not associated with inputs in InboxProcessor
-- [ ] Color picker buttons missing aria-labels
+- [x] ~~Labels not associated with inputs in InboxProcessor~~ - FIXED (changed to <p> for button groups)
+- [x] ~~Color picker buttons missing aria-labels~~ - ALREADY FIXED (has aria-label)
 
 **Dependencies:**
 - [ ] NextAuth beta in production

@@ -260,10 +260,10 @@ export function InboxProcessor({
 
                 {/* Time estimate */}
                 <div className="space-y-2">
-                  <label htmlFor="time-estimate-quick" className="text-sm text-muted-foreground flex items-center gap-2">
+                  <p className="text-sm text-muted-foreground flex items-center gap-2">
                     <Clock className="h-4 w-4" />
                     Quick or Long?
-                  </label>
+                  </p>
                   <div className="grid grid-cols-2 gap-2">
                     <Button
                       variant={timeEstimate === 'quick' ? 'default' : 'outline'}
@@ -286,10 +286,10 @@ export function InboxProcessor({
 
                 {/* Energy level */}
                 <div className="space-y-2">
-                  <label htmlFor="energy-low" className="text-sm text-muted-foreground flex items-center gap-2">
+                  <p className="text-sm text-muted-foreground flex items-center gap-2">
                     <BatteryMedium className="h-4 w-4" />
                     Energy needed?
-                  </label>
+                  </p>
                   <div className="grid grid-cols-3 gap-2">
                     <Button
                       variant={energy === 'low' ? 'default' : 'outline'}
