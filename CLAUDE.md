@@ -107,8 +107,8 @@ cd apps/web && npm run dev
 | Project Detail | **DONE** | Task list for project, add/edit tasks, completed section |
 | Completed | **DONE** | All finished tasks grouped by date, uncomplete to return |
 | Settings | **DONE** | Profile, preferences (pomodoro, WIP limit, theme, notifications), logout |
-| Focus Mode | TODO | Pomodoro timer |
-| Statistics | TODO | Streak tracking |
+| Focus Mode | **DONE** | Pomodoro timer, work/break modes, task selection, session tracking, stats |
+| Statistics | TODO | Streak tracking, charts |
 
 ### Backend - API Routes
 
@@ -125,16 +125,16 @@ cd apps/web && npm run dev
 | POST /api/gamification/achievements/check | **DONE** |
 | POST /api/gamification/creatures/spawn | **DONE** |
 | POST /api/gamification/rewards/log | **DONE** |
-| Focus sessions | TODO |
+| GET/POST /api/focus/sessions | **DONE** |
+| PATCH /api/focus/sessions/[id] | **DONE** |
 
 ### Key Files Changed Recently
-- `src/db/schema.ts` - Added gamification tables and enums
-- `src/hooks/useFeatures.ts` - Feature unlock checking hook
-- `src/hooks/useGamification.ts` - XP/level/rewards hook
-- `src/components/gamification/FeatureGate.tsx` - UI gating component
+- `src/hooks/useFocusTimer.ts` - Pomodoro timer hook with work/break modes
+- `src/app/api/focus/sessions/route.ts` - Focus sessions API (GET/POST)
+- `src/app/api/focus/sessions/[id]/route.ts` - Session update API (PATCH)
+- `src/app/(dashboard)/dashboard/focus/page.tsx` - Focus Mode UI with timer
+- `src/components/gamification/GamificationProvider.tsx` - XP/rewards context
 - `src/app/api/gamification/*` - 5 gamification API endpoints
-- `src/db/seed-gamification.ts` - Seed script for features/achievements/creatures
-- `docs/GAMIFICATION.md` - Full gamification documentation
 
 ### Known Issues (Code Review 2026-01-15)
 
@@ -176,20 +176,33 @@ cd apps/web && npm run dev
 apps/web/src/
 ├── app/
 │   ├── (dashboard)/dashboard/    # Protected pages
-│   │   ├── page.tsx              # Today (connected)
-│   │   ├── inbox/page.tsx        # Inbox (connected)
-│   │   ├── scheduled/page.tsx    # Scheduled (connected)
-│   │   ├── projects/page.tsx     # Projects (TODO)
-│   │   ├── focus/page.tsx        # Focus Mode (TODO)
+│   │   ├── page.tsx              # Today
+│   │   ├── inbox/page.tsx        # Inbox + Process Mode
+│   │   ├── scheduled/page.tsx    # Scheduled
+│   │   ├── projects/page.tsx     # Projects list
+│   │   ├── projects/[id]/page.tsx # Project detail
+│   │   ├── completed/page.tsx    # Completed tasks
+│   │   ├── focus/page.tsx        # Focus Mode (Pomodoro)
+│   │   ├── settings/page.tsx     # Settings
 │   │   └── stats/page.tsx        # Statistics (TODO)
-│   ├── api/tasks/                # Tasks API
+│   ├── api/
+│   │   ├── tasks/                # Tasks API
+│   │   ├── projects/             # Projects API
+│   │   ├── profile/              # Profile API
+│   │   ├── focus/sessions/       # Focus sessions API
+│   │   └── gamification/         # Gamification APIs
 │   └── (public)/                 # Public pages
 ├── components/
 │   ├── tasks/                    # TaskCard, TaskList, AddTaskDialog
 │   ├── inbox/                    # InboxProcessor
+│   ├── gamification/             # FeatureGate, GamificationProvider
 │   └── ui/                       # shadcn components
 ├── hooks/
-│   └── useTasks.ts               # Main tasks hook
+│   ├── useTasks.ts               # Tasks CRUD + filters
+│   ├── useProfile.ts             # User preferences
+│   ├── useFocusTimer.ts          # Pomodoro timer
+│   ├── useFeatures.ts            # Feature unlocks
+│   └── useGamification.ts        # XP/levels/rewards
 ├── db/
 │   ├── index.ts                  # Drizzle client
 │   └── schema.ts                 # Database schema
@@ -378,6 +391,15 @@ docs: update CLAUDE.md
 
 ## Recent Changes (2026-01-17)
 
+### Focus Mode - Pomodoro Timer Complete
+- **useFocusTimer hook**: Full timer with work/short break/long break modes
+- **Circular timer UI**: SVG progress ring, animated countdown
+- **Task selection**: Pick from today's tasks to focus on
+- **Session tracking**: API saves sessions, updates user/task stats
+- **Today's Progress**: Shows pomodoros, minutes, all-time stats
+- **Notifications**: Sound + browser notifications on timer complete
+- **User preferences**: Timer durations from Settings
+
 ### Gamification System - Phase 0 Complete
 - **Progressive Feature Unlocking**: Core concept - app starts with only Inbox, features unlock via levels
 - **DB Schema**: New tables for features, achievements, creatures, rewards
@@ -386,7 +408,6 @@ docs: update CLAUDE.md
 - **FeatureGate component**: Gate UI behind feature unlocks
 - **API endpoints**: 5 new gamification endpoints
 - **Seed data**: 15 features, 30 achievements, 16 creatures
-- **Documentation**: Full docs in `apps/web/docs/GAMIFICATION.md`
 
 ### Previous (2026-01-16)
 - **Completed Page**: `/dashboard/completed` with tasks grouped by date
