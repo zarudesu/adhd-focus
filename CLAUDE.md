@@ -101,13 +101,17 @@ cd apps/web && npm run dev
 | Page | Status | Features |
 |------|--------|----------|
 | Today | **DONE** | Tasks list, complete/uncomplete, add task, edit on click, completed section |
-| Inbox | **DONE** | Tasks WITHOUT project, Process All, Quick Add, move to today |
+| Inbox | **DONE** | Tasks WITHOUT project, Quick Add, move to today |
+| Inbox Process | **DONE** | Process All mode - one task at a time decision flow |
+| Quick Actions | **DONE** | Timer-based quick capture with 2-min countdown |
 | Scheduled | **DONE** | Tasks grouped by date, smart dates (Today/Tomorrow/etc), edit on click |
 | Projects | **DONE** | Clickable project cards, create with emoji/color, task count, progress bar |
 | Project Detail | **DONE** | Task list for project, add/edit tasks, completed section |
 | Completed | **DONE** | All finished tasks grouped by date, uncomplete to return |
 | Settings | **DONE** | Profile, preferences (pomodoro, WIP limit, theme, notifications), logout |
 | Focus Mode | **DONE** | Pomodoro timer, work/break modes, task selection, session tracking, stats |
+| Achievements | **DONE** | List of achievements with progress, unlocked status |
+| Creatures | **DONE** | Collection of creatures, spawn mechanics |
 | Statistics | TODO | Streak tracking, charts |
 
 ### Backend - API Routes
@@ -120,13 +124,15 @@ cd apps/web && npm run dev
 | GET/POST /api/projects | **DONE** |
 | PATCH/DELETE /api/projects/[id] | **DONE** |
 | GET/PATCH /api/profile | **DONE** |
-| GET /api/gamification/stats | **DONE** |
-| POST /api/gamification/xp | **DONE** |
-| POST /api/gamification/achievements/check | **DONE** |
-| POST /api/gamification/creatures/spawn | **DONE** |
-| POST /api/gamification/rewards/log | **DONE** |
 | GET/POST /api/focus/sessions | **DONE** |
 | PATCH /api/focus/sessions/[id] | **DONE** |
+| GET /api/gamification/stats | **DONE** |
+| POST /api/gamification/xp | **DONE** |
+| GET /api/gamification/achievements | **DONE** |
+| POST /api/gamification/achievements/check | **DONE** |
+| GET /api/gamification/creatures | **DONE** |
+| POST /api/gamification/creatures/spawn | **DONE** |
+| POST /api/gamification/rewards/log | **DONE** |
 
 ### Key Files Changed Recently
 - `src/hooks/useFocusTimer.ts` - Pomodoro timer hook with work/break modes
@@ -139,11 +145,11 @@ cd apps/web && npm run dev
 ### Known Issues (Code Review 2026-01-15)
 
 **Security (High):**
-- [ ] No rate limiting on `/api/auth/register` - vulnerable to brute force
+- [x] ~~No rate limiting on `/api/auth/register`~~ - FIXED (5 req/15 min)
 - [ ] Email logging in auth.ts - PII in production logs
 
 **Performance (Medium):**
-- [ ] No `useMemo` in useTasks.ts - filters run every render
+- [x] ~~No `useMemo` in useTasks.ts~~ - FIXED
 - [ ] N+1 queries in projects listing
 
 **Code Quality (Medium):**
@@ -156,7 +162,6 @@ cd apps/web && npm run dev
 - [ ] Color picker buttons missing aria-labels
 
 **Dependencies:**
-- [ ] Zod version 4.x doesn't exist - check package.json
 - [ ] NextAuth beta in production
 
 ## Tech Stack
@@ -177,21 +182,30 @@ apps/web/src/
 ├── app/
 │   ├── (dashboard)/dashboard/    # Protected pages
 │   │   ├── page.tsx              # Today
-│   │   ├── inbox/page.tsx        # Inbox + Process Mode
+│   │   ├── inbox/
+│   │   │   ├── page.tsx          # Inbox
+│   │   │   └── process/page.tsx  # Process All mode
+│   │   ├── quick-actions/page.tsx # Quick Actions (2-min timer)
 │   │   ├── scheduled/page.tsx    # Scheduled
-│   │   ├── projects/page.tsx     # Projects list
-│   │   ├── projects/[id]/page.tsx # Project detail
+│   │   ├── projects/
+│   │   │   ├── page.tsx          # Projects list
+│   │   │   └── [id]/page.tsx     # Project detail
 │   │   ├── completed/page.tsx    # Completed tasks
 │   │   ├── focus/page.tsx        # Focus Mode (Pomodoro)
-│   │   ├── settings/page.tsx     # Settings
-│   │   └── stats/page.tsx        # Statistics (TODO)
+│   │   ├── achievements/page.tsx # Achievements list
+│   │   ├── creatures/page.tsx    # Creatures collection
+│   │   ├── stats/page.tsx        # Statistics (TODO)
+│   │   └── settings/
+│   │       ├── page.tsx          # Settings
+│   │       └── integrations/     # Integrations
 │   ├── api/
-│   │   ├── tasks/                # Tasks API
-│   │   ├── projects/             # Projects API
-│   │   ├── profile/              # Profile API
-│   │   ├── focus/sessions/       # Focus sessions API
-│   │   └── gamification/         # Gamification APIs
-│   └── (public)/                 # Public pages
+│   │   ├── auth/                 # NextAuth + register
+│   │   ├── tasks/                # Tasks CRUD
+│   │   ├── projects/             # Projects CRUD
+│   │   ├── profile/              # Profile GET/PATCH
+│   │   ├── focus/sessions/       # Focus sessions
+│   │   └── gamification/         # Stats, XP, achievements, creatures, rewards
+│   └── (public)/                 # Login, signup, etc.
 ├── components/
 │   ├── tasks/                    # TaskCard, TaskList, AddTaskDialog
 │   ├── inbox/                    # InboxProcessor
@@ -199,13 +213,15 @@ apps/web/src/
 │   └── ui/                       # shadcn components
 ├── hooks/
 │   ├── useTasks.ts               # Tasks CRUD + filters
+│   ├── useProjects.ts            # Projects CRUD
 │   ├── useProfile.ts             # User preferences
 │   ├── useFocusTimer.ts          # Pomodoro timer
 │   ├── useFeatures.ts            # Feature unlocks
-│   └── useGamification.ts        # XP/levels/rewards
+│   ├── useGamification.ts        # XP/levels/rewards
+│   └── useAuth.ts                # Auth state
 ├── db/
 │   ├── index.ts                  # Drizzle client
-│   └── schema.ts                 # Database schema
+│   └── schema.ts                 # Database schema (incl. gamification)
 └── lib/
     ├── auth.ts                   # NextAuth config
     └── utils.ts                  # Utilities
@@ -352,11 +368,11 @@ await checkAchievements();
 
 ### Roadmap
 - **Phase 0**: ✅ DB schema, hooks, components, API, seed
-- **Phase 1**: TODO - XP integration in useTasks, level bar
-- **Phase 2**: TODO - Visual rewards (NOT confetti!)
-- **Phase 3**: TODO - Achievements UI
-- **Phase 4**: TODO - Creatures collection
-- **Phase 5**: TODO - FeatureGate in all UI
+- **Phase 1**: ✅ XP integration in useTasks, level bar in sidebar
+- **Phase 2**: ✅ Visual rewards - GamificationProvider with effects
+- **Phase 3**: ✅ Achievements UI - /dashboard/achievements page
+- **Phase 4**: ✅ Creatures collection - /dashboard/creatures page
+- **Phase 5**: TODO - FeatureGate in all UI (progressive unlock)
 
 ## Troubleshooting
 
