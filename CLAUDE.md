@@ -136,6 +136,7 @@ cd apps/web && npm run dev
 | GET /api/stats | **DONE** |
 
 ### Key Files Changed Recently
+- `src/lib/logger.ts` - Safe logging utility (sanitizes PII in production)
 - `src/app/(dashboard)/dashboard/stats/page.tsx` - Statistics with focus stats, weekly charts
 - `src/app/api/stats/route.ts` - Historical daily stats API
 - `src/hooks/useFocusTimer.ts` - Pomodoro timer hook with work/break modes
@@ -149,7 +150,7 @@ cd apps/web && npm run dev
 
 **Security (High):**
 - [x] ~~No rate limiting on `/api/auth/register`~~ - FIXED (5 req/15 min)
-- [ ] Email logging in auth.ts - PII in production logs
+- [x] ~~Email logging in auth.ts~~ - FIXED (lib/logger.ts sanitizes PII in production)
 
 **Performance (Medium):**
 - [x] ~~No `useMemo` in useTasks.ts~~ - FIXED
