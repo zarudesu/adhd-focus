@@ -12,6 +12,7 @@ import {
   Sun,
   Timer,
   LogOut,
+  Trophy,
   Zap,
 } from "lucide-react";
 
@@ -77,6 +78,11 @@ const toolsNavItems = [
     title: "Focus Mode",
     url: "/dashboard/focus",
     icon: Timer,
+  },
+  {
+    title: "Achievements",
+    url: "/dashboard/achievements",
+    icon: Trophy,
   },
   {
     title: "Statistics",
