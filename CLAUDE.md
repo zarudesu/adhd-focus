@@ -154,7 +154,7 @@ cd apps/web && npm run dev
 
 **Performance (Medium):**
 - [x] ~~No `useMemo` in useTasks.ts~~ - FIXED
-- [ ] N+1 queries in projects listing
+- [x] ~~N+1 queries in projects listing~~ - ALREADY FIXED (uses JOIN + GROUP BY)
 
 **Code Quality (Medium):**
 - [ ] State set during render in settings/page.tsx - anti-pattern
