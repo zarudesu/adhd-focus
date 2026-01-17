@@ -8,46 +8,16 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Achievement, Creature, UserAchievement, UserCreature } from '@/db/schema';
 
-// XP Calculation constants
-const XP_CONFIG = {
-  taskComplete: 10,
-  quickTaskBonus: 5, // Extra for tasks < 5 min
-  priorityMultiplier: {
-    must: 1.5,
-    should: 1.0,
-    want: 0.8,
-    someday: 0.5,
-  },
-  energyBonus: {
-    low: 0,
-    medium: 2,
-    high: 5,
-  },
-  streakMultiplier: 0.1, // +10% per streak day (capped at 200%)
-  maxStreakMultiplier: 2.0,
-  deadlineBonus: 5, // Completed before due date
-};
+// Re-export from shared lib for backwards compatibility
+export {
+  XP_CONFIG,
+  xpForLevel,
+  levelFromXp,
+  rollReward,
+  type RewardRarity,
+} from '@/lib/gamification';
 
-// Level calculation formula: XP = floor(100 * (level ^ 1.5))
-export function xpForLevel(level: number): number {
-  if (level <= 1) return 0;
-  return Math.floor(100 * Math.pow(level, 1.5));
-}
-
-export function levelFromXp(xp: number): number {
-  // Binary search for level
-  let low = 1;
-  let high = 100;
-  while (low < high) {
-    const mid = Math.floor((low + high + 1) / 2);
-    if (xpForLevel(mid) <= xp) {
-      low = mid;
-    } else {
-      high = mid - 1;
-    }
-  }
-  return low;
-}
+import { XP_CONFIG, xpForLevel, levelFromXp, type RewardRarity } from '@/lib/gamification';
 
 export function xpToNextLevel(currentXp: number): {
   currentLevel: number;
@@ -108,33 +78,9 @@ export function calculateTaskXp(task: {
   return Math.floor(xp);
 }
 
-// Visual reward rarity roll
-export type RewardRarity = 'common' | 'uncommon' | 'rare' | 'legendary' | 'mythic';
-
-export function rollRewardRarity(): RewardRarity {
-  const roll = Math.random();
-  if (roll < 0.001) return 'mythic';     // 0.1%
-  if (roll < 0.03) return 'legendary';   // 2.9%
-  if (roll < 0.15) return 'rare';        // 12%
-  if (roll < 0.40) return 'uncommon';    // 25%
-  return 'common';                        // 60%
-}
-
-// Reward effects by rarity
-export const REWARD_EFFECTS = {
-  common: ['sparkle', 'wave', 'star', 'glow'],
-  uncommon: ['glitch', 'rainbow', 'music', 'fire', 'crystal'],
-  rare: ['portal', 'creature', 'fireworks', 'warp', 'stars'],
-  legendary: ['unicorn', 'volcano', 'invert', 'rocket', 'aurora'],
-  mythic: ['takeover', 'golden', 'eye'],
-};
-
-export function rollRewardEffect(): { rarity: RewardRarity; effect: string } {
-  const rarity = rollRewardRarity();
-  const effects = REWARD_EFFECTS[rarity];
-  const effect = effects[Math.floor(Math.random() * effects.length)];
-  return { rarity, effect };
-}
+// Re-export rollRewardEffect as rollReward for backwards compatibility
+import { rollReward } from '@/lib/gamification';
+export const rollRewardEffect = rollReward;
 
 // Gamification state interface
 interface GamificationState {
@@ -314,5 +260,3 @@ export function useGamification(): UseGamificationReturn {
   };
 }
 
-// Export XP config for use elsewhere
-export { XP_CONFIG };

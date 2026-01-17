@@ -3,7 +3,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/db';
 import { users, userFeatures, features, dailyStats } from '@/db/schema';
 import { eq, and, lte } from 'drizzle-orm';
-import { levelFromXp, xpForLevel } from '@/hooks/useGamification';
+import { levelFromXp } from '@/lib/gamification';
 
 export async function POST(request: Request) {
   try {
