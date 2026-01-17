@@ -10,6 +10,7 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import { LevelUpModal } from './LevelUpModal';
 import { RewardAnimation } from './RewardAnimation';
+import { AchievementToastStack } from './AchievementToast';
 import { useGamification, type RewardRarity } from '@/hooks/useGamification';
 import type { Achievement, Creature } from '@/db/schema';
 
@@ -92,6 +93,9 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
     unlockedFeatures: string[];
   } | null>(null);
 
+  // Phase 3: Achievement toast state
+  const [pendingAchievements, setPendingAchievements] = useState<Achievement[]>([]);
+
   const showLevelUp = useCallback((newLevel: number, unlockedFeatures: string[] = []) => {
     setLevelUpModal({
       open: true,
@@ -135,9 +139,18 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
       refresh();
     }
 
-    // TODO: Handle new achievements toast (Phase 3)
+    // Phase 3: Queue new achievements for toast display
+    if (event.newAchievements && event.newAchievements.length > 0) {
+      setPendingAchievements((prev) => [...prev, ...event.newAchievements!]);
+    }
+
     // TODO: Handle creature caught animation (Phase 4)
   }, [showLevelUp, refresh]);
+
+  // Dismiss achievement from queue
+  const dismissAchievement = useCallback((code: string) => {
+    setPendingAchievements((prev) => prev.filter((a) => a.code !== code));
+  }, []);
 
   return (
     <GamificationContext.Provider value={{ showLevelUp, handleTaskComplete, state, loading, levelProgress, refresh }}>
@@ -157,6 +170,12 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
         onOpenChange={(open) => setLevelUpModal((prev) => ({ ...prev, open }))}
         newLevel={levelUpModal.newLevel}
         unlockedFeatures={levelUpModal.unlockedFeatures}
+      />
+
+      {/* Phase 3: Achievement Toasts */}
+      <AchievementToastStack
+        achievements={pendingAchievements}
+        onDismiss={dismissAchievement}
       />
     </GamificationContext.Provider>
   );
