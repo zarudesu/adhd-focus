@@ -62,7 +62,11 @@ export interface CompleteResult {
   newLevel: number;
   reward: { rarity: RewardRarity; effect: string };
   newAchievements: Achievement[];
-  creature: Creature | null;
+  creature: {
+    creature: Creature;
+    isNew: boolean;
+    newCount: number;
+  } | null;
 }
 
 interface UseTasksOptions {
@@ -277,7 +281,13 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
       });
       if (creatureRes.ok) {
         const creatureData = await creatureRes.json();
-        result.creature = creatureData.creature || null;
+        if (creatureData.creature) {
+          result.creature = {
+            creature: creatureData.creature,
+            isNew: creatureData.isNew ?? true,
+            newCount: creatureData.newCount ?? 1,
+          };
+        }
       }
     } catch (err) {
       // Gamification errors should not break task completion

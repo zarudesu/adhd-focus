@@ -11,6 +11,7 @@ import { createContext, useContext, useState, useCallback, type ReactNode } from
 import { LevelUpModal } from './LevelUpModal';
 import { RewardAnimation } from './RewardAnimation';
 import { AchievementToastStack } from './AchievementToast';
+import { CreatureToastStack, type CaughtCreatureData } from './CreatureCaughtToast';
 import { useGamification, type RewardRarity } from '@/hooks/useGamification';
 import type { Achievement, Creature } from '@/db/schema';
 
@@ -25,7 +26,11 @@ interface GamificationEvent {
     effect: string;
   };
   newAchievements?: Achievement[];
-  creature?: Creature | null;
+  creature?: {
+    creature: Creature;
+    isNew: boolean;
+    newCount: number;
+  } | null;
 }
 
 // Shared gamification state for sidebar
@@ -96,6 +101,9 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
   // Phase 3: Achievement toast state
   const [pendingAchievements, setPendingAchievements] = useState<Achievement[]>([]);
 
+  // Phase 4: Creature toast state
+  const [pendingCreatures, setPendingCreatures] = useState<CaughtCreatureData[]>([]);
+
   const showLevelUp = useCallback((newLevel: number, unlockedFeatures: string[] = []) => {
     setLevelUpModal({
       open: true,
@@ -144,12 +152,24 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
       setPendingAchievements((prev) => [...prev, ...event.newAchievements!]);
     }
 
-    // TODO: Handle creature caught animation (Phase 4)
+    // Phase 4: Queue creature caught for toast display
+    if (event.creature) {
+      setPendingCreatures((prev) => [...prev, {
+        creature: event.creature!.creature,
+        isNew: event.creature!.isNew,
+        count: event.creature!.newCount,
+      }]);
+    }
   }, [showLevelUp, refresh]);
 
   // Dismiss achievement from queue
   const dismissAchievement = useCallback((code: string) => {
     setPendingAchievements((prev) => prev.filter((a) => a.code !== code));
+  }, []);
+
+  // Dismiss creature from queue
+  const dismissCreature = useCallback((creatureId: string) => {
+    setPendingCreatures((prev) => prev.filter((c) => c.creature.id !== creatureId));
   }, []);
 
   return (
@@ -176,6 +196,12 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
       <AchievementToastStack
         achievements={pendingAchievements}
         onDismiss={dismissAchievement}
+      />
+
+      {/* Phase 4: Creature Toasts */}
+      <CreatureToastStack
+        creatures={pendingCreatures}
+        onDismiss={dismissCreature}
       />
     </GamificationContext.Provider>
   );

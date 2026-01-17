@@ -14,6 +14,7 @@ import {
   LogOut,
   Trophy,
   Zap,
+  Ghost,
 } from "lucide-react";
 
 import {
@@ -83,6 +84,11 @@ const toolsNavItems = [
     title: "Achievements",
     url: "/dashboard/achievements",
     icon: Trophy,
+  },
+  {
+    title: "Creatures",
+    url: "/dashboard/creatures",
+    icon: Ghost,
   },
   {
     title: "Statistics",
