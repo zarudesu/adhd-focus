@@ -8,6 +8,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/db';
 import { dailyStats, users } from '@/db/schema';
 import { eq, and, gte, desc } from 'drizzle-orm';
+import { logError } from '@/lib/logger';
 
 export async function GET(request: Request) {
   try {
@@ -93,7 +94,7 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    console.error('Failed to fetch stats:', error);
+    logError('GET /api/stats', error);
     return NextResponse.json(
       { error: 'Failed to fetch stats' },
       { status: 500 }

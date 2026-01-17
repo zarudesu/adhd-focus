@@ -9,6 +9,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/db';
 import { focusSessions, users, tasks } from '@/db/schema';
 import { eq, and, gte, desc } from 'drizzle-orm';
+import { logError } from '@/lib/logger';
 
 // POST - Start a new focus session
 export async function POST(request: Request) {
@@ -37,7 +38,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(focusSession);
   } catch (error) {
-    console.error('Failed to create focus session:', error);
+    logError('POST /api/focus/sessions', error);
     return NextResponse.json(
       { error: 'Failed to create focus session' },
       { status: 500 }
@@ -111,7 +112,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error('Failed to fetch focus sessions:', error);
+    logError('GET /api/focus/sessions', error);
     return NextResponse.json(
       { error: 'Failed to fetch focus sessions' },
       { status: 500 }

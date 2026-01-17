@@ -7,6 +7,7 @@ import { auth } from "@/lib/auth";
 import { db, tasks, type NewTask } from "@/db";
 import { eq, and, inArray, lte, desc, isNull } from "drizzle-orm";
 import { z } from "zod";
+import { logError } from "@/lib/logger";
 
 // Query params schema
 const querySchema = z.object({
@@ -86,7 +87,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("GET /api/tasks error:", error);
+    logError("GET /api/tasks", error);
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid parameters", details: error.issues }, { status: 400 });
     }
@@ -132,7 +133,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(newTask, { status: 201 });
   } catch (error) {
-    console.error("POST /api/tasks error:", error);
+    logError("POST /api/tasks", error);
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid data", details: error.issues }, { status: 400 });
     }

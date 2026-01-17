@@ -13,6 +13,7 @@ import {
   FEATURE_CODES,
 } from '@/db/schema';
 import { eq, desc } from 'drizzle-orm';
+import { logError } from '@/lib/logger';
 
 export async function GET() {
   try {
@@ -120,7 +121,7 @@ export async function GET() {
       features: allFeatures.length > 0 ? allFeatures : undefined,
     });
   } catch (error) {
-    console.error('Failed to fetch gamification stats:', error);
+    logError('GET /api/gamification/stats', error);
     return NextResponse.json(
       { error: 'Failed to fetch gamification stats' },
       { status: 500 }

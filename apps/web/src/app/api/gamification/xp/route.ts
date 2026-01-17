@@ -4,6 +4,7 @@ import { db } from '@/db';
 import { users, userFeatures, features, dailyStats } from '@/db/schema';
 import { eq, and, lte } from 'drizzle-orm';
 import { levelFromXp } from '@/lib/gamification';
+import { logError } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
@@ -114,7 +115,7 @@ export async function POST(request: Request) {
       reason,
     });
   } catch (error) {
-    console.error('Failed to award XP:', error);
+    logError('POST /api/gamification/xp', error);
     return NextResponse.json({ error: 'Failed to award XP' }, { status: 500 });
   }
 }

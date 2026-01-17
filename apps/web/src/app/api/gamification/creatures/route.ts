@@ -8,6 +8,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/db';
 import { creatures, userCreatures, users } from '@/db/schema';
 import { eq, desc } from 'drizzle-orm';
+import { logError } from '@/lib/logger';
 
 export async function GET() {
   try {
@@ -103,7 +104,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error('Failed to fetch creatures:', error);
+    logError('GET /api/gamification/creatures', error);
     return NextResponse.json(
       { error: 'Failed to fetch creatures' },
       { status: 500 }

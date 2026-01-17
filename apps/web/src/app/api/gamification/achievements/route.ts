@@ -8,6 +8,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/db';
 import { achievements, userAchievements, users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { logError } from '@/lib/logger';
 
 export async function GET() {
   try {
@@ -119,7 +120,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error('Failed to fetch achievements:', error);
+    logError('GET /api/gamification/achievements', error);
     return NextResponse.json(
       { error: 'Failed to fetch achievements' },
       { status: 500 }

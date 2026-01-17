@@ -6,6 +6,7 @@ import { db, users } from "@/db";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { hash } from "bcryptjs";
+import { logError } from "@/lib/logger";
 
 // Simple in-memory rate limiter
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
@@ -128,7 +129,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("POST /api/auth/register error:", error);
+    logError("POST /api/auth/register", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

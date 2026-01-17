@@ -10,6 +10,7 @@ import {
   type AchievementCondition,
 } from '@/db/schema';
 import { eq, notInArray } from 'drizzle-orm';
+import { logError } from '@/lib/logger';
 
 // Check if a user meets an achievement condition
 function checkCondition(
@@ -174,7 +175,7 @@ export async function POST(request: Request) {
       newAchievements: newlyUnlocked,
     });
   } catch (error) {
-    console.error('Failed to check achievements:', error);
+    logError('POST /api/gamification/achievements/check', error);
     return NextResponse.json(
       { error: 'Failed to check achievements' },
       { status: 500 }

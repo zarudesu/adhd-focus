@@ -8,6 +8,7 @@ import { auth } from "@/lib/auth";
 import { db, projects, tasks } from "@/db";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
+import { logError } from "@/lib/logger";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ ...project, tasks: projectTasks });
   } catch (error) {
-    console.error("GET /api/projects/[id] error:", error);
+    logError("GET /api/projects/[id]", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -85,7 +86,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json(updatedProject);
   } catch (error) {
-    console.error("PATCH /api/projects/[id] error:", error);
+    logError("PATCH /api/projects/[id]", error);
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid data", details: error.issues }, { status: 400 });
     }
@@ -115,7 +116,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("DELETE /api/projects/[id] error:", error);
+    logError("DELETE /api/projects/[id]", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

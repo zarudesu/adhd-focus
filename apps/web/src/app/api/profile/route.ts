@@ -8,6 +8,7 @@ import { db, users } from "@/db";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import type { UserPreferences } from "@/db/schema";
+import { logError } from "@/lib/logger";
 
 const updateProfileSchema = z.object({
   name: z.string().min(1).max(100).optional(),
@@ -58,7 +59,7 @@ export async function GET() {
 
     return NextResponse.json(user);
   } catch (error) {
-    console.error("GET /api/profile error:", error);
+    logError("GET /api/profile", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -120,7 +121,7 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json(updatedUser);
   } catch (error) {
-    console.error("PATCH /api/profile error:", error);
+    logError("PATCH /api/profile", error);
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid data", details: error.issues }, { status: 400 });
     }

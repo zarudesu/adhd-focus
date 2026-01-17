@@ -7,6 +7,7 @@ import { auth } from "@/lib/auth";
 import { db, projects, tasks } from "@/db";
 import { eq, and, count, sql } from "drizzle-orm";
 import { z } from "zod";
+import { logError } from "@/lib/logger";
 
 const createProjectSchema = z.object({
   name: z.string().min(1).max(100),
@@ -55,7 +56,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(projectsWithCounts);
   } catch (error) {
-    console.error("GET /api/projects error:", error);
+    logError("GET /api/projects", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -83,7 +84,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ...newProject, taskCount: 0, completedCount: 0 }, { status: 201 });
   } catch (error) {
-    console.error("POST /api/projects error:", error);
+    logError("POST /api/projects", error);
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: "Invalid data", details: error.issues }, { status: 400 });
     }

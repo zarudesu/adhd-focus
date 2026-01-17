@@ -8,6 +8,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/db';
 import { focusSessions, users, tasks, dailyStats } from '@/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
+import { logError } from '@/lib/logger';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -116,7 +117,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
     return NextResponse.json(updated);
   } catch (error) {
-    console.error('Failed to update focus session:', error);
+    logError('PATCH /api/focus/sessions/[id]', error);
     return NextResponse.json(
       { error: 'Failed to update focus session' },
       { status: 500 }
