@@ -157,7 +157,7 @@ cd apps/web && npm run dev
 - [x] ~~N+1 queries in projects listing~~ - ALREADY FIXED (uses JOIN + GROUP BY)
 
 **Code Quality (Medium):**
-- [ ] State set during render in settings/page.tsx - anti-pattern
+- [x] ~~State set during render in settings/page.tsx~~ - NOT AN ISSUE (code uses useEffect correctly)
 - [ ] Type duplication - not using @adhd-focus/shared
 - [ ] Self-HTTP-call in registration action
 
