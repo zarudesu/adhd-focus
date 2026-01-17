@@ -5,8 +5,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { db, tasks } from "@/db";
-import { eq, and } from "drizzle-orm";
+import { db, tasks, users } from "@/db";
+import { eq, and, sql } from "drizzle-orm";
 import { z } from "zod";
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -93,6 +93,21 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       updateData.completedAt = new Date();
     }
 
+    // Check if we're marking task as done (need to check previous status)
+    const isCompletingTask = data.status === 'done';
+    let wasAlreadyDone = false;
+
+    if (isCompletingTask) {
+      // Get the current task to check if it was already done
+      const [currentTask] = await db
+        .select({ status: tasks.status })
+        .from(tasks)
+        .where(and(eq(tasks.id, id), eq(tasks.userId, session.user.id)))
+        .limit(1);
+
+      wasAlreadyDone = currentTask?.status === 'done';
+    }
+
     const [updatedTask] = await db
       .update(tasks)
       .set(updateData)
@@ -101,6 +116,17 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     if (!updatedTask) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
+    }
+
+    // If task was just completed (not already done), increment totalTasksCompleted
+    if (isCompletingTask && !wasAlreadyDone) {
+      await db
+        .update(users)
+        .set({
+          totalTasksCompleted: sql`COALESCE(${users.totalTasksCompleted}, 0) + 1`,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, session.user.id));
     }
 
     return NextResponse.json(updatedTask);
