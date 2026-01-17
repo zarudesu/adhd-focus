@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { PageHeader } from '@/components/layout/PageHeader';
+import { PageHeader } from '@/components/layout/page-header';
 import { Trophy, Lock, Check, Sparkles } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
