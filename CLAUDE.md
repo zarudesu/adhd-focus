@@ -112,7 +112,7 @@ cd apps/web && npm run dev
 | Focus Mode | **DONE** | Pomodoro timer, work/break modes, task selection, session tracking, stats |
 | Achievements | **DONE** | List of achievements with progress, unlocked status |
 | Creatures | **DONE** | Collection of creatures, spawn mechanics |
-| Statistics | TODO | Streak tracking, charts |
+| Statistics | **DONE** | Streak, level, XP, pomodoros, focus time, weekly charts, achievements |
 
 ### Backend - API Routes
 
@@ -133,8 +133,11 @@ cd apps/web && npm run dev
 | GET /api/gamification/creatures | **DONE** |
 | POST /api/gamification/creatures/spawn | **DONE** |
 | POST /api/gamification/rewards/log | **DONE** |
+| GET /api/stats | **DONE** |
 
 ### Key Files Changed Recently
+- `src/app/(dashboard)/dashboard/stats/page.tsx` - Statistics with focus stats, weekly charts
+- `src/app/api/stats/route.ts` - Historical daily stats API
 - `src/hooks/useFocusTimer.ts` - Pomodoro timer hook with work/break modes
 - `src/app/api/focus/sessions/route.ts` - Focus sessions API (GET/POST)
 - `src/app/api/focus/sessions/[id]/route.ts` - Session update API (PATCH)

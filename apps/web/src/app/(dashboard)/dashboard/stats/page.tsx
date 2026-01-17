@@ -2,17 +2,79 @@
 
 /**
  * Statistics Page
- * Shows user's gamification stats, streak, achievements
+ * Shows user's gamification stats, streak, achievements, focus stats
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Flame, Target, CheckCircle2, Trophy, Sparkles, TrendingUp } from 'lucide-react';
+import { Flame, Target, CheckCircle2, Trophy, Sparkles, TrendingUp, Timer, Clock } from 'lucide-react';
 import { useGamification } from '@/hooks/useGamification';
 import { cn } from '@/lib/utils';
+
+// Stats data from API
+interface DailyStat {
+  date: string;
+  tasksCompleted: number;
+  pomodorosCompleted: number;
+  focusMinutes: number;
+  xpEarned: number;
+  streakMaintained: boolean;
+}
+
+interface StatsData {
+  dailyStats: DailyStat[];
+  periodTotals: {
+    tasksCompleted: number;
+    pomodorosCompleted: number;
+    focusMinutes: number;
+    xpEarned: number;
+  };
+  allTime: {
+    totalPomodoros: number;
+    totalFocusMinutes: number;
+    totalTasksCompleted: number;
+    currentStreak: number;
+    longestStreak: number;
+  };
+}
+
+// Hook to fetch stats data
+function useStats(days: number = 7) {
+  const [data, setData] = useState<StatsData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const res = await fetch(`/api/stats?days=${days}`);
+        if (res.ok) {
+          const statsData = await res.json();
+          setData(statsData);
+        }
+      } catch {
+        // Ignore errors
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchStats();
+  }, [days]);
+
+  return { data, loading };
+}
+
+// Format minutes to hours and minutes
+function formatDuration(minutes: number): string {
+  if (minutes < 60) {
+    return `${minutes}m`;
+  }
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+}
 
 // Calculate tasks completed today
 function useTodayTasksCount() {
@@ -83,10 +145,58 @@ function StatsSkeleton() {
   );
 }
 
+// Simple bar chart component for weekly activity
+function WeeklyChart({ data, dataKey, label, color }: {
+  data: DailyStat[];
+  dataKey: 'tasksCompleted' | 'pomodorosCompleted' | 'focusMinutes';
+  label: string;
+  color: string;
+}) {
+  const maxValue = useMemo(() => {
+    const max = Math.max(...data.map(d => d[dataKey]), 1);
+    return max;
+  }, [data, dataKey]);
+
+  const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs text-muted-foreground font-medium">{label}</p>
+      <div className="flex items-end gap-1 h-16">
+        {data.map((day) => {
+          const value = day[dataKey];
+          const height = maxValue > 0 ? (value / maxValue) * 100 : 0;
+          const dayOfWeek = new Date(day.date).getDay();
+
+          return (
+            <div key={day.date} className="flex-1 flex flex-col items-center gap-1">
+              <div className="w-full flex items-end justify-center h-12">
+                <div
+                  className={cn(
+                    'w-full max-w-6 rounded-t transition-all',
+                    color,
+                    value === 0 && 'opacity-20'
+                  )}
+                  style={{ height: `${Math.max(height, 4)}%` }}
+                  title={`${day.date}: ${dataKey === 'focusMinutes' ? formatDuration(value) : value}`}
+                />
+              </div>
+              <span className="text-[10px] text-muted-foreground">
+                {dayLabels[dayOfWeek]}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function StatsPage() {
   const { state, loading, levelProgress } = useGamification();
   const { count: todayTasksCount, loading: todayLoading } = useTodayTasksCount();
   const wipLimit = useWipLimit();
+  const { data: statsData, loading: statsLoading } = useStats(7);
 
   if (loading) {
     return (
@@ -201,6 +311,68 @@ export default function StatsPage() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Focus Stats */}
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card>
+              <CardHeader className="flex flex-row items-center gap-2 space-y-0">
+                <Timer className="h-5 w-5 text-red-500" />
+                <CardTitle>Pomodoros</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">
+                  {statsData?.allTime.totalPomodoros || 0}
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {statsData?.periodTotals.pomodorosCompleted || 0} this week
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center gap-2 space-y-0">
+                <Clock className="h-5 w-5 text-blue-500" />
+                <CardTitle>Focus Time</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">
+                  {formatDuration(statsData?.allTime.totalFocusMinutes || 0)}
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {formatDuration(statsData?.periodTotals.focusMinutes || 0)} this week
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Weekly Activity */}
+          {statsData?.dailyStats && statsData.dailyStats.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Weekly Activity</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <WeeklyChart
+                  data={statsData.dailyStats}
+                  dataKey="tasksCompleted"
+                  label="Tasks Completed"
+                  color="bg-primary"
+                />
+                <WeeklyChart
+                  data={statsData.dailyStats}
+                  dataKey="pomodorosCompleted"
+                  label="Pomodoros"
+                  color="bg-red-500"
+                />
+                <WeeklyChart
+                  data={statsData.dailyStats}
+                  dataKey="focusMinutes"
+                  label="Focus Minutes"
+                  color="bg-blue-500"
+                />
+              </CardContent>
+            </Card>
+          )}
 
           {/* XP & Creatures Summary */}
           <div className="grid gap-4 md:grid-cols-2">
