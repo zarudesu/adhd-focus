@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { TaskList, AddTaskDialog } from "@/components/tasks";
 import { useTasks } from "@/hooks/useTasks";
+import { useGamificationEvents } from "@/components/gamification/GamificationProvider";
 import type { Task } from "@/db/schema";
 import { Plus, Calendar } from "lucide-react";
 
@@ -23,6 +24,24 @@ export default function ScheduledPage() {
     create,
     update,
   } = useTasks();
+  const { handleTaskComplete } = useGamificationEvents();
+
+  // Wrapper to handle task completion with gamification
+  const handleComplete = useCallback(async (id: string) => {
+    const result = await complete(id);
+
+    // Always trigger gamification events (reward animation + optional level up)
+    handleTaskComplete({
+      levelUp: result.levelUp ? {
+        newLevel: result.newLevel,
+        unlockedFeatures: [],
+      } : undefined,
+      xpAwarded: result.xpAwarded,
+      reward: result.reward,
+      newAchievements: result.newAchievements,
+      creature: result.creature,
+    });
+  }, [complete, handleTaskComplete]);
 
   // Group tasks by scheduled date
   const groupedTasks = scheduledTasks.reduce((acc, task) => {
@@ -121,7 +140,7 @@ export default function ScheduledPage() {
               </h3>
               <TaskList
                 tasks={groupedTasks[date]}
-                onComplete={complete}
+                onComplete={handleComplete}
                 onUncomplete={uncomplete}
                 onDelete={deleteTask}
                 onMoveToToday={moveToToday}

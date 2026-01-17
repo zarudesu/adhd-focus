@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
+import { GamificationProvider } from "@/components/gamification/GamificationProvider";
 import { auth } from "@/lib/auth";
 
 export default async function DashboardLayout({
@@ -20,15 +21,17 @@ export default async function DashboardLayout({
   const defaultOpen = cookieStore.get("sidebar_state")?.value !== "false";
 
   return (
-    <SidebarProvider defaultOpen={defaultOpen}>
-      <AppSidebar
-        user={{
-          email: session.user.email ?? undefined,
-          name: session.user.name ?? undefined,
-          avatar_url: session.user.image ?? undefined,
-        }}
-      />
-      <SidebarInset>{children}</SidebarInset>
-    </SidebarProvider>
+    <GamificationProvider>
+      <SidebarProvider defaultOpen={defaultOpen}>
+        <AppSidebar
+          user={{
+            email: session.user.email ?? undefined,
+            name: session.user.name ?? undefined,
+            avatar_url: session.user.image ?? undefined,
+          }}
+        />
+        <SidebarInset>{children}</SidebarInset>
+      </SidebarProvider>
+    </GamificationProvider>
   );
 }

@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/select';
 import { useTasks } from '@/hooks/useTasks';
 import { useProjects } from '@/hooks/useProjects';
+import { useGamificationEvents } from '@/components/gamification/GamificationProvider';
 import type { Task } from '@/db/schema';
 import {
   Play,
@@ -52,6 +53,7 @@ export default function QuickActionsPage() {
   const router = useRouter();
   const { tasks, loading, complete, update } = useTasks();
   const { projects } = useProjects();
+  const { handleTaskComplete } = useGamificationEvents();
 
   const [sortMode, setSortMode] = useState<SortMode>('priority');
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -151,7 +153,20 @@ export default function QuickActionsPage() {
   const handleComplete = async () => {
     if (!currentTask) return;
     setTimerRunning(false);
-    await complete(currentTask.id);
+    const result = await complete(currentTask.id);
+
+    // Always trigger gamification events (reward animation + optional level up)
+    handleTaskComplete({
+      levelUp: result.levelUp ? {
+        newLevel: result.newLevel,
+        unlockedFeatures: [],
+      } : undefined,
+      xpAwarded: result.xpAwarded,
+      reward: result.reward,
+      newAchievements: result.newAchievements,
+      creature: result.creature,
+    });
+
     // Move to next or stay at current index
     if (currentIndex >= quickTasks.length - 1) {
       setCurrentIndex(Math.max(0, quickTasks.length - 2));

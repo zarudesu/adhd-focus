@@ -1,7 +1,7 @@
 # CLAUDE.md - AI Assistant Instructions
 
 > **READ THIS FILE FIRST** in every new session or after context compaction.
-> Last updated: 2026-01-16
+> Last updated: 2026-01-17
 
 ## CRITICAL: When Fixing Bugs
 
@@ -120,12 +120,21 @@ cd apps/web && npm run dev
 | GET/POST /api/projects | **DONE** |
 | PATCH/DELETE /api/projects/[id] | **DONE** |
 | GET/PATCH /api/profile | **DONE** |
+| GET /api/gamification/stats | **DONE** |
+| POST /api/gamification/xp | **DONE** |
+| POST /api/gamification/achievements/check | **DONE** |
+| POST /api/gamification/creatures/spawn | **DONE** |
+| POST /api/gamification/rewards/log | **DONE** |
 | Focus sessions | TODO |
 
 ### Key Files Changed Recently
-- `src/app/api/profile/route.ts` - Profile API (GET, PATCH)
-- `src/hooks/useProfile.ts` - Profile hook with preferences
-- `src/app/(dashboard)/dashboard/settings/page.tsx` - Settings UI connected to API
+- `src/db/schema.ts` - Added gamification tables and enums
+- `src/hooks/useFeatures.ts` - Feature unlock checking hook
+- `src/hooks/useGamification.ts` - XP/level/rewards hook
+- `src/components/gamification/FeatureGate.tsx` - UI gating component
+- `src/app/api/gamification/*` - 5 gamification API endpoints
+- `src/db/seed-gamification.ts` - Seed script for features/achievements/creatures
+- `docs/GAMIFICATION.md` - Full gamification documentation
 
 ### Known Issues (Code Review 2026-01-15)
 
@@ -256,6 +265,86 @@ const { tasks, todayTasks, inboxTasks, scheduledTasks,
 - WIP limit: 3 tasks/day
 - Quick capture: instant inbox
 
+## Gamification System (NEW!)
+
+**Documentation**: See `apps/web/docs/GAMIFICATION.md` for full details.
+
+### Core Concept: Progressive Feature Unlocking
+
+ADHD brain overwhelms from too many options. Solution:
+- New user sees **only Inbox**
+- Features **unlock** through levels/achievements
+- Creates **progress feeling** + **tutorial effect**
+
+### Key Components
+
+| Component | Purpose |
+|-----------|---------|
+| `FeatureGate` | Hides UI until feature unlocked |
+| `useFeatures` | Check if feature unlocked, get next unlock |
+| `useGamification` | XP/level, award XP, check achievements |
+
+### Feature Unlock Order
+
+| Level | Feature | Alt: Task Count |
+|-------|---------|-----------------|
+| 0 | Inbox | - |
+| 2 | Today | 3 tasks |
+| 3 | Priority | 5 tasks |
+| 4 | Energy | 10 tasks |
+| 5 | Projects | 15 tasks |
+| 6+ | Scheduled, Tags, Focus, etc. | - |
+
+### XP Formula
+```typescript
+XP_to_level = floor(100 × (level ^ 1.5))
+// L1→2: 100 XP, L2→3: 283 XP, L5→6: 1118 XP
+```
+
+### Files Structure
+```
+src/
+├── hooks/
+│   ├── useFeatures.ts        # Feature unlock checking
+│   └── useGamification.ts    # XP, levels, rewards
+├── components/gamification/
+│   └── FeatureGate.tsx       # Gates UI behind features
+├── app/api/gamification/
+│   ├── stats/route.ts        # GET user stats
+│   ├── xp/route.ts           # POST award XP
+│   ├── achievements/check/   # POST check achievements
+│   ├── creatures/spawn/      # POST spawn creature
+│   └── rewards/log/          # POST log visual effect
+└── db/
+    ├── schema.ts             # Gamification tables
+    └── seed-gamification.ts  # Seed features/achievements/creatures
+```
+
+### Usage Example
+```tsx
+// Gate feature behind unlock
+<FeatureGate feature="priority">
+  <PrioritySelector />
+</FeatureGate>
+
+// Check in code
+const { isUnlocked } = useFeatures();
+if (isUnlocked('projects')) { /* show projects */ }
+
+// Award XP
+const { awardXp, checkAchievements } = useGamification();
+await awardXp(15, 'task_complete');
+await checkAchievements();
+```
+
+### Roadmap
+- **Phase 0**: ✅ DB schema, hooks, components, API, seed
+- **Phase 1**: TODO - XP integration in useTasks, level bar
+- **Phase 2**: TODO - Visual rewards (NOT confetti!)
+- **Phase 3**: TODO - Achievements UI
+- **Phase 4**: TODO - Creatures collection
+- **Phase 5**: TODO - FeatureGate in all UI
+
 ## Troubleshooting
 
 ```bash
@@ -287,22 +376,25 @@ fix(auth): fix bug
 docs: update CLAUDE.md
 ```
 
-## Recent Changes (2026-01-16)
+## Recent Changes (2026-01-17)
 
-### New Features
-- **Completed Page**: New `/dashboard/completed` showing all finished tasks grouped by completion date
-- **Project Selector**: AddTaskDialog has project dropdown in "More options"
-- **Clickable Projects**: Project cards navigate to project detail page
-- **Project Detail Page**: Full task list with add/edit, completed section
-- **Task Editing Everywhere**: Click any task to edit (Today, Inbox, Scheduled, Projects)
+### Gamification System - Phase 0 Complete
+- **Progressive Feature Unlocking**: Core concept - app starts with only Inbox, features unlock via levels
+- **DB Schema**: New tables for features, achievements, creatures, rewards
+- **useFeatures hook**: Check unlocked features, get next unlock
+- **useGamification hook**: XP/level system, reward effects, creature spawning
+- **FeatureGate component**: Gate UI behind feature unlocks
+- **API endpoints**: 5 new gamification endpoints
+- **Seed data**: 15 features, 30 achievements, 16 creatures
+- **Documentation**: Full docs in `apps/web/docs/GAMIFICATION.md`
 
-### Architecture Changes
-- **Inbox Filter**: Shows only tasks WITHOUT a project (`projectId=null`)
-- **API Filter**: `/api/tasks?projectId=null` returns tasks without project
-- **Today Completed Fix**: Shows tasks completed today (checks `completedAt` date)
+### Previous (2026-01-16)
+- **Completed Page**: `/dashboard/completed` with tasks grouped by date
+- **Project Selector**: In AddTaskDialog "More options"
+- **Clickable Projects**: Navigate to project detail
+- **Task Editing Everywhere**: Click any task to edit
 
 ### Previous (2026-01-15)
 - **Responsive AddTaskDialog**: Form stacks vertically on mobile (320px+)
 - **Security**: Rate limiting on `/api/auth/register` (5 req/15 min)
 - **Performance**: `useMemo` for filtered task lists in `useTasks.ts`
-- **Button Styles**: Unified selection styles in AddTaskDialog

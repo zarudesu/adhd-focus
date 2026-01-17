@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { TaskList, AddTaskDialog } from "@/components/tasks";
 import { useTasks } from "@/hooks/useTasks";
+import { useGamificationEvents } from "@/components/gamification/GamificationProvider";
 import type { Task } from "@/db/schema";
 import { Plus, Sparkles, AlertTriangle } from "lucide-react";
 
@@ -27,6 +28,24 @@ export default function InboxPage() {
     update,
     create,
   } = useTasks();
+  const { handleTaskComplete } = useGamificationEvents();
+
+  // Wrapper to handle task completion with gamification
+  const handleComplete = useCallback(async (id: string) => {
+    const result = await complete(id);
+
+    // Always trigger gamification events (reward animation + optional level up)
+    handleTaskComplete({
+      levelUp: result.levelUp ? {
+        newLevel: result.newLevel,
+        unlockedFeatures: [],
+      } : undefined,
+      xpAwarded: result.xpAwarded,
+      reward: result.reward,
+      newAchievements: result.newAchievements,
+      creature: result.creature,
+    });
+  }, [complete, handleTaskComplete]);
 
   const showWarning = inboxTasks.length >= MAX_INBOX_BEFORE_WARNING;
   const estimatedMinutes = Math.ceil(inboxTasks.length * 0.5); // ~30 sec per task
@@ -129,7 +148,7 @@ export default function InboxPage() {
             loading={loading}
             emptyMessage="Inbox is empty"
             emptyDescription="Quick capture ideas here, process them later"
-            onComplete={complete}
+            onComplete={handleComplete}
             onUncomplete={uncomplete}
             onDelete={deleteTask}
             onMoveToToday={moveToToday}

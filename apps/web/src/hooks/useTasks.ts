@@ -3,10 +3,16 @@
 /**
  * Tasks Hook - Business logic for task operations
  * Uses Next.js API routes with fetch
+ * Integrated with gamification system (XP, achievements, creatures)
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import type { Task } from '@/db/schema';
+import type { Task, Achievement, Creature } from '@/db/schema';
+import {
+  calculateTaskXp,
+  rollRewardEffect,
+  type RewardRarity,
+} from './useGamification';
 
 interface TaskFilters {
   status?: string | string[];
@@ -48,6 +54,17 @@ interface UpdateTaskInput {
   sortOrder?: number;
 }
 
+// Result of completing a task with gamification
+export interface CompleteResult {
+  task: Task;
+  xpAwarded: number;
+  levelUp: boolean;
+  newLevel: number;
+  reward: { rarity: RewardRarity; effect: string };
+  newAchievements: Achievement[];
+  creature: Creature | null;
+}
+
 interface UseTasksOptions {
   filters?: TaskFilters;
   autoFetch?: boolean;
@@ -60,7 +77,7 @@ interface UseTasksReturn {
   fetch: () => Promise<void>;
   create: (input: CreateTaskInput) => Promise<Task>;
   update: (id: string, input: UpdateTaskInput) => Promise<Task>;
-  complete: (id: string) => Promise<Task>;
+  complete: (id: string) => Promise<CompleteResult>;
   uncomplete: (id: string) => Promise<Task>;
   deleteTask: (id: string) => Promise<void>;
   moveToToday: (id: string) => Promise<Task>;
@@ -161,12 +178,114 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
     }
   }, [fetch]);
 
-  const complete = useCallback(async (id: string): Promise<Task> => {
-    return update(id, {
+  const complete = useCallback(async (id: string): Promise<CompleteResult> => {
+    // Find task before completing
+    const task = tasks.find((t) => t.id === id);
+
+    // 1. Complete the task
+    const updatedTask = await update(id, {
       status: 'done',
       completedAt: new Date().toISOString(),
     });
-  }, [update]);
+
+    // Default result (for unauthenticated users or errors)
+    let result: CompleteResult = {
+      task: updatedTask,
+      xpAwarded: 0,
+      levelUp: false,
+      newLevel: 1,
+      reward: { rarity: 'common', effect: 'sparkle' },
+      newAchievements: [],
+      creature: null,
+    };
+
+    try {
+      // Get current streak for XP calculation
+      let currentStreak = 0;
+      try {
+        const statsRes = await window.fetch('/api/gamification/stats');
+        if (statsRes.ok) {
+          const stats = await statsRes.json();
+          currentStreak = stats.currentStreak || 0;
+        }
+      } catch {
+        // Ignore - use 0 streak
+      }
+
+      // 2. Calculate and award XP
+      const completedAtStr = updatedTask.completedAt
+        ? typeof updatedTask.completedAt === 'string'
+          ? updatedTask.completedAt
+          : updatedTask.completedAt.toISOString()
+        : null;
+
+      const xpAmount = calculateTaskXp(
+        {
+          priority: task?.priority,
+          energyRequired: task?.energyRequired,
+          estimatedMinutes: task?.estimatedMinutes,
+          dueDate: task?.dueDate,
+          completedAt: completedAtStr,
+        },
+        currentStreak
+      );
+
+      const xpRes = await window.fetch('/api/gamification/xp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: xpAmount, reason: 'task_complete' }),
+      });
+
+      if (xpRes.ok) {
+        const xpData = await xpRes.json();
+        result.xpAwarded = xpAmount;
+        result.levelUp = xpData.leveledUp || false;
+        result.newLevel = xpData.newLevel || 1;
+      }
+
+      // 3. Roll visual reward
+      result.reward = rollRewardEffect();
+
+      // Log the reward
+      await window.fetch('/api/gamification/rewards/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rarity: result.reward.rarity,
+          effect: result.reward.effect,
+          trigger: 'task_complete',
+        }),
+      });
+
+      // 4. Check achievements
+      const achieveRes = await window.fetch('/api/gamification/achievements/check', {
+        method: 'POST',
+      });
+      if (achieveRes.ok) {
+        const achieveData = await achieveRes.json();
+        result.newAchievements = achieveData.newAchievements || [];
+      }
+
+      // 5. Try to spawn creature
+      const creatureRes = await window.fetch('/api/gamification/creatures/spawn', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          onTaskComplete: true,
+          isQuickTask: (task?.estimatedMinutes || 0) <= 5,
+        }),
+      });
+      if (creatureRes.ok) {
+        const creatureData = await creatureRes.json();
+        result.creature = creatureData.creature || null;
+      }
+    } catch (err) {
+      // Gamification errors should not break task completion
+      console.error('Gamification error:', err);
+    }
+
+    return result;
+  }, [tasks, update]);
 
   const uncomplete = useCallback(async (id: string): Promise<Task> => {
     return update(id, {

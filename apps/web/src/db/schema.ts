@@ -33,6 +33,23 @@ export const energyLevelEnum = pgEnum("energy_level", ["low", "medium", "high"])
 
 export const priorityEnum = pgEnum("priority", ["must", "should", "want", "someday"]);
 
+// Gamification Enums
+export const achievementVisibilityEnum = pgEnum("achievement_visibility", [
+  "visible",      // Shown in list with progress
+  "hidden",       // Shown as ??? until unlocked
+  "invisible",    // Not shown at all until unlocked
+  "ultra_secret", // Never shown to anyone else
+]);
+
+export const rarityEnum = pgEnum("rarity", [
+  "common",
+  "uncommon",
+  "rare",
+  "legendary",
+  "mythic",
+  "secret",
+]);
+
 // ===================
 // NextAuth Tables
 // ===================
@@ -63,6 +80,13 @@ export const users = pgTable("user", {
     theme: "system",
     timezone: "UTC",
   }),
+
+  // Gamification
+  xp: integer("xp").default(0),
+  level: integer("level").default(1),
+  totalCreatures: integer("total_creatures").default(0),
+  rarestRewardSeen: text("rarest_reward_seen"),
+  lastActiveDate: date("last_active_date"),
 
   // Stats
   currentStreak: integer("current_streak").default(0),
@@ -211,6 +235,130 @@ export const dailyStats = pgTable("daily_stat", {
   pomodorosCompleted: integer("pomodoros_completed").default(0),
   focusMinutes: integer("focus_minutes").default(0),
   streakMaintained: boolean("streak_maintained").default(false),
+  xpEarned: integer("xp_earned").default(0),
+});
+
+// ===================
+// Gamification Tables
+// ===================
+
+// Feature unlocks - what features exist and when they unlock
+export const features = pgTable("feature", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  code: text("code").notNull().unique(), // "today", "priority", "projects"
+  name: text("name").notNull(),
+  description: text("description"),
+
+  // Unlock conditions (one of these)
+  unlockLevel: integer("unlock_level"), // Level required
+  unlockAchievementCode: text("unlock_achievement_code"), // OR achievement required
+  unlockTaskCount: integer("unlock_task_count"), // OR task count required
+
+  // UI
+  icon: text("icon"), // Lucide icon name
+  sortOrder: integer("sort_order").default(0),
+
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// User's unlocked features
+export const userFeatures = pgTable("user_feature", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  featureCode: text("feature_code").notNull(),
+  unlockedAt: timestamp("unlocked_at").defaultNow(),
+});
+
+// Achievements definitions
+export const achievements = pgTable("achievement", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  code: text("code").notNull().unique(),
+  name: text("name").notNull(),
+  hiddenName: text("hidden_name").default("???"), // What to show when hidden
+  description: text("description"),
+  hiddenDescription: text("hidden_description").default("Complete secret conditions to unlock"),
+
+  icon: text("icon"), // Emoji or icon
+  category: text("category").notNull(), // "progress", "streak", "productivity", "mastery", "hidden", "secret"
+
+  // Visibility
+  visibility: achievementVisibilityEnum("visibility").default("visible"),
+
+  // Rewards
+  xpReward: integer("xp_reward").default(0),
+  unlocksFeature: text("unlocks_feature"), // Feature code to unlock
+  unlocksCreature: text("unlocks_creature"), // Creature code to add
+
+  // Conditions (JSONB for flexibility)
+  conditionType: text("condition_type").notNull(), // "task_count", "streak_days", "level", "time", "special"
+  conditionValue: jsonb("condition_value").$type<AchievementCondition>(),
+
+  sortOrder: integer("sort_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// User's unlocked achievements
+export const userAchievements = pgTable("user_achievement", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  achievementId: uuid("achievement_id")
+    .notNull()
+    .references(() => achievements.id, { onDelete: "cascade" }),
+  unlockedAt: timestamp("unlocked_at").defaultNow(),
+});
+
+// Creatures definitions
+export const creatures = pgTable("creature", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  code: text("code").notNull().unique(),
+  name: text("name").notNull(),
+  emoji: text("emoji").notNull(),
+  description: text("description"),
+
+  rarity: rarityEnum("rarity").default("common"),
+
+  // Spawn conditions
+  spawnConditions: jsonb("spawn_conditions").$type<CreatureSpawnCondition>(),
+  spawnChance: integer("spawn_chance").default(100), // Out of 1000
+
+  // Evolution
+  evolvesFrom: text("evolves_from"), // Creature code
+  evolvesTo: text("evolves_to"), // Creature code
+  evolutionCondition: jsonb("evolution_condition").$type<CreatureEvolutionCondition>(),
+
+  // Bonuses
+  xpMultiplier: integer("xp_multiplier").default(100), // 100 = 1x, 150 = 1.5x
+
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// User's creature collection
+export const userCreatures = pgTable("user_creature", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  creatureId: uuid("creature_id")
+    .notNull()
+    .references(() => creatures.id, { onDelete: "cascade" }),
+  count: integer("count").default(1),
+  firstCaughtAt: timestamp("first_caught_at").defaultNow(),
+});
+
+// Visual reward log (for statistics and ensuring variety)
+export const rewardLogs = pgTable("reward_log", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  rewardType: text("reward_type").notNull(), // "sparkle", "glitch", "unicorn", etc
+  rarity: rarityEnum("rarity").notNull(),
+  triggeredBy: text("triggered_by"), // "task_complete", "achievement", "level_up"
+  seenAt: timestamp("seen_at").defaultNow(),
 });
 
 // ===================
@@ -224,6 +372,11 @@ export const usersRelations = relations(users, ({ many }) => ({
   tasks: many(tasks),
   focusSessions: many(focusSessions),
   dailyStats: many(dailyStats),
+  // Gamification
+  userFeatures: many(userFeatures),
+  userAchievements: many(userAchievements),
+  userCreatures: many(userCreatures),
+  rewardLogs: many(rewardLogs),
 }));
 
 export const projectsRelations = relations(projects, ({ one, many }) => ({
@@ -270,6 +423,51 @@ export const dailyStatsRelations = relations(dailyStats, ({ one }) => ({
   }),
 }));
 
+// Gamification Relations
+export const userFeaturesRelations = relations(userFeatures, ({ one }) => ({
+  user: one(users, {
+    fields: [userFeatures.userId],
+    references: [users.id],
+  }),
+}));
+
+export const achievementsRelations = relations(achievements, ({ many }) => ({
+  userAchievements: many(userAchievements),
+}));
+
+export const userAchievementsRelations = relations(userAchievements, ({ one }) => ({
+  user: one(users, {
+    fields: [userAchievements.userId],
+    references: [users.id],
+  }),
+  achievement: one(achievements, {
+    fields: [userAchievements.achievementId],
+    references: [achievements.id],
+  }),
+}));
+
+export const creaturesRelations = relations(creatures, ({ many }) => ({
+  userCreatures: many(userCreatures),
+}));
+
+export const userCreaturesRelations = relations(userCreatures, ({ one }) => ({
+  user: one(users, {
+    fields: [userCreatures.userId],
+    references: [users.id],
+  }),
+  creature: one(creatures, {
+    fields: [userCreatures.creatureId],
+    references: [creatures.id],
+  }),
+}));
+
+export const rewardLogsRelations = relations(rewardLogs, ({ one }) => ({
+  user: one(users, {
+    fields: [rewardLogs.userId],
+    references: [users.id],
+  }),
+}));
+
 // ===================
 // Types
 // ===================
@@ -290,6 +488,42 @@ export interface UserPreferences {
   timezone: string;
 }
 
+// Gamification condition types
+export interface AchievementCondition {
+  // For task_count
+  count?: number;
+  // For streak_days
+  days?: number;
+  // For level
+  level?: number;
+  // For time-based
+  hour?: number;
+  minute?: number;
+  dayOfWeek?: number; // 0-6
+  dayOfMonth?: number; // 1-31
+  month?: number; // 0-11
+  // For special conditions
+  special?: string; // Custom condition identifier
+}
+
+export interface CreatureSpawnCondition {
+  // When can this creature spawn?
+  onTaskComplete?: boolean;
+  onQuickTask?: boolean; // Tasks < 5 min
+  onStreakDay?: number; // Minimum streak
+  onLevel?: number; // Minimum level
+  onTimeRange?: { startHour: number; endHour: number };
+  onSpecial?: string; // Custom condition
+}
+
+export interface CreatureEvolutionCondition {
+  // What triggers evolution?
+  catchCount?: number; // Have N of this creature
+  streakDays?: number;
+  level?: number;
+  special?: string;
+}
+
 // Export types for use in the app
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -301,3 +535,36 @@ export type FocusSession = typeof focusSessions.$inferSelect;
 export type NewFocusSession = typeof focusSessions.$inferInsert;
 export type DailyStat = typeof dailyStats.$inferSelect;
 export type NewDailyStat = typeof dailyStats.$inferInsert;
+
+// Gamification types
+export type Feature = typeof features.$inferSelect;
+export type NewFeature = typeof features.$inferInsert;
+export type UserFeature = typeof userFeatures.$inferSelect;
+export type Achievement = typeof achievements.$inferSelect;
+export type NewAchievement = typeof achievements.$inferInsert;
+export type UserAchievement = typeof userAchievements.$inferSelect;
+export type Creature = typeof creatures.$inferSelect;
+export type NewCreature = typeof creatures.$inferInsert;
+export type UserCreature = typeof userCreatures.$inferSelect;
+export type RewardLog = typeof rewardLogs.$inferSelect;
+
+// Feature codes as const for type safety
+export const FEATURE_CODES = {
+  INBOX: 'inbox',
+  TODAY: 'today',
+  PRIORITY: 'priority',
+  ENERGY: 'energy',
+  PROJECTS: 'projects',
+  SCHEDULED: 'scheduled',
+  DESCRIPTION: 'description',
+  QUICK_ACTIONS: 'quick_actions',
+  TAGS: 'tags',
+  FOCUS_MODE: 'focus_mode',
+  STATS: 'stats',
+  THEMES: 'themes',
+  SETTINGS: 'settings',
+  NOTIFICATIONS: 'notifications',
+  ADVANCED_STATS: 'advanced_stats',
+} as const;
+
+export type FeatureCode = typeof FEATURE_CODES[keyof typeof FEATURE_CODES];

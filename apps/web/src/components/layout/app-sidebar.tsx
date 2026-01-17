@@ -27,7 +27,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  SidebarSeparator,
 } from "@/components/ui/sidebar";
+import { LevelProgress } from "@/components/gamification/LevelProgress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -111,6 +113,9 @@ export function AppSidebar({ user }: AppSidebarProps) {
           <span className="font-semibold">ADHD Focus</span>
         </Link>
       </SidebarHeader>
+
+      <LevelProgress />
+      <SidebarSeparator />
 
       <SidebarContent>
         <SidebarGroup>
