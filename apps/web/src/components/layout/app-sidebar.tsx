@@ -12,6 +12,7 @@ import {
   Sun,
   Timer,
   LogOut,
+  Zap,
 } from "lucide-react";
 
 import {
@@ -65,6 +66,11 @@ const mainNavItems = [
 ];
 
 const toolsNavItems = [
+  {
+    title: "Quick Actions",
+    url: "/dashboard/quick-actions",
+    icon: Zap,
+  },
   {
     title: "Focus Mode",
     url: "/dashboard/focus",
