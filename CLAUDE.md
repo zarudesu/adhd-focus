@@ -159,7 +159,7 @@ cd apps/web && npm run dev
 **Code Quality (Medium):**
 - [x] ~~State set during render in settings/page.tsx~~ - NOT AN ISSUE (code uses useEffect correctly)
 - [ ] Type duplication - not using @adhd-focus/shared
-- [ ] Self-HTTP-call in registration action
+- [x] ~~Self-HTTP-call in registration action~~ - ALREADY FIXED (imports registerUser directly)
 
 **Accessibility:**
 - [x] ~~Labels not associated with inputs in InboxProcessor~~ - FIXED (changed to <p> for button groups)
