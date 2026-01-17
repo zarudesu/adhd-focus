@@ -251,7 +251,7 @@ export default function StatsPage() {
                       className="flex items-center gap-3 rounded-lg border bg-card p-3"
                     >
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-yellow-500/10 text-xl">
-                        {userAchievement.achievement.emoji || '🏆'}
+                        {userAchievement.achievement.icon || '🏆'}
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="font-medium truncate">
