@@ -109,6 +109,6 @@ export function useIsFeatureUnlocked(feature: FeatureCode): {
   return {
     isUnlocked: isUnlocked(feature),
     loading,
-    unlockLevel: featureInfo?.unlockLevel,
+    unlockLevel: featureInfo?.unlockLevel ?? undefined,
   };
 }

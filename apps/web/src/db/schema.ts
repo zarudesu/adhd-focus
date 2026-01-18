@@ -95,6 +95,19 @@ export const users = pgTable("user", {
   totalPomodoros: integer("total_pomodoros").default(0),
   totalFocusMinutes: integer("total_focus_minutes").default(0),
 
+  // Onboarding progress (action counters)
+  tasksAdded: integer("tasks_added").default(0),
+  tasksAssignedToday: integer("tasks_assigned_today").default(0),
+  tasksScheduled: integer("tasks_scheduled").default(0),
+  tasksDeleted: integer("tasks_deleted").default(0),
+  projectsCreated: integer("projects_created").default(0),
+  inboxCleared: integer("inbox_cleared").default(0), // Times inbox was emptied
+  focusSessionsCompleted: integer("focus_sessions_completed").default(0),
+
+  // Onboarding flags
+  onboardingCompleted: boolean("onboarding_completed").default(false),
+  lastUnlockSeen: text("last_unlock_seen"), // Last feature unlock notification seen
+
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -248,15 +261,28 @@ export const features = pgTable("feature", {
   code: text("code").notNull().unique(), // "today", "priority", "projects"
   name: text("name").notNull(),
   description: text("description"),
+  celebrationText: text("celebration_text"), // "🎉 You unlocked Today view!"
 
-  // Unlock conditions (one of these)
+  // Unlock conditions (check in order, first match wins)
   unlockLevel: integer("unlock_level"), // Level required
   unlockAchievementCode: text("unlock_achievement_code"), // OR achievement required
-  unlockTaskCount: integer("unlock_task_count"), // OR task count required
+  unlockTaskCount: integer("unlock_task_count"), // OR tasks completed
+
+  // Action-based unlocks (onboarding)
+  unlockTasksAdded: integer("unlock_tasks_added"), // Tasks added to inbox
+  unlockTasksCompleted: integer("unlock_tasks_completed"), // Tasks completed
+  unlockTasksAssignedToday: integer("unlock_tasks_assigned_today"), // Tasks moved to today
+  unlockTasksScheduled: integer("unlock_tasks_scheduled"), // Tasks scheduled
+  unlockProjectsCreated: integer("unlock_projects_created"), // Projects created
+  unlockInboxCleared: integer("unlock_inbox_cleared"), // Times inbox cleared
+  unlockFocusSessions: integer("unlock_focus_sessions"), // Focus sessions done
+  unlockStreakDays: integer("unlock_streak_days"), // Streak days
 
   // UI
   icon: text("icon"), // Lucide icon name
+  category: text("category").default("general"), // "navigation", "feature", "setting"
   sortOrder: integer("sort_order").default(0),
+  isNavItem: boolean("is_nav_item").default(false), // Show in sidebar
 
   createdAt: timestamp("created_at").defaultNow(),
 });

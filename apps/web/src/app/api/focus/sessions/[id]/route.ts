@@ -64,12 +64,13 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     if (completed && (pomodoros ?? 0) > 0) {
       const pomodoroCount = pomodoros ?? 1;
 
-      // Update user totals
+      // Update user totals and onboarding progress
       await db
         .update(users)
         .set({
           totalPomodoros: sql`${users.totalPomodoros} + ${pomodoroCount}`,
           totalFocusMinutes: sql`${users.totalFocusMinutes} + ${calculatedDuration}`,
+          focusSessionsCompleted: sql`COALESCE(${users.focusSessionsCompleted}, 0) + 1`,
         })
         .where(eq(users.id, session.user.id));
 

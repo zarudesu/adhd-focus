@@ -43,7 +43,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useFeatures } from "@/hooks/useFeatures";
-import { FEATURE_CODES, type FeatureCode } from "@/db/schema";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -52,89 +51,19 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-interface NavItem {
-  title: string;
-  url: string;
-  icon: typeof Sun;
-  featureCode: FeatureCode | null;
-  unlockLevel: number;
-}
-
-const mainNavItems: NavItem[] = [
-  {
-    title: "Today",
-    url: "/dashboard",
-    icon: Sun,
-    featureCode: FEATURE_CODES.TODAY,
-    unlockLevel: 0,
-  },
-  {
-    title: "Inbox",
-    url: "/dashboard/inbox",
-    icon: Inbox,
-    featureCode: FEATURE_CODES.INBOX,
-    unlockLevel: 0,
-  },
-  {
-    title: "Scheduled",
-    url: "/dashboard/scheduled",
-    icon: Calendar,
-    featureCode: FEATURE_CODES.SCHEDULED,
-    unlockLevel: 6,
-  },
-  {
-    title: "Projects",
-    url: "/dashboard/projects",
-    icon: Folder,
-    featureCode: FEATURE_CODES.PROJECTS,
-    unlockLevel: 5,
-  },
-  {
-    title: "Completed",
-    url: "/dashboard/completed",
-    icon: CheckCircle2,
-    featureCode: null,
-    unlockLevel: 3,
-  },
-];
-
-const toolsNavItems: NavItem[] = [
-  {
-    title: "Quick Actions",
-    url: "/dashboard/quick-actions",
-    icon: Zap,
-    featureCode: FEATURE_CODES.QUICK_ACTIONS,
-    unlockLevel: 8,
-  },
-  {
-    title: "Focus Mode",
-    url: "/dashboard/focus",
-    icon: Timer,
-    featureCode: FEATURE_CODES.FOCUS_MODE,
-    unlockLevel: 10,
-  },
-  {
-    title: "Achievements",
-    url: "/dashboard/achievements",
-    icon: Trophy,
-    featureCode: null,
-    unlockLevel: 0,
-  },
-  {
-    title: "Creatures",
-    url: "/dashboard/creatures",
-    icon: Ghost,
-    featureCode: null,
-    unlockLevel: 5,
-  },
-  {
-    title: "Statistics",
-    url: "/dashboard/stats",
-    icon: ChartBar,
-    featureCode: FEATURE_CODES.STATS,
-    unlockLevel: 12,
-  },
-];
+// Map nav codes to URLs and icons
+const NAV_CONFIG: Record<string, { url: string; icon: typeof Sun; group: 'tasks' | 'tools' }> = {
+  nav_inbox: { url: "/dashboard/inbox", icon: Inbox, group: 'tasks' },
+  nav_today: { url: "/dashboard", icon: Sun, group: 'tasks' },
+  nav_scheduled: { url: "/dashboard/scheduled", icon: Calendar, group: 'tasks' },
+  nav_projects: { url: "/dashboard/projects", icon: Folder, group: 'tasks' },
+  nav_completed: { url: "/dashboard/completed", icon: CheckCircle2, group: 'tasks' },
+  nav_quick_actions: { url: "/dashboard/quick-actions", icon: Zap, group: 'tools' },
+  nav_focus: { url: "/dashboard/focus", icon: Timer, group: 'tools' },
+  nav_achievements: { url: "/dashboard/achievements", icon: Trophy, group: 'tools' },
+  nav_creatures: { url: "/dashboard/creatures", icon: Ghost, group: 'tools' },
+  nav_stats: { url: "/dashboard/stats", icon: ChartBar, group: 'tools' },
+};
 
 interface AppSidebarProps {
   user?: {
@@ -146,7 +75,7 @@ interface AppSidebarProps {
 
 export function AppSidebar({ user }: AppSidebarProps) {
   const pathname = usePathname();
-  const { isUnlocked, unlockedFeatures, loading } = useFeatures();
+  const { navFeatures, loading } = useFeatures();
 
   const isActive = (url: string) => {
     if (url === "/dashboard") {
@@ -155,30 +84,31 @@ export function AppSidebar({ user }: AppSidebarProps) {
     return pathname.startsWith(url);
   };
 
-  // Check if a nav item is unlocked
-  const isItemUnlocked = (item: NavItem): boolean => {
-    // While loading, only show basic items (level 0)
-    if (loading) {
-      return item.unlockLevel === 0;
-    }
+  // Separate nav features by group
+  const taskItems = navFeatures
+    .filter(f => NAV_CONFIG[f.code]?.group === 'tasks')
+    .sort((a, b) => {
+      // Sort by predefined order
+      const order = ['nav_inbox', 'nav_today', 'nav_scheduled', 'nav_projects', 'nav_completed'];
+      return order.indexOf(a.code) - order.indexOf(b.code);
+    });
 
-    // If item has a feature code, check if it's unlocked
-    if (item.featureCode) {
-      return isUnlocked(item.featureCode);
-    }
+  const toolItems = navFeatures
+    .filter(f => NAV_CONFIG[f.code]?.group === 'tools')
+    .sort((a, b) => {
+      const order = ['nav_quick_actions', 'nav_focus', 'nav_achievements', 'nav_creatures', 'nav_stats'];
+      return order.indexOf(a.code) - order.indexOf(b.code);
+    });
 
-    // For items without feature code, check level-based unlock
-    // Count unlocked features as proxy for level progression
-    const effectiveLevel = Math.floor(unlockedFeatures.size / 2);
-    return effectiveLevel >= item.unlockLevel || item.unlockLevel === 0;
-  };
+  const renderNavItem = (feature: typeof navFeatures[0]) => {
+    const config = NAV_CONFIG[feature.code];
+    if (!config) return null;
 
-  const renderNavItem = (item: NavItem) => {
-    const unlocked = isItemUnlocked(item);
+    const IconComponent = config.icon;
 
-    if (!unlocked) {
+    if (!feature.isUnlocked) {
       return (
-        <SidebarMenuItem key={item.title}>
+        <SidebarMenuItem key={feature.code}>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -187,11 +117,11 @@ export function AppSidebar({ user }: AppSidebarProps) {
                   disabled
                 >
                   <Lock className="h-4 w-4" />
-                  <span>{item.title}</span>
+                  <span>{feature.name}</span>
                 </SidebarMenuButton>
               </TooltipTrigger>
               <TooltipContent side="right">
-                <p>Unlocks at level {item.unlockLevel}</p>
+                <p>Keep going to unlock!</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -200,21 +130,54 @@ export function AppSidebar({ user }: AppSidebarProps) {
     }
 
     return (
-      <SidebarMenuItem key={item.title}>
-        <SidebarMenuButton asChild isActive={isActive(item.url)}>
-          <Link href={item.url}>
-            <item.icon className="h-4 w-4" />
-            <span>{item.title}</span>
+      <SidebarMenuItem key={feature.code}>
+        <SidebarMenuButton asChild isActive={isActive(config.url)}>
+          <Link href={config.url}>
+            <IconComponent className="h-4 w-4" />
+            <span>{feature.name}</span>
           </Link>
         </SidebarMenuButton>
       </SidebarMenuItem>
     );
   };
 
+  // Show minimal UI while loading
+  if (loading) {
+    return (
+      <Sidebar>
+        <SidebarHeader className="p-4">
+          <Link href="/dashboard/inbox" className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <Timer className="h-4 w-4" />
+            </div>
+            <span className="font-semibold">ADHD Focus</span>
+          </Link>
+        </SidebarHeader>
+        <SidebarContent>
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive>
+                    <Link href="/dashboard/inbox">
+                      <Inbox className="h-4 w-4" />
+                      <span>Inbox</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+        <SidebarRail />
+      </Sidebar>
+    );
+  }
+
   return (
     <Sidebar>
       <SidebarHeader className="p-4">
-        <Link href="/dashboard" className="flex items-center gap-2">
+        <Link href="/dashboard/inbox" className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Timer className="h-4 w-4" />
           </div>
@@ -226,23 +189,27 @@ export function AppSidebar({ user }: AppSidebarProps) {
       <SidebarSeparator />
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Tasks</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {mainNavItems.map((item) => renderNavItem(item))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {taskItems.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Tasks</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {taskItems.map((item) => renderNavItem(item))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Tools</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {toolsNavItems.map((item) => renderNavItem(item))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {toolItems.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Tools</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {toolItems.map((item) => renderNavItem(item))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter>

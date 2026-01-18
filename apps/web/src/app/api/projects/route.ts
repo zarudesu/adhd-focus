@@ -4,7 +4,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { db, projects, tasks } from "@/db";
+import { db, projects, tasks, users } from "@/db";
 import { eq, and, count, sql } from "drizzle-orm";
 import { z } from "zod";
 import { logError } from "@/lib/logger";
@@ -81,6 +81,15 @@ export async function POST(request: NextRequest) {
         emoji: data.emoji || "📁",
       })
       .returning();
+
+    // Track onboarding progress - project created
+    await db
+      .update(users)
+      .set({
+        projectsCreated: sql`COALESCE(${users.projectsCreated}, 0) + 1`,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, session.user.id));
 
     return NextResponse.json({ ...newProject, taskCount: 0, completedCount: 0 }, { status: 201 });
   } catch (error) {

@@ -4,8 +4,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { db, tasks, type NewTask } from "@/db";
-import { eq, and, inArray, lte, desc, isNull } from "drizzle-orm";
+import { db, tasks, users, type NewTask } from "@/db";
+import { eq, and, inArray, lte, desc, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { logError } from "@/lib/logger";
 
@@ -130,6 +130,27 @@ export async function POST(request: NextRequest) {
         tags: data.tags || [],
       } satisfies NewTask)
       .returning();
+
+    // Track onboarding progress
+    const progressUpdates: Record<string, unknown> = {
+      tasksAdded: sql`COALESCE(${users.tasksAdded}, 0) + 1`,
+      updatedAt: new Date(),
+    };
+
+    // Track if assigned to today
+    if (status === "today") {
+      progressUpdates.tasksAssignedToday = sql`COALESCE(${users.tasksAssignedToday}, 0) + 1`;
+    }
+
+    // Track if scheduled
+    if (data.scheduledDate) {
+      progressUpdates.tasksScheduled = sql`COALESCE(${users.tasksScheduled}, 0) + 1`;
+    }
+
+    await db
+      .update(users)
+      .set(progressUpdates)
+      .where(eq(users.id, session.user.id));
 
     return NextResponse.json(newTask, { status: 201 });
   } catch (error) {

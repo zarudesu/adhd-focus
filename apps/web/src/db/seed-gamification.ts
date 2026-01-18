@@ -11,18 +11,154 @@ async function seedFeatures() {
   console.log('Seeding features...');
 
   const featureData = [
-    // BASIC (Level 0-5)
-    { code: 'inbox_basic', name: 'Inbox', description: 'Capture tasks quickly', icon: 'Inbox', unlockLevel: 0, sortOrder: 1 },
-    { code: 'inbox_count', name: 'Inbox Count', description: 'See how many tasks in inbox', icon: 'Hash', unlockLevel: 1, sortOrder: 2 },
-    { code: 'inbox_quick_add', name: 'Quick Add', description: 'Add tasks with Cmd+N', icon: 'Plus', unlockLevel: 2, sortOrder: 3 },
-    { code: 'today_view', name: 'Today', description: 'Focus on daily tasks', icon: 'Sun', unlockLevel: 2, sortOrder: 4 },
-    { code: 'today_complete', name: 'Complete Tasks', description: 'Mark tasks as done', icon: 'Check', unlockLevel: 0, sortOrder: 5 },
-    { code: 'today_progress', name: 'Daily Progress', description: 'See your daily progress bar', icon: 'BarChart2', unlockLevel: 3, sortOrder: 6 },
-    { code: 'priority_basic', name: 'Basic Priority', description: '2 priority levels', icon: 'Flag', unlockLevel: 3, sortOrder: 7 },
-    { code: 'inbox_process', name: 'Process Mode', description: 'Swipe through inbox tasks', icon: 'Shuffle', unlockLevel: 4, sortOrder: 8 },
-    { code: 'energy_basic', name: 'Energy Levels', description: 'Low and High energy', icon: 'Battery', unlockLevel: 4, sortOrder: 9 },
-    { code: 'project_create', name: 'Projects', description: 'Organize tasks into projects', icon: 'Folder', unlockLevel: 5, sortOrder: 10 },
-    { code: 'theme_dark', name: 'Dark Mode', description: 'Dark theme for night work', icon: 'Moon', unlockLevel: 5, sortOrder: 11 },
+    // ==========================================
+    // NAVIGATION ITEMS (shown in sidebar)
+    // ==========================================
+
+    // Always visible - starting point
+    {
+      code: 'nav_inbox',
+      name: 'Inbox',
+      description: 'Capture your thoughts',
+      icon: 'Inbox',
+      category: 'navigation',
+      isNavItem: true,
+      sortOrder: 1,
+      // No unlock conditions = always available
+    },
+
+    // After 3 tasks added - first achievement triggers this
+    {
+      code: 'nav_achievements',
+      name: 'Achievements',
+      description: 'Track your progress',
+      celebrationText: '🏆 Achievements unlocked! See your first badge!',
+      icon: 'Trophy',
+      category: 'navigation',
+      isNavItem: true,
+      unlockTasksAdded: 3,
+      sortOrder: 10,
+    },
+
+    // After completing 1 task
+    {
+      code: 'nav_completed',
+      name: 'Completed',
+      description: 'Your finished tasks',
+      celebrationText: '✅ You can now view completed tasks!',
+      icon: 'CheckCircle2',
+      category: 'navigation',
+      isNavItem: true,
+      unlockTasksCompleted: 1,
+      sortOrder: 5,
+    },
+
+    // After assigning 1 task to today
+    {
+      code: 'nav_today',
+      name: 'Today',
+      description: 'Focus on daily tasks',
+      celebrationText: '☀️ Today view unlocked! Focus on what matters.',
+      icon: 'Sun',
+      category: 'navigation',
+      isNavItem: true,
+      unlockTasksAssignedToday: 1,
+      sortOrder: 2,
+    },
+
+    // After scheduling 1 task
+    {
+      code: 'nav_scheduled',
+      name: 'Scheduled',
+      description: 'Plan ahead',
+      celebrationText: '📅 Scheduled view unlocked! Plan your future.',
+      icon: 'Calendar',
+      category: 'navigation',
+      isNavItem: true,
+      unlockTasksScheduled: 1,
+      sortOrder: 3,
+    },
+
+    // After creating 1 project
+    {
+      code: 'nav_projects',
+      name: 'Projects',
+      description: 'Organize by project',
+      celebrationText: '📁 Projects unlocked! Organize your tasks.',
+      icon: 'Folder',
+      category: 'navigation',
+      isNavItem: true,
+      unlockProjectsCreated: 1,
+      sortOrder: 4,
+    },
+
+    // After completing 10 tasks
+    {
+      code: 'nav_quick_actions',
+      name: 'Quick Actions',
+      description: 'Speed through small tasks',
+      celebrationText: '⚡ Quick Actions unlocked! Crush small tasks fast.',
+      icon: 'Zap',
+      category: 'navigation',
+      isNavItem: true,
+      unlockTasksCompleted: 10,
+      sortOrder: 6,
+    },
+
+    // After completing 1 focus session
+    {
+      code: 'nav_focus',
+      name: 'Focus Mode',
+      description: 'Deep work timer',
+      celebrationText: '🎯 Focus Mode unlocked! Enter the zone.',
+      icon: 'Timer',
+      category: 'navigation',
+      isNavItem: true,
+      unlockFocusSessions: 1,
+      sortOrder: 7,
+    },
+
+    // After level 5
+    {
+      code: 'nav_creatures',
+      name: 'Creatures',
+      description: 'Collect productivity companions',
+      celebrationText: '👻 Creatures unlocked! Collect them all.',
+      icon: 'Ghost',
+      category: 'navigation',
+      isNavItem: true,
+      unlockLevel: 5,
+      sortOrder: 9,
+    },
+
+    // After 7-day streak
+    {
+      code: 'nav_stats',
+      name: 'Statistics',
+      description: 'Your productivity insights',
+      celebrationText: '📊 Statistics unlocked! Track your growth.',
+      icon: 'ChartBar',
+      category: 'navigation',
+      isNavItem: true,
+      unlockStreakDays: 7,
+      sortOrder: 11,
+    },
+
+    // ==========================================
+    // FEATURES (functionality within pages)
+    // ==========================================
+
+    // Basic features - always available
+    { code: 'inbox_basic', name: 'Inbox', description: 'Capture tasks quickly', icon: 'Inbox', sortOrder: 101 },
+    { code: 'inbox_count', name: 'Inbox Count', description: 'See how many tasks in inbox', icon: 'Hash', unlockTasksAdded: 1, sortOrder: 102 },
+    { code: 'inbox_quick_add', name: 'Quick Add', description: 'Add tasks with Cmd+N', icon: 'Plus', unlockTasksAdded: 5, sortOrder: 103 },
+    { code: 'today_complete', name: 'Complete Tasks', description: 'Mark tasks as done', icon: 'Check', sortOrder: 105 },
+    { code: 'today_progress', name: 'Daily Progress', description: 'See your daily progress bar', icon: 'BarChart2', unlockTasksCompleted: 3, sortOrder: 106 },
+    { code: 'priority_basic', name: 'Basic Priority', description: '2 priority levels', icon: 'Flag', unlockTasksAdded: 5, sortOrder: 107 },
+    { code: 'inbox_process', name: 'Process Mode', description: 'Swipe through inbox tasks', icon: 'Shuffle', unlockTasksAdded: 10, sortOrder: 108 },
+    { code: 'energy_basic', name: 'Energy Levels', description: 'Low and High energy', icon: 'Battery', unlockTasksCompleted: 5, sortOrder: 109 },
+    { code: 'project_create', name: 'Create Project', description: 'Organize tasks into projects', icon: 'Folder', unlockTasksAdded: 5, sortOrder: 110 },
+    { code: 'theme_dark', name: 'Dark Mode', description: 'Dark theme for night work', icon: 'Moon', unlockLevel: 3, sortOrder: 111 },
 
     // INTERMEDIATE (Level 6-12)
     { code: 'priority_full', name: 'Full Priority', description: '4 priority levels', icon: 'Flag', unlockLevel: 6, sortOrder: 12 },

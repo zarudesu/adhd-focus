@@ -94,20 +94,20 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       updateData.completedAt = new Date();
     }
 
-    // Check if we're marking task as done (need to check previous status)
-    const isCompletingTask = data.status === 'done';
-    let wasAlreadyDone = false;
+    // Get the current task state BEFORE update for tracking progress
+    const [currentTask] = await db
+      .select({ status: tasks.status, scheduledDate: tasks.scheduledDate })
+      .from(tasks)
+      .where(and(eq(tasks.id, id), eq(tasks.userId, session.user.id)))
+      .limit(1);
 
-    if (isCompletingTask) {
-      // Get the current task to check if it was already done
-      const [currentTask] = await db
-        .select({ status: tasks.status })
-        .from(tasks)
-        .where(and(eq(tasks.id, id), eq(tasks.userId, session.user.id)))
-        .limit(1);
-
-      wasAlreadyDone = currentTask?.status === 'done';
+    if (!currentTask) {
+      return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
+
+    const wasAlreadyDone = currentTask.status === 'done';
+    const wasAlreadyToday = currentTask.status === 'today';
+    const hadScheduledDate = !!currentTask.scheduledDate;
 
     const [updatedTask] = await db
       .update(tasks)
@@ -119,14 +119,31 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
+    // Track onboarding progress
+    const progressUpdates: Record<string, unknown> = {
+      updatedAt: new Date(),
+    };
+
     // If task was just completed (not already done), increment totalTasksCompleted
-    if (isCompletingTask && !wasAlreadyDone) {
+    if (data.status === 'done' && !wasAlreadyDone) {
+      progressUpdates.totalTasksCompleted = sql`COALESCE(${users.totalTasksCompleted}, 0) + 1`;
+    }
+
+    // Check if we're assigning to today (only count first time)
+    if (data.status === 'today' && !wasAlreadyToday) {
+      progressUpdates.tasksAssignedToday = sql`COALESCE(${users.tasksAssignedToday}, 0) + 1`;
+    }
+
+    // Check if we're scheduling (only count first time setting scheduledDate)
+    if (data.scheduledDate && !hadScheduledDate) {
+      progressUpdates.tasksScheduled = sql`COALESCE(${users.tasksScheduled}, 0) + 1`;
+    }
+
+    // Only update if we have progress to track
+    if (Object.keys(progressUpdates).length > 1) {
       await db
         .update(users)
-        .set({
-          totalTasksCompleted: sql`COALESCE(${users.totalTasksCompleted}, 0) + 1`,
-          updatedAt: new Date(),
-        })
+        .set(progressUpdates)
         .where(eq(users.id, session.user.id));
     }
 
@@ -159,6 +176,15 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!archivedTask) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
+
+    // Track onboarding progress - task deleted
+    await db
+      .update(users)
+      .set({
+        tasksDeleted: sql`COALESCE(${users.tasksDeleted}, 0) + 1`,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, session.user.id));
 
     return NextResponse.json({ success: true });
   } catch (error) {
