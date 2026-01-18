@@ -281,7 +281,8 @@ export const achievements = pgTable("achievement", {
   hiddenDescription: text("hidden_description").default("Complete secret conditions to unlock"),
 
   icon: text("icon"), // Emoji or icon
-  category: text("category").notNull(), // "progress", "streak", "productivity", "mastery", "hidden", "secret"
+  category: text("category").notNull(), // "progress", "streak", "daily", "weekly", etc.
+  subcategory: text("subcategory"), // More specific categorization
 
   // Visibility
   visibility: achievementVisibilityEnum("visibility").default("visible"),
@@ -492,18 +493,54 @@ export interface UserPreferences {
 export interface AchievementCondition {
   // For task_count
   count?: number;
+  timeframe?: 'total' | 'hour' | 'day' | 'week' | 'month' | 'year';
+
+  // Task properties
+  priority?: 'critical' | 'should' | 'want' | 'someday';
+  energy?: 'low' | 'medium' | 'high';
+  duration?: 'quick' | 'medium' | 'long';
+
+  // Context
+  hasDescription?: boolean;
+  hasSubtasks?: boolean;
+  hasTags?: boolean;
+  inProject?: boolean;
+  noProject?: boolean;
+  recurring?: boolean;
+  onTime?: boolean;
+  wasOverdue?: boolean;
+  context?: string;
+
   // For streak_days
   days?: number;
+
   // For level
   level?: number;
+
+  // For XP
+  xp?: number;
+  hours?: number;
+
   // For time-based
   hour?: number;
   minute?: number;
   dayOfWeek?: number; // 0-6
   dayOfMonth?: number; // 1-31
   month?: number; // 0-11
+  period?: 'morning' | 'afternoon' | 'evening' | 'night';
+  weekend?: boolean;
+  weekday?: boolean;
+
+  // For task numbers
+  number?: number;
+
   // For special conditions
   special?: string; // Custom condition identifier
+  action?: string;
+  rarity?: string;
+  all?: boolean;
+  complete?: boolean;
+  minutes?: number;
 }
 
 export interface CreatureSpawnCondition {
