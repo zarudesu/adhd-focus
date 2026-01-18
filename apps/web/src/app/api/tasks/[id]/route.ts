@@ -134,9 +134,12 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       progressUpdates.tasksAssignedToday = sql`COALESCE(${users.tasksAssignedToday}, 0) + 1`;
     }
 
-    // Check if we're scheduling (only count first time setting scheduledDate)
+    // Check if we're scheduling for a FUTURE date (only count first time)
     if (data.scheduledDate && !hadScheduledDate) {
-      progressUpdates.tasksScheduled = sql`COALESCE(${users.tasksScheduled}, 0) + 1`;
+      const today = new Date().toISOString().split("T")[0];
+      if (data.scheduledDate > today) {
+        progressUpdates.tasksScheduled = sql`COALESCE(${users.tasksScheduled}, 0) + 1`;
+      }
     }
 
     // Only update if we have progress to track

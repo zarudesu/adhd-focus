@@ -145,8 +145,6 @@ export function AddTaskDialog({
 
     setLoading(true);
     try {
-      const today = new Date().toISOString().split('T')[0];
-
       // Determine status and scheduled date
       let status: 'inbox' | 'today' | 'scheduled' = 'inbox';
       let schedDate: string | undefined;
@@ -156,7 +154,7 @@ export function AddTaskDialog({
         schedDate = format(scheduledDate, 'yyyy-MM-dd');
       } else if (forToday) {
         status = 'today';
-        schedDate = today;
+        // Don't set scheduledDate for "today" - it's not scheduled, it's immediate
       }
 
       await onSubmit({
