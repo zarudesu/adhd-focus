@@ -80,7 +80,7 @@ export async function GET() {
 
     const userId = session.user.id;
 
-    // Get user gamification data including onboarding progress
+    // Get user gamification data including onboarding progress and habit stats
     const [user] = await db
       .select({
         xp: users.xp,
@@ -100,6 +100,12 @@ export async function GET() {
         inboxCleared: users.inboxCleared,
         focusSessionsCompleted: users.focusSessionsCompleted,
         onboardingCompleted: users.onboardingCompleted,
+        // Habit stats
+        habitsCompleted: users.habitsCompleted,
+        habitsCreated: users.habitsCreated,
+        habitStreak: users.habitStreak,
+        longestHabitStreak: users.longestHabitStreak,
+        allHabitsCompletedDays: users.allHabitsCompletedDays,
       })
       .from(users)
       .where(eq(users.id, userId))
@@ -209,6 +215,15 @@ export async function GET() {
 
       // Onboarding progress
       progress: userProgress,
+
+      // Habit stats
+      habitStats: {
+        habitsCompleted: user.habitsCompleted || 0,
+        habitsCreated: user.habitsCreated || 0,
+        habitStreak: user.habitStreak || 0,
+        longestHabitStreak: user.longestHabitStreak || 0,
+        allHabitsCompletedDays: user.allHabitsCompletedDays || 0,
+      },
 
       // Features
       unlockedFeatures,

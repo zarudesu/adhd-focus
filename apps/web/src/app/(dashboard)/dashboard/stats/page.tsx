@@ -11,8 +11,9 @@ import { ProtectedRoute } from '@/components/gamification/ProtectedRoute';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Flame, Target, CheckCircle2, Trophy, Sparkles, TrendingUp, Timer, Clock } from 'lucide-react';
+import { Flame, Target, CheckCircle2, Trophy, Sparkles, TrendingUp, Timer, Clock, ListChecks, CalendarCheck } from 'lucide-react';
 import { useGamification } from '@/hooks/useGamification';
+import { useHabits } from '@/hooks/useHabits';
 import { cn } from '@/lib/utils';
 
 // Stats data from API
@@ -198,6 +199,7 @@ function StatsContent() {
   const { count: todayTasksCount, loading: todayLoading } = useTodayTasksCount();
   const wipLimit = useWipLimit();
   const { data: statsData, loading: statsLoading } = useStats(7);
+  const { summary: habitSummary, loading: habitsLoading } = useHabits();
 
   if (loading) {
     return (
@@ -342,6 +344,85 @@ function StatsContent() {
                 <p className="text-sm text-muted-foreground mt-1">
                   {formatDuration(statsData?.periodTotals.focusMinutes || 0)} this week
                 </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Habits Stats */}
+          <div className="grid gap-4 md:grid-cols-3">
+            {/* Today's Habits */}
+            <Card className={cn(habitSummary.allDone && 'border-green-500/30')}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Today's Habits</CardTitle>
+                <ListChecks className={cn(
+                  'h-4 w-4',
+                  habitSummary.allDone ? 'text-green-500' : 'text-muted-foreground'
+                )} />
+              </CardHeader>
+              <CardContent>
+                <div className={cn(
+                  'text-2xl font-bold',
+                  habitSummary.allDone && 'text-green-500'
+                )}>
+                  {habitsLoading ? '...' : habitSummary.completed}/{habitSummary.habitsForToday}
+                </div>
+                <Progress
+                  value={habitSummary.progress}
+                  className={cn('mt-2', habitSummary.allDone && '[&>div]:bg-green-500')}
+                />
+                {habitSummary.skipped > 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {habitSummary.skipped} skipped
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Habit Streak */}
+            <Card className={cn(
+              state?.habitStats?.habitStreak && state.habitStats.habitStreak > 0 && 'border-purple-500/30'
+            )}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Habit Streak</CardTitle>
+                <CalendarCheck className={cn(
+                  'h-4 w-4',
+                  state?.habitStats?.habitStreak && state.habitStats.habitStreak > 0
+                    ? 'text-purple-500'
+                    : 'text-muted-foreground'
+                )} />
+              </CardHeader>
+              <CardContent>
+                <div className={cn(
+                  'text-2xl font-bold',
+                  state?.habitStats?.habitStreak && state.habitStats.habitStreak > 0 && 'text-purple-500'
+                )}>
+                  {state?.habitStats?.habitStreak || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {state?.habitStats?.habitStreak === 1 ? 'day' : 'days'} in a row
+                </p>
+                {state?.habitStats?.longestHabitStreak && state.habitStats.longestHabitStreak > 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Best: {state.habitStats.longestHabitStreak} days
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Total Habits Completed */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Habits Completed</CardTitle>
+                <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{state?.habitStats?.habitsCompleted || 0}</div>
+                <p className="text-xs text-muted-foreground">total check-ins</p>
+                {state?.habitStats?.allHabitsCompletedDays && state.habitStats.allHabitsCompletedDays > 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {state.habitStats.allHabitsCompletedDays} perfect days
+                  </p>
+                )}
               </CardContent>
             </Card>
           </div>

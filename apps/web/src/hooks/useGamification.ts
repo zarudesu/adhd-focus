@@ -82,6 +82,15 @@ export function calculateTaskXp(task: {
 import { rollReward } from '@/lib/gamification';
 export const rollRewardEffect = rollReward;
 
+// Habit stats interface
+interface HabitStats {
+  habitsCompleted: number;
+  habitsCreated: number;
+  habitStreak: number;
+  longestHabitStreak: number;
+  allHabitsCompletedDays: number;
+}
+
 // Gamification state interface
 interface GamificationState {
   xp: number;
@@ -93,6 +102,7 @@ interface GamificationState {
   achievements: (UserAchievement & { achievement: Achievement })[];
   creatures: (UserCreature & { creature: Creature })[];
   recentRewards: { rarity: RewardRarity; effect: string; timestamp: Date }[];
+  habitStats: HabitStats;
 }
 
 interface UseGamificationReturn {
@@ -139,6 +149,13 @@ export function useGamification(): UseGamificationReturn {
         achievements: [],
         creatures: [],
         recentRewards: [],
+        habitStats: {
+          habitsCompleted: 0,
+          habitsCreated: 0,
+          habitStreak: 0,
+          longestHabitStreak: 0,
+          allHabitsCompletedDays: 0,
+        },
       });
     } finally {
       setLoading(false);
