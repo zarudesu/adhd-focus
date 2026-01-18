@@ -142,9 +142,12 @@ export async function POST(request: NextRequest) {
       progressUpdates.tasksAssignedToday = sql`COALESCE(${users.tasksAssignedToday}, 0) + 1`;
     }
 
-    // Track if scheduled
+    // Track if scheduled (only for future dates, not "today")
     if (data.scheduledDate) {
-      progressUpdates.tasksScheduled = sql`COALESCE(${users.tasksScheduled}, 0) + 1`;
+      const today = new Date().toISOString().split("T")[0];
+      if (data.scheduledDate > today) {
+        progressUpdates.tasksScheduled = sql`COALESCE(${users.tasksScheduled}, 0) + 1`;
+      }
     }
 
     await db
