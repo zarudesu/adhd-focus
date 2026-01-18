@@ -21,6 +21,12 @@ function checkCondition(
     totalTasksCompleted: number;
     currentStreak: number;
     longestStreak: number;
+    // Habit stats
+    habitsCompleted: number;
+    habitsCreated: number;
+    habitStreak: number;
+    longestHabitStreak: number;
+    allHabitsCompletedDays: number;
   },
   context?: {
     currentHour?: number;
@@ -53,6 +59,22 @@ function checkCondition(
       if (condition.month !== undefined && context.currentMonth !== condition.month) return false;
       return true;
 
+    // Habit achievements
+    case 'habit_count':
+      return condition.count !== undefined && userStats.habitsCompleted >= condition.count;
+
+    case 'habit_create':
+      return condition.count !== undefined && userStats.habitsCreated >= condition.count;
+
+    case 'habit_streak':
+      return condition.days !== undefined && userStats.habitStreak >= condition.days;
+
+    case 'habit_longest_streak':
+      return condition.days !== undefined && userStats.longestHabitStreak >= condition.days;
+
+    case 'all_habits_days':
+      return condition.count !== undefined && userStats.allHabitsCompletedDays >= condition.count;
+
     case 'special':
       // Special conditions are checked elsewhere with specific logic
       return false;
@@ -78,6 +100,12 @@ export async function POST(request: Request) {
         totalTasksCompleted: users.totalTasksCompleted,
         currentStreak: users.currentStreak,
         longestStreak: users.longestStreak,
+        // Habit stats
+        habitsCompleted: users.habitsCompleted,
+        habitsCreated: users.habitsCreated,
+        habitStreak: users.habitStreak,
+        longestHabitStreak: users.longestHabitStreak,
+        allHabitsCompletedDays: users.allHabitsCompletedDays,
       })
       .from(users)
       .where(eq(users.id, userId))
@@ -130,6 +158,12 @@ export async function POST(request: Request) {
           totalTasksCompleted: user.totalTasksCompleted || 0,
           currentStreak: user.currentStreak || 0,
           longestStreak: user.longestStreak || 0,
+          // Habit stats
+          habitsCompleted: user.habitsCompleted || 0,
+          habitsCreated: user.habitsCreated || 0,
+          habitStreak: user.habitStreak || 0,
+          longestHabitStreak: user.longestHabitStreak || 0,
+          allHabitsCompletedDays: user.allHabitsCompletedDays || 0,
         },
         context
       );
