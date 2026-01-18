@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Check, X, MoreHorizontal, Trash2, Flame, Loader2 } from "lucide-react";
+import { Check, X, MoreHorizontal, Trash2, Flame, Loader2, Pencil } from "lucide-react";
 
 interface HabitItemProps {
   habit: {
@@ -25,10 +25,11 @@ interface HabitItemProps {
   onCheck: (id: string, skipped?: boolean) => Promise<void>;
   onUncheck: (id: string) => Promise<void>;
   onArchive: (id: string) => Promise<void>;
+  onEdit?: (id: string) => void;
   disabled?: boolean;
 }
 
-export function HabitItem({ habit, onCheck, onUncheck, onArchive, disabled }: HabitItemProps) {
+export function HabitItem({ habit, onCheck, onUncheck, onArchive, onEdit, disabled }: HabitItemProps) {
   const [loading, setLoading] = useState(false);
 
   const handleCheck = async () => {
@@ -142,6 +143,12 @@ export function HabitItem({ habit, onCheck, onUncheck, onArchive, disabled }: Ha
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          {onEdit && (
+            <DropdownMenuItem onClick={() => onEdit(habit.id)}>
+              <Pencil className="h-4 w-4 mr-2" />
+              Edit
+            </DropdownMenuItem>
+          )}
           {(habit.isCompleted || habit.isSkipped) && (
             <DropdownMenuItem onClick={handleCheck}>
               Undo

@@ -10,6 +10,8 @@ import { useYesterdayReview } from "@/hooks/useYesterdayReview";
 import { useGamificationEvents } from "@/components/gamification/GamificationProvider";
 import { AddHabitDialog, YesterdayReviewModal } from "@/components/habits";
 import { HabitItem } from "@/components/habits/HabitItem";
+import { EditHabitDialog } from "@/components/habits/EditHabitDialog";
+import type { Habit } from "@/db/schema";
 import {
   Plus,
   Sparkles,
@@ -19,7 +21,8 @@ import {
 
 export default function ChecklistPage() {
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const { habits, summary, loading, error, check, uncheck, create, archive, refresh } = useHabits();
+  const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
+  const { habits, summary, loading, error, check, uncheck, create, update, archive, refresh } = useHabits();
   const { data: reviewData, loading: reviewLoading, submitReview, skipReview, dismissed } = useYesterdayReview();
   const { handleTaskComplete } = useGamificationEvents();
 
@@ -57,6 +60,17 @@ export default function ChecklistPage() {
     await archive(id);
   }, [archive]);
 
+  const handleEdit = useCallback((id: string) => {
+    const habit = habits.find(h => h.id === id);
+    if (habit) {
+      setEditingHabit(habit as unknown as Habit);
+    }
+  }, [habits]);
+
+  const handleUpdate = useCallback(async (id: string, input: Parameters<typeof update>[1]) => {
+    await update(id, input);
+  }, [update]);
+
   // Filter habits by time of day
   const morningHabits = habits.filter(h => h.timeOfDay === 'morning' && h.shouldDoToday);
   const afternoonHabits = habits.filter(h => h.timeOfDay === 'afternoon' && h.shouldDoToday);
@@ -84,6 +98,13 @@ export default function ChecklistPage() {
         onSubmit={async (input) => {
           await create(input);
         }}
+      />
+
+      <EditHabitDialog
+        habit={editingHabit}
+        open={!!editingHabit}
+        onOpenChange={(open) => !open && setEditingHabit(null)}
+        onSubmit={handleUpdate}
       />
 
       {showReviewModal && reviewData && (
@@ -174,6 +195,7 @@ export default function ChecklistPage() {
                 onCheck={handleCheck}
                 onUncheck={handleUncheck}
                 onArchive={handleArchive}
+                onEdit={handleEdit}
               />
             )}
 
@@ -186,6 +208,7 @@ export default function ChecklistPage() {
                 onCheck={handleCheck}
                 onUncheck={handleUncheck}
                 onArchive={handleArchive}
+                onEdit={handleEdit}
               />
             )}
 
@@ -198,6 +221,7 @@ export default function ChecklistPage() {
                 onCheck={handleCheck}
                 onUncheck={handleUncheck}
                 onArchive={handleArchive}
+                onEdit={handleEdit}
               />
             )}
 
@@ -210,6 +234,7 @@ export default function ChecklistPage() {
                 onCheck={handleCheck}
                 onUncheck={handleUncheck}
                 onArchive={handleArchive}
+                onEdit={handleEdit}
               />
             )}
 
@@ -222,6 +247,7 @@ export default function ChecklistPage() {
                 onCheck={handleCheck}
                 onUncheck={handleUncheck}
                 onArchive={handleArchive}
+                onEdit={handleEdit}
               />
             )}
 
@@ -234,6 +260,7 @@ export default function ChecklistPage() {
                   onCheck={handleCheck}
                   onUncheck={handleUncheck}
                   onArchive={handleArchive}
+                  onEdit={handleEdit}
                   disabled
                 />
               </div>
@@ -261,10 +288,11 @@ interface HabitSectionProps {
   onCheck: (id: string, skipped?: boolean) => Promise<void>;
   onUncheck: (id: string) => Promise<void>;
   onArchive: (id: string) => Promise<void>;
+  onEdit?: (id: string) => void;
   disabled?: boolean;
 }
 
-function HabitSection({ title, emoji, habits, onCheck, onUncheck, onArchive, disabled }: HabitSectionProps) {
+function HabitSection({ title, emoji, habits, onCheck, onUncheck, onArchive, onEdit, disabled }: HabitSectionProps) {
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -284,6 +312,7 @@ function HabitSection({ title, emoji, habits, onCheck, onUncheck, onArchive, dis
             onCheck={onCheck}
             onUncheck={onUncheck}
             onArchive={onArchive}
+            onEdit={onEdit}
             disabled={disabled}
           />
         ))}
