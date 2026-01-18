@@ -298,16 +298,19 @@ const { tasks, todayTasks, inboxTasks, scheduledTasks,
 - WIP limit: 3 tasks/day
 - Quick capture: instant inbox
 
-## Gamification System (NEW!)
+## Gamification System
 
-**Documentation**: See `apps/web/docs/GAMIFICATION.md` for full details.
+**Documentation**:
+- **[docs/FEATURE_UNLOCKS.md](docs/FEATURE_UNLOCKS.md)** - Unlock conditions & rationale
+- **[apps/web/docs/GAMIFICATION.md](apps/web/docs/GAMIFICATION.md)** - XP, achievements, creatures
 
 ### Core Concept: Progressive Feature Unlocking
 
 ADHD brain overwhelms from too many options. Solution:
 - New user sees **only Inbox**
-- Features **unlock** through levels/achievements
+- Features **unlock** through user actions (not levels!)
 - Creates **progress feeling** + **tutorial effect**
+- Hidden until unlocked = surprise delight
 
 ### Key Components
 
@@ -317,16 +320,22 @@ ADHD brain overwhelms from too many options. Solution:
 | `useFeatures` | Check if feature unlocked, get next unlock |
 | `useGamification` | XP/level, award XP, check achievements |
 
-### Feature Unlock Order
+### Feature Unlock Order (Current)
 
-| Level | Feature | Alt: Task Count |
-|-------|---------|-----------------|
-| 0 | Inbox | - |
-| 2 | Today | 3 tasks |
-| 3 | Priority | 5 tasks |
-| 4 | Energy | 10 tasks |
-| 5 | Projects | 15 tasks |
-| 6+ | Scheduled, Tags, Focus, etc. | - |
+| Feature | Unlock Trigger |
+|---------|---------------|
+| Inbox | Always available |
+| Today | 1 task assigned to today |
+| Scheduled | 1 task scheduled for **future** date |
+| Completed | 1 task completed |
+| Achievements | 3 tasks added |
+| Focus Mode | 5 tasks completed |
+| Projects | 10 tasks added |
+| Quick Actions | 10 tasks completed |
+| Creatures | Level 5 |
+| Statistics | 7-day streak |
+
+See **[docs/FEATURE_UNLOCKS.md](docs/FEATURE_UNLOCKS.md)** for full details and rationale.
 
 ### XP Formula
 ```typescript

@@ -104,23 +104,20 @@ reward_logs
 
 ## Порядок разблокировки
 
-| Level | Feature | Task Count Alt |
-|-------|---------|----------------|
-| 0 | Inbox | - |
-| 2 | Today | 3 tasks |
-| 3 | Priority | 5 tasks |
-| 4 | Energy | 10 tasks |
-| 5 | Projects | 15 tasks |
-| 6 | Scheduled | - |
-| 7 | Descriptions | 20 tasks |
-| 8 | Quick Actions | - |
-| 9 | Tags | - |
-| 10 | Focus Mode | - |
-| 12 | Statistics | - |
-| 15 | Themes | - |
-| 18 | Settings | - |
-| 20 | Notifications | - |
-| 25 | Advanced Stats | - |
+> **Актуальная документация**: См. [docs/FEATURE_UNLOCKS.md](../../../docs/FEATURE_UNLOCKS.md)
+
+| Feature | Unlock Trigger |
+|---------|---------------|
+| Inbox | Always available |
+| Today | 1 task assigned to today |
+| Scheduled | 1 task scheduled for **future** date |
+| Completed | 1 task completed |
+| Achievements | 3 tasks added |
+| Focus Mode | 5 tasks completed |
+| Projects | 10 tasks added |
+| Quick Actions | 10 tasks completed |
+| Creatures | Level 5 |
+| Statistics | 7-day streak |
 
 ---
 

@@ -1,5 +1,9 @@
 # ADHD Focus API Documentation
 
+> **ARCHIVED**: This document describes the OLD Supabase REST API.
+> The project now uses Next.js API routes with Drizzle ORM.
+> See [CLAUDE.md](../CLAUDE.md) for current API routes.
+
 ## Overview
 
 ADHD Focus provides a REST API powered by Supabase (PostgREST). The API can be used for:

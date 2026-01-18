@@ -1,5 +1,9 @@
 # Architecture
 
+> **ARCHIVED**: This document describes the OLD Supabase + Expo architecture.
+> The project now uses Next.js + Drizzle + PostgreSQL.
+> See [CLAUDE.md](../CLAUDE.md) for current architecture.
+
 This document describes the system architecture of ADHD Focus.
 
 ## Overview

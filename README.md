@@ -2,43 +2,66 @@
 
 Task management app designed specifically for people with ADHD. Reduces cognitive load, supports executive function, and makes productivity achievable.
 
+**Live:** [beatyour8.com](https://beatyour8.com)
+
 ## Why Another Task Manager?
 
 Most task managers are built for neurotypical brains. They overwhelm with features, require complex setups, and show everything at once. ADHD Focus is different:
 
+- **Progressive Disclosure** - Start with just Inbox, unlock features as you go
 - **One Task at a Time** - Hide the noise, focus on what matters now
 - **Energy Matching** - Tag tasks by energy level, work with your brain not against it
 - **Simple Priorities** - Must/Should/Want instead of confusing 1-5 scales
 - **Quick Capture** - Instant inbox for brain dumps, process later
-- **Streaks & Rewards** - Dopamine hits for completing tasks
+- **Gamification** - XP, levels, achievements, and collectible creatures
 
 ## Features
 
-### Core
-- Task management with ADHD-specific fields (energy, simple priority)
-- Pomodoro timer with automatic breaks
-- Daily task limits (WIP limit - max 3 by default)
-- Streak tracking for motivation
+### Core Task Management
+- **Inbox** - Quick capture, process later
+- **Today** - Focus on today's tasks (WIP limit: 3 by default)
+- **Scheduled** - Plan for the future
+- **Projects** - Group related tasks
 
-### Integrations
-- **Telegram bot** - Quick capture from anywhere
-- **Google Calendar** - Sync scheduled tasks
-- **REST API** - Build your own integrations
-- **Webhooks** - Automate with external services
+### Focus Tools
+- **Pomodoro Timer** - Work/break cycles with stats
+- **Quick Actions** - 2-minute timer for rapid task capture
+- **Process Mode** - Triage inbox tasks one at a time
 
-### Deployment
-- Cloud (Supabase hosted)
-- Self-hosted (Docker Compose)
-- Open source (MIT)
+### Gamification
+- **XP & Levels** - Earn XP for completing tasks
+- **Achievements** - 30+ achievements (some secret!)
+- **Creatures** - Collectible creatures that spawn on task completion
+- **Visual Rewards** - Sci-fi animations for dopamine hits
+- **Streaks** - Track consecutive days
+
+### Progressive Unlocking
+New users see only Inbox. Features unlock naturally:
+- Complete a task → Completed page appears
+- Assign to today → Today page appears
+- Add 10 tasks → Projects unlocks
+- Reach Level 5 → Creatures collection unlocks
+
+See [docs/FEATURE_UNLOCKS.md](docs/FEATURE_UNLOCKS.md) for full details.
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| Framework | Next.js 16 (App Router) |
+| Database | PostgreSQL 17 |
+| ORM | Drizzle |
+| Auth | NextAuth v5 (Credentials) |
+| UI | shadcn/ui + Tailwind CSS |
+| Deployment | Docker + Caddy + GitHub Actions |
 
 ## Quick Start
 
 ### Prerequisites
 - Node.js 18+
-- pnpm (`npm install -g pnpm`)
-- Supabase account (or Docker for self-hosted)
+- Docker (for database)
 
-### Installation
+### Development Setup
 
 ```bash
 # Clone
@@ -46,26 +69,64 @@ git clone https://github.com/zarudesu/adhd-focus.git
 cd adhd-focus
 
 # Install dependencies
-pnpm install
+npm install
+
+# Start database
+cd docker && docker compose up -d db
 
 # Configure environment
-cp apps/mobile/.env.example apps/mobile/.env
-# Edit .env with your Supabase credentials
+cp apps/web/.env.example apps/web/.env.local
+# Edit .env.local with your settings
 
-# Run mobile app
-cd apps/mobile
-npx expo start
+# Run migrations
+cd apps/web && npm run db:push
+
+# Start dev server
+npm run dev
 ```
 
-### Database Setup
+Open [http://localhost:3000](http://localhost:3000)
 
-1. Create Supabase project at [supabase.com](https://supabase.com)
-2. Run migrations in SQL Editor:
-   - `supabase/migrations/001_initial_schema.sql`
-   - `supabase/migrations/002_integrations.sql`
-3. Copy project URL and anon key to `.env`
+### Environment Variables
 
-### Self-Hosted Deployment
+```bash
+# apps/web/.env.local
+DATABASE_URL=postgres://postgres:testpassword123@localhost:5434/postgres
+AUTH_SECRET=your-secret-here
+AUTH_URL=http://localhost:3000
+```
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [CLAUDE.md](CLAUDE.md) | AI assistant context & project state |
+| [docs/README.md](docs/README.md) | Documentation index |
+| [docs/FEATURE_UNLOCKS.md](docs/FEATURE_UNLOCKS.md) | Progressive unlock system |
+| [apps/web/docs/GAMIFICATION.md](apps/web/docs/GAMIFICATION.md) | Gamification details |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | How to contribute |
+
+## Project Structure
+
+```
+adhd-focus/
+├── apps/
+│   └── web/                    # Next.js web app
+│       ├── src/
+│       │   ├── app/            # Pages + API routes
+│       │   ├── components/     # React components
+│       │   ├── hooks/          # Custom hooks
+│       │   ├── db/             # Drizzle schema
+│       │   └── lib/            # Utilities
+│       └── docs/               # App-specific docs
+├── docker/                     # Production deployment
+├── docs/                       # Project documentation
+└── CLAUDE.md                   # AI context file
+```
+
+## Deployment
+
+### Self-Hosted (Docker)
 
 ```bash
 cd docker
@@ -75,95 +136,36 @@ cp .env.example .env
 docker compose up -d
 ```
 
-Access points:
-- Studio (Admin): http://localhost:3000
-- API: http://localhost:8000/rest/v1
-- Auth: http://localhost:8000/auth/v1
+The app will be available on your configured domain with automatic HTTPS via Caddy.
 
-## Documentation
+### Production
 
-| Document | Description |
-|----------|-------------|
-| [CLAUDE.md](CLAUDE.md) | AI assistant context & project rules |
-| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | Development setup & workflow |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design & data flow |
-| [docs/API.md](docs/API.md) | REST API, Telegram bot, Calendar sync |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | How to contribute |
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|------------|
-| Mobile/Web | Expo (React Native) |
-| Backend | Supabase (PostgreSQL, Auth, Realtime) |
-| Edge Functions | Deno |
-| Monorepo | Turborepo |
-| Language | TypeScript |
-| State | Zustand (local UI only) |
-
-## Project Structure
-
-```
-adhd-focus/
-├── apps/
-│   ├── mobile/              # Expo app (iOS, Android, Web)
-│   │   ├── api/             # Supabase API layer
-│   │   ├── hooks/           # Business logic hooks
-│   │   ├── components/      # UI components
-│   │   ├── app/             # Screens (Expo Router)
-│   │   ├── store/           # Local UI state (Zustand)
-│   │   └── lib/             # Utilities
-│   └── web/                 # Web dashboard (planned)
-├── packages/
-│   ├── shared/              # Shared types, constants, utils
-│   └── ui/                  # Shared UI components
-├── supabase/
-│   ├── migrations/          # Database schema (SQL)
-│   └── functions/           # Edge Functions (Deno)
-│       ├── telegram-webhook/
-│       └── google-calendar-sync/
-├── docker/                  # Self-hosted deployment
-│   ├── docker-compose.yml
-│   └── .env.example
-├── docs/                    # Documentation
-├── CLAUDE.md               # AI assistant instructions
-└── CONTRIBUTING.md         # Contribution guide
-```
+- Push to `main` triggers GitHub Actions
+- Builds Docker image and deploys to server
+- Automatic HTTPS with Let's Encrypt
 
 ## Design Philosophy
 
 1. **Minimal UI** - Every element must earn its place
 2. **Reduce Decisions** - Smart defaults, auto-prioritization
-3. **One Thing at a Time** - Progressive disclosure
+3. **Progressive Disclosure** - Reveal features as user is ready
 4. **Instant Feedback** - Visual response to every action
 5. **Forgiving UX** - Easy undo, no data loss
-6. **Works Offline** - Sync when connected
 
 ## Commands
 
 ```bash
 # Development
-pnpm install              # Install all dependencies
-pnpm dev                  # Run all apps
-pnpm build                # Build all packages
+npm install              # Install dependencies
+npm run dev              # Start dev server
 
-# Mobile app
-cd apps/mobile
-npx expo start            # Start Expo dev server
-npx expo start --ios      # iOS simulator
-npx expo start --android  # Android emulator
-npx expo start --web      # Web browser
+# Database
+npm run db:push          # Sync schema to database
+npm run db:studio        # Open Drizzle Studio
 
-# Supabase
-supabase start            # Local Supabase
-supabase db push          # Apply migrations
-supabase functions serve  # Local Edge Functions
-
-# Docker (self-hosted)
-cd docker
-docker compose up -d      # Start services
-docker compose logs -f    # View logs
-docker compose down       # Stop services
+# Production
+docker compose up -d     # Start production stack
+docker compose logs -f   # View logs
 ```
 
 ## Contributing
@@ -173,11 +175,6 @@ Contributions welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
 ## License
 
 MIT License - feel free to use this for your own projects.
-
-## Links
-
-- [GitHub Repository](https://github.com/zarudesu/adhd-focus)
-- [Issues & Feature Requests](https://github.com/zarudesu/adhd-focus/issues)
 
 ---
 

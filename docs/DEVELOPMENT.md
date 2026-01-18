@@ -1,5 +1,9 @@
 # Development Guide
 
+> **ARCHIVED**: This document describes the OLD Supabase + Expo setup.
+> The project now uses Next.js + Drizzle + PostgreSQL.
+> See [CLAUDE.md](../CLAUDE.md) for current development workflow.
+
 Complete guide for developing ADHD Focus.
 
 ## Table of Contents
