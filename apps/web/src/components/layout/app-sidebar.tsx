@@ -16,7 +16,6 @@ import {
   Trophy,
   Zap,
   Ghost,
-  Lock,
 } from "lucide-react";
 
 import {
@@ -43,13 +42,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useFeatures } from "@/hooks/useFeatures";
-import { cn } from "@/lib/utils";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 // Map nav codes to URLs and icons
 const NAV_CONFIG: Record<string, { url: string; icon: typeof Sun; group: 'tasks' | 'tools' }> = {
@@ -104,30 +96,12 @@ export function AppSidebar({ user }: AppSidebarProps) {
     const config = NAV_CONFIG[feature.code];
     if (!config) return null;
 
-    const IconComponent = config.icon;
-
+    // Hide locked features completely - they appear as a surprise when unlocked!
     if (!feature.isUnlocked) {
-      return (
-        <SidebarMenuItem key={feature.code}>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <SidebarMenuButton
-                  className="opacity-40 cursor-not-allowed"
-                  disabled
-                >
-                  <Lock className="h-4 w-4" />
-                  <span>{feature.name}</span>
-                </SidebarMenuButton>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                <p>Keep going to unlock!</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </SidebarMenuItem>
-      );
+      return null;
     }
+
+    const IconComponent = config.icon;
 
     return (
       <SidebarMenuItem key={feature.code}>
