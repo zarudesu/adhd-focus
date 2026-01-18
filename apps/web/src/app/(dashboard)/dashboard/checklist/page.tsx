@@ -9,9 +9,23 @@ import { useHabits } from "@/hooks/useHabits";
 import { useYesterdayReview } from "@/hooks/useYesterdayReview";
 import { useGamificationEvents } from "@/components/gamification/GamificationProvider";
 import { AddHabitDialog, YesterdayReviewModal } from "@/components/habits";
-import { HabitItem } from "@/components/habits/HabitItem";
 import { EditHabitDialog } from "@/components/habits/EditHabitDialog";
+import { SortableHabitItem } from "@/components/habits/SortableHabitItem";
 import type { Habit } from "@/db/schema";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import {
   Plus,
   Sparkles,
@@ -22,9 +36,21 @@ import {
 export default function ChecklistPage() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
-  const { habits, summary, loading, error, check, uncheck, create, update, archive, refresh } = useHabits();
+  const { habits, summary, loading, error, check, uncheck, create, update, archive, reorder, refresh } = useHabits();
   const { data: reviewData, loading: reviewLoading, submitReview, skipReview, dismissed } = useYesterdayReview();
   const { handleTaskComplete } = useGamificationEvents();
+
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   // Show review modal if needed and not dismissed
   const showReviewModal = !reviewLoading && reviewData?.needsReview && !dismissed && habits.length > 0;
@@ -70,6 +96,25 @@ export default function ChecklistPage() {
   const handleUpdate = useCallback(async (id: string, input: Parameters<typeof update>[1]) => {
     await update(id, input);
   }, [update]);
+
+  const handleDragEnd = useCallback((event: DragEndEvent, sectionHabits: typeof habits) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = sectionHabits.findIndex(h => h.id === active.id);
+      const newIndex = sectionHabits.findIndex(h => h.id === over.id);
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        // Create new order
+        const newOrder = [...sectionHabits];
+        const [moved] = newOrder.splice(oldIndex, 1);
+        newOrder.splice(newIndex, 0, moved);
+
+        // Reorder just this section
+        reorder(newOrder.map(h => h.id));
+      }
+    }
+  }, [reorder]);
 
   // Filter habits by time of day
   const morningHabits = habits.filter(h => h.timeOfDay === 'morning' && h.shouldDoToday);
@@ -196,6 +241,8 @@ export default function ChecklistPage() {
                 onUncheck={handleUncheck}
                 onArchive={handleArchive}
                 onEdit={handleEdit}
+                onDragEnd={(e) => handleDragEnd(e, morningHabits)}
+                sensors={sensors}
               />
             )}
 
@@ -209,6 +256,8 @@ export default function ChecklistPage() {
                 onUncheck={handleUncheck}
                 onArchive={handleArchive}
                 onEdit={handleEdit}
+                onDragEnd={(e) => handleDragEnd(e, afternoonHabits)}
+                sensors={sensors}
               />
             )}
 
@@ -222,6 +271,8 @@ export default function ChecklistPage() {
                 onUncheck={handleUncheck}
                 onArchive={handleArchive}
                 onEdit={handleEdit}
+                onDragEnd={(e) => handleDragEnd(e, eveningHabits)}
+                sensors={sensors}
               />
             )}
 
@@ -235,6 +286,8 @@ export default function ChecklistPage() {
                 onUncheck={handleUncheck}
                 onArchive={handleArchive}
                 onEdit={handleEdit}
+                onDragEnd={(e) => handleDragEnd(e, nightHabits)}
+                sensors={sensors}
               />
             )}
 
@@ -248,6 +301,8 @@ export default function ChecklistPage() {
                 onUncheck={handleUncheck}
                 onArchive={handleArchive}
                 onEdit={handleEdit}
+                onDragEnd={(e) => handleDragEnd(e, anytimeHabits)}
+                sensors={sensors}
               />
             )}
 
@@ -261,6 +316,8 @@ export default function ChecklistPage() {
                   onUncheck={handleUncheck}
                   onArchive={handleArchive}
                   onEdit={handleEdit}
+                  onDragEnd={(e) => handleDragEnd(e, notTodayHabits)}
+                  sensors={sensors}
                   disabled
                 />
               </div>
@@ -289,10 +346,12 @@ interface HabitSectionProps {
   onUncheck: (id: string) => Promise<void>;
   onArchive: (id: string) => Promise<void>;
   onEdit?: (id: string) => void;
+  onDragEnd?: (event: DragEndEvent) => void;
+  sensors: ReturnType<typeof useSensors>;
   disabled?: boolean;
 }
 
-function HabitSection({ title, emoji, habits, onCheck, onUncheck, onArchive, onEdit, disabled }: HabitSectionProps) {
+function HabitSection({ title, emoji, habits, onCheck, onUncheck, onArchive, onEdit, onDragEnd, sensors, disabled }: HabitSectionProps) {
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -305,17 +364,28 @@ function HabitSection({ title, emoji, habits, onCheck, onUncheck, onArchive, onE
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
-        {habits.map(habit => (
-          <HabitItem
-            key={habit.id}
-            habit={habit}
-            onCheck={onCheck}
-            onUncheck={onUncheck}
-            onArchive={onArchive}
-            onEdit={onEdit}
-            disabled={disabled}
-          />
-        ))}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={onDragEnd}
+        >
+          <SortableContext
+            items={habits.map(h => h.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            {habits.map(habit => (
+              <SortableHabitItem
+                key={habit.id}
+                habit={habit}
+                onCheck={onCheck}
+                onUncheck={onUncheck}
+                onArchive={onArchive}
+                onEdit={onEdit}
+                disabled={disabled}
+              />
+            ))}
+          </SortableContext>
+        </DndContext>
       </CardContent>
     </Card>
   );

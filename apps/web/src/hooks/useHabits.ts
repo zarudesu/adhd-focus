@@ -45,6 +45,7 @@ interface UseHabitsReturn {
   archive: (id: string) => Promise<void>;
   check: (id: string, skipped?: boolean, reflection?: string) => Promise<CheckResult>;
   uncheck: (id: string) => Promise<void>;
+  reorder: (orderedIds: string[]) => Promise<void>;
 }
 
 interface CreateHabitInput {
@@ -227,6 +228,52 @@ export function useHabits(): UseHabitsReturn {
     }
   }, [date, fetchHabits]);
 
+  const reorder = useCallback(async (orderedIds: string[]): Promise<void> => {
+    // Optimistic update - reorder habits in state
+    setHabits(prev => {
+      const habitMap = new Map(prev.map(h => [h.id, h]));
+      const reordered: typeof prev = [];
+
+      // First add habits in the new order
+      orderedIds.forEach(id => {
+        const habit = habitMap.get(id);
+        if (habit) reordered.push(habit);
+      });
+
+      // Add any remaining habits that weren't in orderedIds
+      prev.forEach(h => {
+        if (!orderedIds.includes(h.id)) {
+          reordered.push(h);
+        }
+      });
+
+      return reordered;
+    });
+
+    try {
+      // Send update to server - batch update sort orders
+      const updates = orderedIds.map((id, index) => ({
+        id,
+        sortOrder: index,
+      }));
+
+      const res = await fetch('/api/habits/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ habits: updates }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to reorder habits');
+      }
+    } catch (err) {
+      // Revert on error
+      await fetchHabits();
+      throw err;
+    }
+  }, [fetchHabits]);
+
   return {
     habits,
     summary,
@@ -239,5 +286,6 @@ export function useHabits(): UseHabitsReturn {
     archive,
     check,
     uncheck,
+    reorder,
   };
 }
