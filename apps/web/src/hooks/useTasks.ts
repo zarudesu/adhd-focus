@@ -143,7 +143,15 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
     } finally {
       setLoading(false);
     }
-  }, [JSON.stringify(filters)]);
+  }, [
+    filters.status,
+    filters.projectId,
+    filters.scheduledDate,
+    filters.dueDateBefore,
+    filters.energyRequired,
+    filters.limit,
+    filters.offset,
+  ]);
 
   useEffect(() => {
     if (autoFetch) {
@@ -345,7 +353,8 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
     });
   }, [update]);
 
-  const today = new Date().toISOString().split('T')[0];
+  // Memoize today's date string to prevent filter recalculations
+  const today = useMemo(() => new Date().toISOString().split('T')[0], []);
 
   const todayTasks = useMemo(
     () =>

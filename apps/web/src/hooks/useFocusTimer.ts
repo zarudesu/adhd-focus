@@ -148,6 +148,27 @@ export function useFocusTimer(options: UseFocusTimerOptions = {}): UseFocusTimer
     requestNotificationPermission();
   }, []);
 
+  // Save session to database when timer completes
+  useEffect(() => {
+    if (state.status === 'completed' && state.currentSessionId && state.mode === 'work') {
+      const saveSession = async () => {
+        try {
+          await fetch(`/api/focus/sessions/${state.currentSessionId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              completed: true,
+              pomodoros: 1, // Each work session is exactly 1 pomodoro
+            }),
+          });
+        } catch {
+          // Ignore errors - session tracking is non-critical
+        }
+      };
+      saveSession();
+    }
+  }, [state.status, state.currentSessionId, state.mode]);
+
   // Timer tick logic
   useEffect(() => {
     if (state.status === 'running') {

@@ -9,6 +9,7 @@ import { signIn, signOut } from '@/lib/auth';
 import { AuthError } from 'next-auth';
 import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import { registerUser } from '@/app/api/auth/register/route';
+import { logError } from '@/lib/logger';
 
 export type AuthState = {
   error?: string;
@@ -42,7 +43,7 @@ export async function authenticate(
       throw error;
     }
 
-    console.error('[Auth] Login error:', error);
+    logError('[Auth] Login', error);
 
     if (error instanceof AuthError) {
       switch (error.type) {
@@ -82,7 +83,6 @@ export async function register(
     const result = await registerUser({ email, password });
 
     if (!result.success) {
-      console.error('[Auth] Registration failed:', result.error);
       return { error: result.error };
     }
 
@@ -100,7 +100,7 @@ export async function register(
       throw error;
     }
 
-    console.error('[Auth] Registration error:', error);
+    logError('[Auth] Registration', error);
 
     if (error instanceof AuthError) {
       return { error: 'Failed to sign in after registration' };

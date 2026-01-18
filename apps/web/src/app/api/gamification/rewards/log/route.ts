@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/db';
 import { users, rewardLogs } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { logError } from '@/lib/logger';
 
 // Rarity hierarchy for "rarest seen" tracking
 const RARITY_ORDER = ['common', 'uncommon', 'rare', 'legendary', 'mythic'];
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Failed to log reward:', error);
+    logError('POST /api/gamification/rewards/log', error);
     return NextResponse.json({ error: 'Failed to log reward' }, { status: 500 });
   }
 }

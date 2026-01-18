@@ -9,6 +9,7 @@ import {
   type CreatureSpawnCondition,
 } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
+import { logError } from '@/lib/logger';
 
 // Check if spawn conditions are met
 function checkSpawnConditions(
@@ -166,7 +167,7 @@ export async function POST(request: Request) {
       newCount: existingUserCreature ? (existingUserCreature.count || 1) + 1 : 1,
     });
   } catch (error) {
-    console.error('Failed to spawn creature:', error);
+    logError('POST /api/gamification/creatures/spawn', error);
     return NextResponse.json(
       { error: 'Failed to spawn creature' },
       { status: 500 }
