@@ -3,7 +3,7 @@
 
 {$DOMAIN} {
     # Next.js Web App (handles both frontend and API)
-    reverse_proxy web:3000
+    reverse_proxy adhd-focus-web:3000
 
     # Security headers
     header {
