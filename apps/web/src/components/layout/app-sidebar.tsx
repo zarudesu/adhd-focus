@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   Folder,
   Inbox,
+  ListChecks,
   Settings,
   Sun,
   Timer,
@@ -50,6 +51,7 @@ const NAV_CONFIG: Record<string, { url: string; icon: typeof Sun; group: 'tasks'
   nav_scheduled: { url: "/dashboard/scheduled", icon: Calendar, group: 'tasks' },
   nav_projects: { url: "/dashboard/projects", icon: Folder, group: 'tasks' },
   nav_completed: { url: "/dashboard/completed", icon: CheckCircle2, group: 'tasks' },
+  nav_checklist: { url: "/dashboard/checklist", icon: ListChecks, group: 'tasks' },
   nav_quick_actions: { url: "/dashboard/quick-actions", icon: Zap, group: 'tools' },
   nav_focus: { url: "/dashboard/focus", icon: Timer, group: 'tools' },
   nav_achievements: { url: "/dashboard/achievements", icon: Trophy, group: 'tools' },
@@ -81,7 +83,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
     .filter(f => NAV_CONFIG[f.code]?.group === 'tasks')
     .sort((a, b) => {
       // Sort by predefined order
-      const order = ['nav_inbox', 'nav_today', 'nav_scheduled', 'nav_projects', 'nav_completed'];
+      const order = ['nav_inbox', 'nav_today', 'nav_scheduled', 'nav_projects', 'nav_completed', 'nav_checklist'];
       return order.indexOf(a.code) - order.indexOf(b.code);
     });
 

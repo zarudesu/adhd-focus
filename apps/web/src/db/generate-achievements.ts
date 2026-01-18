@@ -71,6 +71,9 @@ const ICONS = {
   // Streaks
   streaks: ['🔥', '💥', '⚡', '🌋', '☄️', '💫', '✨', '🌟', '⭐', '💎', '👑'],
 
+  // Habits
+  habits: ['✨', '📝', '🎯', '💪', '🌱', '🔄', '⏰', '📋', '💯', '🏆'],
+
   // Projects
   projects: ['📁', '📂', '🗂️', '📋', '📊', '🏗️', '🏢', '🎯'],
 
@@ -1684,7 +1687,133 @@ function generateLevelXPAchievements() {
   });
 }
 
-// 22. HIDDEN ACHIEVEMENTS
+// 22. HABIT ACHIEVEMENTS
+function generateHabitAchievements() {
+  // Total habit completions
+  [1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000].forEach((count, i) => {
+    achievements.push(createAchievement(
+      `habits_total_${count}`,
+      `Habit Builder ${getCountName(count)}`,
+      `Complete ${formatNumber(count)} habit checks total`,
+      '✨',
+      'habits',
+      calculateXP(count),
+      'habit_count',
+      { count, timeframe: 'total' },
+      'visible',
+      'total'
+    ));
+  });
+
+  // All habits done in a day (bonus achievement)
+  [1, 3, 5, 7, 14, 21, 30, 60, 90, 100, 180, 365].forEach((count, i) => {
+    achievements.push(createAchievement(
+      `all_habits_day_${count}`,
+      count === 1 ? 'Perfect Habit Day' : `Perfect Habit Day x${count}`,
+      `Complete all habits in ${count} day${count > 1 ? 's' : ''}`,
+      '💯',
+      'habits',
+      count * 10,
+      'habit_count',
+      { count, allDone: true, timeframe: 'days' },
+      'visible',
+      'perfect_day'
+    ));
+  });
+
+  // Habit streak (days in a row with all habits done)
+  [3, 5, 7, 14, 21, 30, 45, 60, 90, 100, 120, 150, 180, 200, 250, 300, 365].forEach((days, i) => {
+    const names: Record<number, string> = {
+      3: 'Habit Spark', 5: 'Habit Flame', 7: 'Week of Habits',
+      14: 'Fortnight of Habits', 21: '3 Weeks', 30: 'Monthly Habit Master',
+      45: '45 Days Strong', 60: '2 Months', 90: 'Quarter Year',
+      100: 'Century of Habits', 120: '4 Months', 150: '5 Months',
+      180: 'Half Year', 200: '200 Days', 250: 'Marathon',
+      300: '10 Months', 365: 'Year of Habits',
+    };
+    achievements.push(createAchievement(
+      `habit_streak_${days}`,
+      names[days] || `${days} Day Streak`,
+      `Complete all habits ${days} days in a row`,
+      pickIcon(ICONS.streaks, Math.floor(i / 2)),
+      'habits',
+      days * 5,
+      'habit_streak',
+      { days },
+      'visible',
+      'streak'
+    ));
+  });
+
+  // Create habits
+  [1, 3, 5, 7, 10, 15, 20].forEach((count, i) => {
+    achievements.push(createAchievement(
+      `habits_created_${count}`,
+      `Habit Creator ${count}`,
+      `Create ${count} habit${count > 1 ? 's' : ''}`,
+      '📝',
+      'habits',
+      count * 5,
+      'habit_create',
+      { count },
+      'visible',
+      'create'
+    ));
+  });
+
+  // Individual habit streaks (same habit done X days in a row)
+  [7, 14, 30, 60, 90, 180, 365].forEach((days, i) => {
+    achievements.push(createAchievement(
+      `single_habit_streak_${days}`,
+      `Dedicated ${days}`,
+      `Complete the same habit ${days} days in a row`,
+      pickIcon(ICONS.streaks, i),
+      'habits',
+      days * 3,
+      'single_habit_streak',
+      { days },
+      'visible',
+      'single_streak'
+    ));
+  });
+
+  // Morning/evening habits
+  const timeCategories = ['morning', 'afternoon', 'evening', 'night'] as const;
+  timeCategories.forEach((time) => {
+    [10, 50, 100, 250].forEach((count, i) => {
+      achievements.push(createAchievement(
+        `habits_${time}_${count}`,
+        `${time.charAt(0).toUpperCase() + time.slice(1)} Habit ${count}`,
+        `Complete ${count} ${time} habits`,
+        pickIcon(ICONS.timeOfDay[time], i),
+        'habits',
+        calculateXP(count),
+        'habit_count',
+        { count, timeOfDay: time },
+        'visible',
+        `time_${time}`
+      ));
+    });
+  });
+
+  // Daily review achievements
+  [1, 7, 14, 30, 60, 100, 365].forEach((count, i) => {
+    achievements.push(createAchievement(
+      `daily_reviews_${count}`,
+      count === 1 ? 'First Review' : `Reviewer ${count}`,
+      `Complete ${count} daily review${count > 1 ? 's' : ''}`,
+      '📋',
+      'habits',
+      count * 3,
+      'review_count',
+      { count },
+      'visible',
+      'review'
+    ));
+  });
+}
+
+// 23. HIDDEN ACHIEVEMENTS
 function generateHiddenAchievements() {
   // Time-based hidden
   const timeAchievements = [
@@ -1883,6 +2012,9 @@ function generateAllAchievements() {
 
   generateLevelXPAchievements();
   console.log(`+ Level/XP: ${achievements.length}`);
+
+  generateHabitAchievements();
+  console.log(`+ Habits: ${achievements.length}`);
 
   generateHiddenAchievements();
   console.log(`+ Hidden: ${achievements.length}`);

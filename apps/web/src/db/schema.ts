@@ -108,6 +108,14 @@ export const users = pgTable("user", {
   onboardingCompleted: boolean("onboarding_completed").default(false),
   lastUnlockSeen: text("last_unlock_seen"), // Last feature unlock notification seen
 
+  // Habits stats
+  habitsCreated: integer("habits_created").default(0),
+  habitsCompleted: integer("habits_completed").default(0), // Total habit checks
+  allHabitsCompletedDays: integer("all_habits_completed_days").default(0), // Days with 100% completion
+  habitStreak: integer("habit_streak").default(0), // Current "all habits done" streak
+  longestHabitStreak: integer("longest_habit_streak").default(0),
+  lastReviewDate: date("last_review_date"), // Last day user reviewed
+
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -389,6 +397,98 @@ export const rewardLogs = pgTable("reward_log", {
 });
 
 // ===================
+// Daily Checklist (Habits)
+// ===================
+
+export const habitFrequencyEnum = pgEnum("habit_frequency", [
+  "daily",      // Every day
+  "weekdays",   // Mon-Fri
+  "weekends",   // Sat-Sun
+  "custom",     // Custom days selection
+]);
+
+export const timeOfDayEnum = pgEnum("time_of_day", [
+  "morning",    // 5-12
+  "afternoon",  // 12-17
+  "evening",    // 17-21
+  "night",      // 21-5
+  "anytime",    // No specific time
+]);
+
+export const habits = pgTable("habit", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  emoji: text("emoji").default("✅"),
+  description: text("description"),
+
+  // Scheduling
+  frequency: habitFrequencyEnum("frequency").default("daily"),
+  customDays: jsonb("custom_days").$type<number[]>(), // 0=Sun, 1=Mon, ..., 6=Sat
+  timeOfDay: timeOfDayEnum("time_of_day").default("anytime"),
+
+  // Display
+  sortOrder: integer("sort_order").default(0),
+  color: text("color"), // Optional accent color
+
+  // Status
+  isArchived: boolean("is_archived").default(false),
+
+  // Stats (denormalized for quick access)
+  currentStreak: integer("current_streak").default(0),
+  longestStreak: integer("longest_streak").default(0),
+  totalCompletions: integer("total_completions").default(0),
+
+  createdAt: timestamp("created_at").defaultNow(),
+  archivedAt: timestamp("archived_at"),
+});
+
+export const habitChecks = pgTable("habit_check", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  habitId: uuid("habit_id")
+    .notNull()
+    .references(() => habits.id, { onDelete: "cascade" }),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+
+  // When
+  date: date("date").notNull(), // The day this check is for (YYYY-MM-DD)
+  checkedAt: timestamp("checked_at").defaultNow(), // When user actually checked it
+
+  // Reflection (for "why didn't I do this" feature)
+  skipped: boolean("skipped").default(false), // Explicitly marked as skipped
+  reflection: text("reflection"), // Why it wasn't done / notes
+  blockers: jsonb("blockers").$type<string[]>(), // What prevented completion
+
+  // XP awarded (stored for history)
+  xpAwarded: integer("xp_awarded").default(0),
+});
+
+// Yesterday review tracking
+export const dailyReviews = pgTable("daily_review", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  date: date("date").notNull(), // The day being reviewed
+  reviewedAt: timestamp("reviewed_at").defaultNow(),
+
+  // Summary
+  tasksCompleted: integer("tasks_completed").default(0),
+  tasksSkipped: integer("tasks_skipped").default(0),
+  habitsCompleted: integer("habits_completed").default(0),
+  habitsSkipped: integer("habits_skipped").default(0),
+
+  // Overall reflection
+  mood: text("mood"), // How they felt about the day
+  notes: text("notes"),
+  lessonsLearned: text("lessons_learned"),
+});
+
+// ===================
 // Relations
 // ===================
 
@@ -404,6 +504,36 @@ export const usersRelations = relations(users, ({ many }) => ({
   userAchievements: many(userAchievements),
   userCreatures: many(userCreatures),
   rewardLogs: many(rewardLogs),
+  // Habits
+  habits: many(habits),
+  habitChecks: many(habitChecks),
+  dailyReviews: many(dailyReviews),
+}));
+
+export const habitsRelations = relations(habits, ({ one, many }) => ({
+  user: one(users, {
+    fields: [habits.userId],
+    references: [users.id],
+  }),
+  checks: many(habitChecks),
+}));
+
+export const habitChecksRelations = relations(habitChecks, ({ one }) => ({
+  habit: one(habits, {
+    fields: [habitChecks.habitId],
+    references: [habits.id],
+  }),
+  user: one(users, {
+    fields: [habitChecks.userId],
+    references: [users.id],
+  }),
+}));
+
+export const dailyReviewsRelations = relations(dailyReviews, ({ one }) => ({
+  user: one(users, {
+    fields: [dailyReviews.userId],
+    references: [users.id],
+  }),
 }));
 
 export const projectsRelations = relations(projects, ({ one, many }) => ({
@@ -630,6 +760,7 @@ export const FEATURE_CODES = {
   SETTINGS: 'settings',
   NOTIFICATIONS: 'notifications',
   ADVANCED_STATS: 'advanced_stats',
+  CHECKLIST: 'checklist',
 } as const;
 
 export type FeatureCode = typeof FEATURE_CODES[keyof typeof FEATURE_CODES];

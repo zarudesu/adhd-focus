@@ -37,7 +37,7 @@ async function seedFeatures() {
       category: 'navigation',
       isNavItem: true,
       unlockTasksAdded: 3,
-      sortOrder: 10,
+      sortOrder: 11,
     },
 
     // After completing 1 task
@@ -51,6 +51,19 @@ async function seedFeatures() {
       isNavItem: true,
       unlockTasksCompleted: 1,
       sortOrder: 5,
+    },
+
+    // After completing 3 tasks - build habits
+    {
+      code: 'nav_checklist',
+      name: 'Daily Checklist',
+      description: 'Build daily habits',
+      celebrationText: '✨ Daily Checklist unlocked! Build powerful habits.',
+      icon: 'ListChecks',
+      category: 'navigation',
+      isNavItem: true,
+      unlockTasksCompleted: 3,
+      sortOrder: 6,
     },
 
     // After assigning 1 task to today
@@ -102,7 +115,7 @@ async function seedFeatures() {
       category: 'navigation',
       isNavItem: true,
       unlockTasksCompleted: 10,
-      sortOrder: 6,
+      sortOrder: 7,
     },
 
     // After completing 5 tasks (accessible from Inbox)
@@ -115,7 +128,7 @@ async function seedFeatures() {
       category: 'navigation',
       isNavItem: true,
       unlockTasksCompleted: 5,
-      sortOrder: 7,
+      sortOrder: 8,
     },
 
     // After level 5
@@ -128,7 +141,7 @@ async function seedFeatures() {
       category: 'navigation',
       isNavItem: true,
       unlockLevel: 5,
-      sortOrder: 9,
+      sortOrder: 10,
     },
 
     // After 7-day streak
@@ -141,7 +154,7 @@ async function seedFeatures() {
       category: 'navigation',
       isNavItem: true,
       unlockStreakDays: 7,
-      sortOrder: 11,
+      sortOrder: 12,
     },
 
     // ==========================================

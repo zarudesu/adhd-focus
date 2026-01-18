@@ -84,3 +84,4 @@ export function rollReward(): { rarity: RewardRarity; effect: string } {
 
   return { rarity, effect };
 }
+

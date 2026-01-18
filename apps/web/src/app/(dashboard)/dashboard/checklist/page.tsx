@@ -1,0 +1,270 @@
+'use client';
+
+import { useState, useCallback } from 'react';
+import { PageHeader } from "@/components/layout/page-header";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { useHabits } from "@/hooks/useHabits";
+import { useGamificationEvents } from "@/components/gamification/GamificationProvider";
+import { AddHabitDialog } from "@/components/habits/AddHabitDialog";
+import { HabitItem } from "@/components/habits/HabitItem";
+import {
+  Plus,
+  Sparkles,
+  Trophy,
+  Loader2,
+} from "lucide-react";
+
+export default function ChecklistPage() {
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const { habits, summary, loading, error, check, uncheck, create, archive } = useHabits();
+  const { handleTaskComplete } = useGamificationEvents();
+
+  const handleCheck = useCallback(async (id: string, skipped = false) => {
+    const result = await check(id, skipped);
+
+    // Trigger gamification events
+    if (result.xpAwarded > 0) {
+      handleTaskComplete({
+        xpAwarded: result.xpAwarded,
+        levelUp: result.levelUp ? {
+          newLevel: result.newLevel!,
+          unlockedFeatures: [],
+        } : undefined,
+      });
+    }
+
+    // Extra celebration if all habits done!
+    if (result.allHabitsDone) {
+      handleTaskComplete({
+        xpAwarded: result.bonusXp,
+        reward: { rarity: 'rare', effect: 'stars' },
+      });
+    }
+  }, [check, handleTaskComplete]);
+
+  const handleUncheck = useCallback(async (id: string) => {
+    await uncheck(id);
+  }, [uncheck]);
+
+  const handleArchive = useCallback(async (id: string) => {
+    await archive(id);
+  }, [archive]);
+
+  // Filter habits by time of day
+  const morningHabits = habits.filter(h => h.timeOfDay === 'morning' && h.shouldDoToday);
+  const afternoonHabits = habits.filter(h => h.timeOfDay === 'afternoon' && h.shouldDoToday);
+  const eveningHabits = habits.filter(h => h.timeOfDay === 'evening' && h.shouldDoToday);
+  const nightHabits = habits.filter(h => h.timeOfDay === 'night' && h.shouldDoToday);
+  const anytimeHabits = habits.filter(h => h.timeOfDay === 'anytime' && h.shouldDoToday);
+  const notTodayHabits = habits.filter(h => !h.shouldDoToday);
+
+  return (
+    <>
+      <PageHeader
+        title="Daily Checklist"
+        description="Build powerful habits, one check at a time"
+        actions={
+          <Button size="sm" onClick={() => setShowAddDialog(true)}>
+            <Plus className="h-4 w-4 mr-1" />
+            Add Habit
+          </Button>
+        }
+      />
+
+      <AddHabitDialog
+        open={showAddDialog}
+        onOpenChange={setShowAddDialog}
+        onSubmit={async (input) => {
+          await create(input);
+        }}
+      />
+
+      <main className="flex-1 p-4 space-y-4">
+        {error && (
+          <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-lg">
+            {error.message}
+          </div>
+        )}
+
+        {/* Progress Summary */}
+        {summary.habitsForToday > 0 && (
+          <Card className={summary.allDone ? "border-2 border-green-500 bg-green-50 dark:bg-green-950/20" : ""}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  {summary.allDone ? (
+                    <>
+                      <Trophy className="h-5 w-5 text-yellow-500" />
+                      <span className="font-semibold text-green-700 dark:text-green-400">
+                        All done! +25 XP
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-5 w-5 text-primary" />
+                      <span className="font-medium">Today's Progress</span>
+                    </>
+                  )}
+                </div>
+                <span className="text-sm text-muted-foreground">
+                  {summary.completed}/{summary.habitsForToday} completed
+                </span>
+              </div>
+              <Progress value={summary.progress} className="h-2" />
+              {summary.skipped > 0 && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  {summary.skipped} skipped
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : habits.length === 0 ? (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <Sparkles className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <h3 className="font-semibold mb-2">No habits yet</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Create your first habit to start building a routine
+              </p>
+              <Button onClick={() => setShowAddDialog(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Your First Habit
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-6">
+            {/* Morning */}
+            {morningHabits.length > 0 && (
+              <HabitSection
+                title="Morning"
+                emoji="🌅"
+                habits={morningHabits}
+                onCheck={handleCheck}
+                onUncheck={handleUncheck}
+                onArchive={handleArchive}
+              />
+            )}
+
+            {/* Afternoon */}
+            {afternoonHabits.length > 0 && (
+              <HabitSection
+                title="Afternoon"
+                emoji="☀️"
+                habits={afternoonHabits}
+                onCheck={handleCheck}
+                onUncheck={handleUncheck}
+                onArchive={handleArchive}
+              />
+            )}
+
+            {/* Evening */}
+            {eveningHabits.length > 0 && (
+              <HabitSection
+                title="Evening"
+                emoji="🌆"
+                habits={eveningHabits}
+                onCheck={handleCheck}
+                onUncheck={handleUncheck}
+                onArchive={handleArchive}
+              />
+            )}
+
+            {/* Night */}
+            {nightHabits.length > 0 && (
+              <HabitSection
+                title="Night"
+                emoji="🌙"
+                habits={nightHabits}
+                onCheck={handleCheck}
+                onUncheck={handleUncheck}
+                onArchive={handleArchive}
+              />
+            )}
+
+            {/* Anytime */}
+            {anytimeHabits.length > 0 && (
+              <HabitSection
+                title="Anytime"
+                emoji="✨"
+                habits={anytimeHabits}
+                onCheck={handleCheck}
+                onUncheck={handleUncheck}
+                onArchive={handleArchive}
+              />
+            )}
+
+            {/* Not Today */}
+            {notTodayHabits.length > 0 && (
+              <div className="opacity-50">
+                <HabitSection
+                  title="Not scheduled for today"
+                  habits={notTodayHabits}
+                  onCheck={handleCheck}
+                  onUncheck={handleUncheck}
+                  onArchive={handleArchive}
+                  disabled
+                />
+              </div>
+            )}
+          </div>
+        )}
+      </main>
+    </>
+  );
+}
+
+interface HabitSectionProps {
+  title: string;
+  emoji?: string;
+  habits: Array<{
+    id: string;
+    name: string;
+    emoji: string | null;
+    description: string | null;
+    color: string | null;
+    currentStreak: number | null;
+    isCompleted: boolean;
+    isSkipped: boolean;
+  }>;
+  onCheck: (id: string, skipped?: boolean) => Promise<void>;
+  onUncheck: (id: string) => Promise<void>;
+  onArchive: (id: string) => Promise<void>;
+  disabled?: boolean;
+}
+
+function HabitSection({ title, emoji, habits, onCheck, onUncheck, onArchive, disabled }: HabitSectionProps) {
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          {emoji && <span>{emoji}</span>}
+          {title}
+          <span className="text-sm font-normal text-muted-foreground">
+            ({habits.filter(h => h.isCompleted).length}/{habits.length})
+          </span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {habits.map(habit => (
+          <HabitItem
+            key={habit.id}
+            habit={habit}
+            onCheck={onCheck}
+            onUncheck={onUncheck}
+            onArchive={onArchive}
+            disabled={disabled}
+          />
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
