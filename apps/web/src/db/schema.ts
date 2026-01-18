@@ -743,6 +743,14 @@ export type NewCreature = typeof creatures.$inferInsert;
 export type UserCreature = typeof userCreatures.$inferSelect;
 export type RewardLog = typeof rewardLogs.$inferSelect;
 
+// Habit types
+export type Habit = typeof habits.$inferSelect;
+export type NewHabit = typeof habits.$inferInsert;
+export type HabitCheck = typeof habitChecks.$inferSelect;
+export type NewHabitCheck = typeof habitChecks.$inferInsert;
+export type DailyReview = typeof dailyReviews.$inferSelect;
+export type NewDailyReview = typeof dailyReviews.$inferInsert;
+
 // Feature codes as const for type safety
 export const FEATURE_CODES = {
   INBOX: 'inbox',

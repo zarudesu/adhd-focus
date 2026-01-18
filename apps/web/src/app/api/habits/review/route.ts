@@ -5,8 +5,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db, users } from "@/db";
-import { dailyReviews, habitChecks, tasks } from "@/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { dailyReviews, habitChecks, tasks, habits } from "@/db/schema";
+import { eq, and, sql, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { logError } from "@/lib/logger";
 
@@ -28,59 +28,90 @@ const reviewSchema = z.object({
   lessonsLearned: z.string().max(2000).optional(),
 });
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const yesterday = getYesterdayDate();
+    const { searchParams } = new URL(request.url);
+    const dateParam = searchParams.get("date");
+    const targetDate = dateParam || getYesterdayDate();
 
-    // Check if user already reviewed yesterday
+    // Check if user already reviewed this date
     const [existingReview] = await db
       .select()
       .from(dailyReviews)
       .where(and(
         eq(dailyReviews.userId, session.user.id),
-        eq(dailyReviews.date, yesterday)
+        eq(dailyReviews.date, targetDate)
       ));
 
     if (existingReview) {
       return NextResponse.json({
         needsReview: false,
-        date: yesterday,
+        yesterdayDate: targetDate,
+        habits: [],
         existingReview,
       });
     }
 
-    // Get yesterday's stats to prefill the review
-    const [yesterdayHabitChecks] = await db
+    // Get user's active habits
+    const userHabits = await db
       .select({
-        completed: sql<number>`COUNT(*) FILTER (WHERE ${habitChecks.skipped} = false)`,
-        skipped: sql<number>`COUNT(*) FILTER (WHERE ${habitChecks.skipped} = true)`,
+        id: habits.id,
+        name: habits.name,
+        emoji: habits.emoji,
+      })
+      .from(habits)
+      .where(and(
+        eq(habits.userId, session.user.id),
+        eq(habits.isArchived, false)
+      ));
+
+    if (userHabits.length === 0) {
+      return NextResponse.json({
+        needsReview: false,
+        yesterdayDate: targetDate,
+        habits: [],
+      });
+    }
+
+    // Get checks for the target date
+    const checks = await db
+      .select({
+        habitId: habitChecks.habitId,
+        skipped: habitChecks.skipped,
       })
       .from(habitChecks)
       .where(and(
         eq(habitChecks.userId, session.user.id),
-        eq(habitChecks.date, yesterday)
+        eq(habitChecks.date, targetDate),
+        inArray(habitChecks.habitId, userHabits.map(h => h.id))
       ));
 
-    const [yesterdayTasks] = await db
-      .select({
-        completed: sql<number>`COUNT(*) FILTER (WHERE ${tasks.status} = 'done' AND DATE(${tasks.completedAt}) = ${yesterday})`,
-      })
-      .from(tasks)
-      .where(eq(tasks.userId, session.user.id));
+    const checkMap = new Map(checks.map(c => [c.habitId, c]));
+
+    // Build habits list with their status
+    const habitsWithStatus = userHabits.map(habit => {
+      const check = checkMap.get(habit.id);
+      return {
+        id: habit.id,
+        name: habit.name,
+        emoji: habit.emoji,
+        isCompleted: check ? !check.skipped : false,
+        isSkipped: check?.skipped || false,
+      };
+    });
+
+    // Only need review if there are unchecked habits
+    const hasUncheckedHabits = habitsWithStatus.some(h => !h.isCompleted && !h.isSkipped);
 
     return NextResponse.json({
-      needsReview: true,
-      date: yesterday,
-      suggestions: {
-        habitsCompleted: Number(yesterdayHabitChecks?.completed || 0),
-        habitsSkipped: Number(yesterdayHabitChecks?.skipped || 0),
-        tasksCompleted: Number(yesterdayTasks?.completed || 0),
-      },
+      needsReview: hasUncheckedHabits,
+      yesterdayDate: targetDate,
+      habits: habitsWithStatus,
     });
   } catch (error) {
     logError("GET /api/habits/review", error);

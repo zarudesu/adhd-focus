@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useHabits } from "@/hooks/useHabits";
+import { useYesterdayReview } from "@/hooks/useYesterdayReview";
 import { useGamificationEvents } from "@/components/gamification/GamificationProvider";
-import { AddHabitDialog } from "@/components/habits/AddHabitDialog";
+import { AddHabitDialog, YesterdayReviewModal } from "@/components/habits";
 import { HabitItem } from "@/components/habits/HabitItem";
 import {
   Plus,
@@ -18,8 +19,12 @@ import {
 
 export default function ChecklistPage() {
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const { habits, summary, loading, error, check, uncheck, create, archive } = useHabits();
+  const { habits, summary, loading, error, check, uncheck, create, archive, refresh } = useHabits();
+  const { data: reviewData, loading: reviewLoading, submitReview, skipReview, dismissed } = useYesterdayReview();
   const { handleTaskComplete } = useGamificationEvents();
+
+  // Show review modal if needed and not dismissed
+  const showReviewModal = !reviewLoading && reviewData?.needsReview && !dismissed && habits.length > 0;
 
   const handleCheck = useCallback(async (id: string, skipped = false) => {
     const result = await check(id, skipped);
@@ -80,6 +85,24 @@ export default function ChecklistPage() {
           await create(input);
         }}
       />
+
+      {showReviewModal && reviewData && (
+        <YesterdayReviewModal
+          open={showReviewModal}
+          onOpenChange={(open) => {
+            if (!open) {
+              // User closed modal without submitting - skip review
+              skipReview();
+            }
+          }}
+          yesterdayDate={reviewData.yesterdayDate}
+          habits={reviewData.habits}
+          onSubmit={async (data) => {
+            await submitReview(data);
+            refresh();
+          }}
+        />
+      )}
 
       <main className="flex-1 p-4 space-y-4">
         {error && (
