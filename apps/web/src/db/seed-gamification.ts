@@ -79,7 +79,7 @@ async function seedFeatures() {
       sortOrder: 3,
     },
 
-    // After creating 1 project
+    // After adding 10 tasks (encourage organization)
     {
       code: 'nav_projects',
       name: 'Projects',
@@ -88,7 +88,7 @@ async function seedFeatures() {
       icon: 'Folder',
       category: 'navigation',
       isNavItem: true,
-      unlockProjectsCreated: 1,
+      unlockTasksAdded: 10,
       sortOrder: 4,
     },
 
@@ -105,7 +105,7 @@ async function seedFeatures() {
       sortOrder: 6,
     },
 
-    // After completing 1 focus session
+    // After completing 5 tasks (accessible from Inbox)
     {
       code: 'nav_focus',
       name: 'Focus Mode',
@@ -114,7 +114,7 @@ async function seedFeatures() {
       icon: 'Timer',
       category: 'navigation',
       isNavItem: true,
-      unlockFocusSessions: 1,
+      unlockTasksCompleted: 5,
       sortOrder: 7,
     },
 
