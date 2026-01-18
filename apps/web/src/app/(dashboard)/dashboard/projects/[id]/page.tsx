@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { PageHeader } from "@/components/layout/page-header";
+import { ProtectedRoute } from '@/components/gamification/ProtectedRoute';
 import { Button } from "@/components/ui/button";
 import { TaskList, AddTaskDialog } from "@/components/tasks";
 import { useTasks } from "@/hooks/useTasks";
@@ -11,7 +12,7 @@ import { useGamificationEvents } from "@/components/gamification/GamificationPro
 import type { Task } from "@/db/schema";
 import { Plus, Settings, ArrowLeft, FolderOpen } from "lucide-react";
 
-export default function ProjectDetailPage() {
+function ProjectDetailContent() {
   const params = useParams();
   const router = useRouter();
   const projectId = params.id as string;
@@ -170,5 +171,14 @@ export default function ProjectDetailPage() {
         )}
       </main>
     </>
+  );
+}
+
+
+export default function ProjectDetailPage() {
+  return (
+    <ProtectedRoute featureCode="nav_projects">
+      <ProjectDetailContent />
+    </ProtectedRoute>
   );
 }

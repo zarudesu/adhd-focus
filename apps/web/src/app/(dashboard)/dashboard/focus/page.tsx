@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { PageHeader } from "@/components/layout/page-header";
+import { ProtectedRoute } from '@/components/gamification/ProtectedRoute';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -20,7 +21,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export default function FocusPage() {
+function FocusContent() {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [sessionStats, setSessionStats] = useState<{
     todayPomodoros: number;
@@ -301,5 +302,13 @@ export default function FocusPage() {
         </div>
       </main>
     </>
+  );
+}
+
+export default function FocusPage() {
+  return (
+    <ProtectedRoute featureCode="nav_focus">
+      <FocusContent />
+    </ProtectedRoute>
   );
 }

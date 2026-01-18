@@ -7,6 +7,7 @@
 
 import { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/layout/page-header';
+import { ProtectedRoute } from '@/components/gamification/ProtectedRoute';
 import { Lock, Sparkles } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
@@ -163,7 +164,7 @@ function RaritySection({
   );
 }
 
-export default function CreaturesPage() {
+function CreaturesContent() {
   const [data, setData] = useState<CreaturesResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -293,5 +294,13 @@ export default function CreaturesPage() {
         )}
       </main>
     </>
+  );
+}
+
+export default function CreaturesPage() {
+  return (
+    <ProtectedRoute featureCode="nav_creatures">
+      <CreaturesContent />
+    </ProtectedRoute>
   );
 }

@@ -1,15 +1,26 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { TaskList, AddTaskDialog } from "@/components/tasks";
 import { useTasks } from "@/hooks/useTasks";
+import { useProfile } from "@/hooks/useProfile";
+import { useFeatures } from "@/hooks/useFeatures";
 import { useGamificationEvents } from "@/components/gamification/GamificationProvider";
 import type { Task } from "@/db/schema";
 import { Plus, Sparkles, AlertTriangle } from "lucide-react";
+
+// Map landing page preference to route and feature code
+const LANDING_PAGE_ROUTES: Record<string, { route: string; featureCode: string }> = {
+  inbox: { route: '/dashboard/inbox', featureCode: 'nav_inbox' },
+  today: { route: '/dashboard', featureCode: 'nav_today' },
+  scheduled: { route: '/dashboard/scheduled', featureCode: 'nav_scheduled' },
+  projects: { route: '/dashboard/projects', featureCode: 'nav_projects' },
+  completed: { route: '/dashboard/completed', featureCode: 'nav_completed' },
+};
 
 const MAX_INBOX_BEFORE_WARNING = 10;
 
@@ -17,6 +28,10 @@ export default function InboxPage() {
   const router = useRouter();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const hasCheckedLanding = useRef(false);
+
+  const { profile, loading: profileLoading } = useProfile();
+  const { navFeatures, loading: featuresLoading } = useFeatures();
   const {
     inboxTasks,
     loading,
@@ -29,6 +44,28 @@ export default function InboxPage() {
     create,
   } = useTasks();
   const { handleTaskComplete } = useGamificationEvents();
+
+  // Check if user should be redirected to their preferred landing page
+  useEffect(() => {
+    // Only check once per mount, and only after data is loaded
+    if (hasCheckedLanding.current || profileLoading || featuresLoading) return;
+    hasCheckedLanding.current = true;
+
+    const defaultPage = profile?.preferences?.defaultLandingPage;
+
+    // Skip if no preference or preference is inbox (already here)
+    if (!defaultPage || defaultPage === 'inbox') return;
+
+    const pageConfig = LANDING_PAGE_ROUTES[defaultPage];
+    if (!pageConfig) return;
+
+    // Check if the preferred page feature is unlocked
+    const feature = navFeatures.find(f => f.code === pageConfig.featureCode);
+    if (!feature?.isUnlocked) return;
+
+    // Redirect to preferred page
+    router.replace(pageConfig.route);
+  }, [profile, profileLoading, featuresLoading, navFeatures, router]);
 
   // Wrapper to handle task completion with gamification
   const handleComplete = useCallback(async (id: string) => {

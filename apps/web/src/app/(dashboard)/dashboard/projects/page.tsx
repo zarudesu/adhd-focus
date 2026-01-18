@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from "@/components/layout/page-header";
+import { ProtectedRoute } from '@/components/gamification/ProtectedRoute';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -38,7 +39,7 @@ const COLOR_OPTIONS = [
 
 const EMOJI_OPTIONS = ["📁", "🎯", "💼", "🏠", "💡", "🎨", "📚", "🚀", "⭐"];
 
-export default function ProjectsPage() {
+function ProjectsContent() {
   const router = useRouter();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [newName, setNewName] = useState('');
@@ -236,5 +237,14 @@ export default function ProjectsPage() {
         )}
       </main>
     </>
+  );
+}
+
+
+export default function ProjectsPage() {
+  return (
+    <ProtectedRoute featureCode="nav_projects">
+      <ProjectsContent />
+    </ProtectedRoute>
   );
 }

@@ -2,12 +2,13 @@
 
 import { useState } from 'react';
 import { PageHeader } from "@/components/layout/page-header";
+import { ProtectedRoute } from '@/components/gamification/ProtectedRoute';
 import { TaskList, AddTaskDialog } from "@/components/tasks";
 import { useTasks } from "@/hooks/useTasks";
 import type { Task } from "@/db/schema";
 import { CheckCircle2 } from "lucide-react";
 
-export default function CompletedPage() {
+function CompletedContent() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const {
     tasks,
@@ -110,5 +111,14 @@ export default function CompletedPage() {
         )}
       </main>
     </>
+  );
+}
+
+
+export default function CompletedPage() {
+  return (
+    <ProtectedRoute featureCode="nav_completed">
+      <CompletedContent />
+    </ProtectedRoute>
   );
 }

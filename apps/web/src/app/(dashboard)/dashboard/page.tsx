@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { PageHeader } from "@/components/layout/page-header";
+import { ProtectedRoute } from '@/components/gamification/ProtectedRoute';
 import { Button } from "@/components/ui/button";
 import { TaskList, AddTaskDialog } from "@/components/tasks";
 import { useTasks } from "@/hooks/useTasks";
@@ -12,7 +13,7 @@ import { Inbox } from "lucide-react";
 
 const MAX_DAILY_TASKS = 3;
 
-export default function TodayPage() {
+function TodayContent() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const {
     todayTasks,
@@ -109,5 +110,14 @@ export default function TodayPage() {
         )}
       </main>
     </>
+  );
+}
+
+
+export default function TodayPage() {
+  return (
+    <ProtectedRoute featureCode="nav_today">
+      <TodayContent />
+    </ProtectedRoute>
   );
 }

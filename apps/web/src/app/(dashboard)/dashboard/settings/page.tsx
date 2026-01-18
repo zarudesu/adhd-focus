@@ -23,7 +23,9 @@ import {
   Moon,
   Sun,
   Monitor,
+  Home,
 } from "lucide-react";
+import { useFeatures } from "@/hooks/useFeatures";
 import {
   Select,
   SelectContent,
@@ -32,8 +34,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+// Landing page options with their nav feature codes
+const LANDING_PAGE_OPTIONS = [
+  { value: 'inbox', label: 'Inbox', featureCode: 'nav_inbox' },
+  { value: 'today', label: 'Today', featureCode: 'nav_today' },
+  { value: 'scheduled', label: 'Scheduled', featureCode: 'nav_scheduled' },
+  { value: 'projects', label: 'Projects', featureCode: 'nav_projects' },
+  { value: 'completed', label: 'Completed', featureCode: 'nav_completed' },
+] as const;
+
 export default function SettingsPage() {
   const { profile, loading, error, saving, update, updatePreference } = useProfile();
+  const { navFeatures, loading: featuresLoading } = useFeatures();
   const [name, setName] = useState<string>('');
 
   // Initialize name when profile loads
@@ -252,6 +264,46 @@ export default function SettingsPage() {
                     updatePreference('enableNotifications', checked)
                   }
                 />
+              </div>
+
+              <Separator />
+
+              {/* Default Landing Page */}
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label className="flex items-center gap-2">
+                    <Home className="h-4 w-4" />
+                    Default Page
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Where to go after login
+                  </p>
+                </div>
+                <Select
+                  value={prefs?.defaultLandingPage || 'inbox'}
+                  onValueChange={(value: 'inbox' | 'today' | 'scheduled' | 'projects' | 'completed') =>
+                    updatePreference('defaultLandingPage', value)
+                  }
+                  disabled={featuresLoading}
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LANDING_PAGE_OPTIONS.map((option) => {
+                      const feature = navFeatures.find(f => f.code === option.featureCode);
+                      const isUnlocked = feature?.isUnlocked ?? (option.value === 'inbox');
+
+                      if (!isUnlocked) return null;
+
+                      return (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
               </div>
             </CardContent>
           </Card>

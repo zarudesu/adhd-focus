@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { PageHeader } from '@/components/layout/page-header';
+import { ProtectedRoute } from '@/components/gamification/ProtectedRoute';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -192,7 +193,7 @@ function WeeklyChart({ data, dataKey, label, color }: {
   );
 }
 
-export default function StatsPage() {
+function StatsContent() {
   const { state, loading, levelProgress } = useGamification();
   const { count: todayTasksCount, loading: todayLoading } = useTodayTasksCount();
   const wipLimit = useWipLimit();
@@ -447,5 +448,13 @@ export default function StatsPage() {
         </div>
       </main>
     </>
+  );
+}
+
+export default function StatsPage() {
+  return (
+    <ProtectedRoute featureCode="nav_stats">
+      <StatsContent />
+    </ProtectedRoute>
   );
 }

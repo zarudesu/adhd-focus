@@ -26,6 +26,7 @@ const updateProfileSchema = z.object({
     notificationSound: z.boolean().optional(),
     theme: z.enum(["light", "dark", "system"]).optional(),
     timezone: z.string().optional(),
+    defaultLandingPage: z.enum(["inbox", "today", "scheduled", "projects", "completed"]).optional(),
   }).optional(),
 });
 

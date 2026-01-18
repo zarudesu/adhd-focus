@@ -513,6 +513,8 @@ export interface UserPreferences {
   notificationSound: boolean;
   theme: "light" | "dark" | "system";
   timezone: string;
+  /** Default landing page after login (only unlocked pages can be selected) */
+  defaultLandingPage?: "inbox" | "today" | "scheduled" | "projects" | "completed";
 }
 
 // Gamification condition types

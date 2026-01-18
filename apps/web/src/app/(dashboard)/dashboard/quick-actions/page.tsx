@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { ProtectedRoute } from '@/components/gamification/ProtectedRoute';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -49,7 +50,7 @@ const QUICK_TASK_THRESHOLD = 5; // minutes
 const WARNING_TIME = 5 * 60; // 5 minutes in seconds
 const OVERTIME_TIME = 8 * 60; // 8 minutes in seconds
 
-export default function QuickActionsPage() {
+function QuickActionsContent() {
   const router = useRouter();
   const { tasks, loading, complete, update } = useTasks();
   const { projects } = useProjects();
@@ -433,5 +434,13 @@ export default function QuickActionsPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function QuickActionsPage() {
+  return (
+    <ProtectedRoute featureCode="nav_quick_actions">
+      <QuickActionsContent />
+    </ProtectedRoute>
   );
 }

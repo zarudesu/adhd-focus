@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { PageHeader } from "@/components/layout/page-header";
+import { ProtectedRoute } from '@/components/gamification/ProtectedRoute';
 import { Button } from "@/components/ui/button";
 import { TaskList, AddTaskDialog } from "@/components/tasks";
 import { useTasks } from "@/hooks/useTasks";
@@ -9,7 +10,7 @@ import { useGamificationEvents } from "@/components/gamification/GamificationPro
 import type { Task } from "@/db/schema";
 import { Plus, Calendar } from "lucide-react";
 
-export default function ScheduledPage() {
+function ScheduledContent() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const {
@@ -152,5 +153,14 @@ export default function ScheduledPage() {
         )}
       </main>
     </>
+  );
+}
+
+
+export default function ScheduledPage() {
+  return (
+    <ProtectedRoute featureCode="nav_scheduled">
+      <ScheduledContent />
+    </ProtectedRoute>
   );
 }

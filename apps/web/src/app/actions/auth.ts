@@ -26,7 +26,7 @@ export async function authenticate(
   try {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
-    const redirectTo = formData.get('redirectTo') as string || '/dashboard';
+    const redirectTo = formData.get('redirectTo') as string || '/dashboard/inbox';
 
     await signIn('credentials', {
       email,
@@ -76,7 +76,7 @@ export async function register(
   try {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
-    const redirectTo = formData.get('redirectTo') as string || '/dashboard';
+    const redirectTo = formData.get('redirectTo') as string || '/dashboard/inbox';
 
     // Call registration logic directly (no HTTP call)
     const result = await registerUser({ email, password });

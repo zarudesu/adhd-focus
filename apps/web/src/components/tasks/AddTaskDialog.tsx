@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { Task } from '@/db/schema';
 import { useProjects } from '@/hooks/useProjects';
+import { useFeatures } from '@/hooks/useFeatures';
 import { format } from 'date-fns';
 
 type EnergyLevel = 'low' | 'medium' | 'high';
@@ -84,6 +85,8 @@ export function AddTaskDialog({
 }: AddTaskDialogProps) {
   const isEditMode = !!task;
   const { projects } = useProjects();
+  const { isUnlocked } = useFeatures();
+  const projectsUnlocked = isUnlocked('nav_projects');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [energy, setEnergy] = useState<EnergyLevel>('medium');
@@ -354,46 +357,48 @@ export function AddTaskDialog({
 
           {showMore && (
             <div className="space-y-4">
-              {/* Project selector */}
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Project</Label>
-                <Select
-                  value={projectId || 'none'}
-                  onValueChange={(value) => setProjectId(value === 'none' ? undefined : value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="No project (Inbox)">
-                      {projectId ? (
+              {/* Project selector - only show if projects feature is unlocked */}
+              {projectsUnlocked && (
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Project</Label>
+                  <Select
+                    value={projectId || 'none'}
+                    onValueChange={(value) => setProjectId(value === 'none' ? undefined : value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="No project (Inbox)">
+                        {projectId ? (
+                          <span className="flex items-center gap-2">
+                            {projects.find(p => p.id === projectId)?.emoji}
+                            {projects.find(p => p.id === projectId)?.name}
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-2 text-muted-foreground">
+                            <FolderOpen className="h-4 w-4" />
+                            No project (Inbox)
+                          </span>
+                        )}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">
                         <span className="flex items-center gap-2">
-                          {projects.find(p => p.id === projectId)?.emoji}
-                          {projects.find(p => p.id === projectId)?.name}
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-2 text-muted-foreground">
                           <FolderOpen className="h-4 w-4" />
                           No project (Inbox)
                         </span>
-                      )}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">
-                      <span className="flex items-center gap-2">
-                        <FolderOpen className="h-4 w-4" />
-                        No project (Inbox)
-                      </span>
-                    </SelectItem>
-                    {projects.map((project) => (
-                      <SelectItem key={project.id} value={project.id}>
-                        <span className="flex items-center gap-2">
-                          {project.emoji && <span>{project.emoji}</span>}
-                          {project.name}
-                        </span>
                       </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                      {projects.map((project) => (
+                        <SelectItem key={project.id} value={project.id}>
+                          <span className="flex items-center gap-2">
+                            {project.emoji && <span>{project.emoji}</span>}
+                            {project.name}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               {/* Description */}
               <div className="space-y-2">

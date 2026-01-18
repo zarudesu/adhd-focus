@@ -7,6 +7,7 @@
 
 import { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/layout/page-header';
+import { ProtectedRoute } from '@/components/gamification/ProtectedRoute';
 import { Trophy, Lock, Check, Sparkles } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
@@ -172,7 +173,7 @@ function CategorySection({
   );
 }
 
-export default function AchievementsPage() {
+function AchievementsContent() {
   const [data, setData] = useState<AchievementsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -288,5 +289,13 @@ export default function AchievementsPage() {
         )}
       </main>
     </>
+  );
+}
+
+export default function AchievementsPage() {
+  return (
+    <ProtectedRoute featureCode="nav_achievements">
+      <AchievementsContent />
+    </ProtectedRoute>
   );
 }
