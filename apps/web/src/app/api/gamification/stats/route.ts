@@ -121,6 +121,13 @@ export async function GET() {
       .from(features)
       .orderBy(features.sortOrder);
 
+    // Get manually unlocked features from user_feature table
+    const manuallyUnlocked = await db
+      .select({ featureCode: userFeatures.featureCode })
+      .from(userFeatures)
+      .where(eq(userFeatures.userId, userId));
+    const manuallyUnlockedSet = new Set(manuallyUnlocked.map(f => f.featureCode));
+
     // Build user progress object
     const userProgress = {
       level: user.level || 1,
@@ -145,7 +152,8 @@ export async function GET() {
     }> = [];
 
     for (const feature of allFeatures) {
-      const isUnlocked = isFeatureUnlocked(feature, userProgress);
+      // Check both computed unlock conditions AND manual overrides
+      const isUnlocked = isFeatureUnlocked(feature, userProgress) || manuallyUnlockedSet.has(feature.code);
 
       if (isUnlocked) {
         unlockedFeatures.push(feature.code);
