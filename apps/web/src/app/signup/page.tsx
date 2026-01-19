@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useActionState } from 'react';
+import { Suspense, useActionState, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { register, type AuthState } from '@/app/actions/auth';
@@ -16,11 +16,21 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Timer, Loader2, AlertCircle } from 'lucide-react';
+import { Timer, Loader2, AlertCircle, Sparkles } from 'lucide-react';
+import { hasPendingTasks, getPendingTaskCount } from '@/lib/pending-tasks';
 
 function SignupForm() {
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+  const syncPending = searchParams.get('sync') === 'pending';
+  // If we have pending tasks, redirect to sync page after registration
+  const callbackUrl = syncPending ? '/sync' : (searchParams.get('callbackUrl') || '/dashboard');
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    if (hasPendingTasks()) {
+      setPendingCount(getPendingTaskCount());
+    }
+  }, []);
 
   const [state, formAction, isPending] = useActionState<AuthState | undefined, FormData>(
     register,
@@ -31,13 +41,22 @@ function SignupForm() {
     <div className="flex min-h-screen flex-col items-center justify-center px-6 py-12">
       <Link href="/" className="flex items-center gap-2 mb-8">
         <Timer className="h-6 w-6" />
-        <span className="text-xl font-bold">ADHD Focus</span>
+        <span className="text-xl font-bold">beatyour8</span>
       </Link>
 
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Create your account</CardTitle>
-          <CardDescription>Start managing tasks your way</CardDescription>
+          <CardDescription>
+            {pendingCount > 0 ? (
+              <span className="flex items-center justify-center gap-2">
+                <Sparkles className="h-4 w-4 text-yellow-500" />
+                {pendingCount} thought{pendingCount !== 1 ? 's' : ''} waiting to be saved
+              </span>
+            ) : (
+              'Start managing tasks your way'
+            )}
+          </CardDescription>
         </CardHeader>
 
         <CardContent>
