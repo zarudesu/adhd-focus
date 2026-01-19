@@ -30,45 +30,56 @@ const BLOCK_COLORS = [
 // Confetti colors
 const CONFETTI_COLORS = ['#fbbf24', '#f59e0b', '#ef4444', '#22c55e', '#3b82f6', '#a855f7', '#ec4899'];
 
-// Building blocks that assemble together
+// Building blocks that fly in and settle at corners/edges
 function BuildingBlocks() {
+  // Blocks positioned at corners and edges of the modal
   const blocks = [
-    { x: -80, y: 100, rotate: -45, delay: 0, size: 'w-16 h-16', color: BLOCK_COLORS[0] },
-    { x: 80, y: 120, rotate: 30, delay: 0.1, size: 'w-14 h-14', color: BLOCK_COLORS[1] },
-    { x: -60, y: -80, rotate: 60, delay: 0.15, size: 'w-12 h-12', color: BLOCK_COLORS[2] },
-    { x: 100, y: -60, rotate: -20, delay: 0.2, size: 'w-10 h-10', color: BLOCK_COLORS[3] },
-    { x: 0, y: 140, rotate: 15, delay: 0.25, size: 'w-12 h-12', color: BLOCK_COLORS[4] },
-    { x: -100, y: 0, rotate: -60, delay: 0.3, size: 'w-8 h-8', color: BLOCK_COLORS[5] },
+    // Top-left corner
+    { finalX: 8, finalY: 8, startX: -200, startY: -150, rotate: -15, delay: 0, size: 'w-10 h-10', color: BLOCK_COLORS[0] },
+    // Top-right corner
+    { finalX: 'calc(100% - 48px)', finalY: 12, startX: 300, startY: -150, rotate: 20, delay: 0.08, size: 'w-8 h-8', color: BLOCK_COLORS[1] },
+    // Bottom-left corner
+    { finalX: 12, finalY: 'calc(100% - 52px)', startX: -200, startY: 300, rotate: 25, delay: 0.12, size: 'w-9 h-9', color: BLOCK_COLORS[2] },
+    // Bottom-right corner
+    { finalX: 'calc(100% - 44px)', finalY: 'calc(100% - 48px)', startX: 300, startY: 300, rotate: -20, delay: 0.16, size: 'w-7 h-7', color: BLOCK_COLORS[3] },
+    // Top edge middle-left
+    { finalX: 60, finalY: 4, startX: -100, startY: -180, rotate: 10, delay: 0.2, size: 'w-6 h-6', color: BLOCK_COLORS[4] },
+    // Bottom edge middle-right
+    { finalX: 'calc(100% - 80px)', finalY: 'calc(100% - 36px)', startX: 250, startY: 350, rotate: -10, delay: 0.24, size: 'w-5 h-5', color: BLOCK_COLORS[5] },
+    // Left edge middle
+    { finalX: 4, finalY: '45%', startX: -180, startY: 0, rotate: 30, delay: 0.28, size: 'w-6 h-6', color: BLOCK_COLORS[0] },
+    // Right edge middle
+    { finalX: 'calc(100% - 32px)', finalY: '50%', startX: 280, startY: 50, rotate: -25, delay: 0.32, size: 'w-5 h-5', color: BLOCK_COLORS[1] },
   ];
 
   return (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+    <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl">
       {blocks.map((block, i) => (
         <motion.div
           key={i}
-          className={`absolute left-1/2 top-1/2 ${block.size} rounded-xl bg-gradient-to-br ${block.color} shadow-lg`}
+          className={`absolute ${block.size} rounded-lg bg-gradient-to-br ${block.color} shadow-lg opacity-80`}
+          style={{
+            left: typeof block.finalX === 'string' ? block.finalX : `${block.finalX}px`,
+            top: typeof block.finalY === 'string' ? block.finalY : `${block.finalY}px`,
+          }}
           initial={{
-            x: block.x * 3,
-            y: block.y * 3,
-            rotate: block.rotate * 2,
+            x: block.startX,
+            y: block.startY,
+            rotate: block.rotate * 3,
             opacity: 0,
-            scale: 0.3,
+            scale: 0.2,
           }}
           animate={{
-            x: block.x * 0.3,
-            y: block.y * 0.3,
-            rotate: block.rotate * 0.2,
-            opacity: [0, 1, 1, 0.8],
-            scale: [0.3, 1.2, 1, 0.9],
+            x: 0,
+            y: 0,
+            rotate: block.rotate,
+            opacity: [0, 0.9, 0.8],
+            scale: [0.2, 1.1, 1],
           }}
           transition={{
-            duration: 1.2,
+            duration: 0.8,
             delay: block.delay,
-            ease: [0.34, 1.56, 0.64, 1], // Spring-like ease
-          }}
-          style={{
-            marginLeft: `-${parseInt(block.size.split(' ')[0].replace('w-', '')) * 2}px`,
-            marginTop: `-${parseInt(block.size.split(' ')[0].replace('w-', '')) * 2}px`,
+            ease: [0.34, 1.56, 0.64, 1], // Spring-like bounce
           }}
         />
       ))}
@@ -245,8 +256,9 @@ export function UnlockModal({ open, onClose, taskCount }: UnlockModalProps) {
             transition={{ type: 'spring', damping: 20, stiffness: 300 }}
           >
             <div className="relative rounded-2xl border bg-card p-8 shadow-2xl text-center overflow-hidden">
-              {/* Building blocks animation */}
+              {/* Building blocks fly in to corners */}
               <BuildingBlocks />
+              {/* Sparkle particles burst from center */}
               <SparkleParticles />
 
               {/* Celebration icon */}
