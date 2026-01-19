@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { useHabits } from "@/hooks/useHabits";
 import { useYesterdayReview } from "@/hooks/useYesterdayReview";
 import { useGamificationEvents } from "@/components/gamification/GamificationProvider";
+import { ProtectedRoute } from "@/components/gamification/ProtectedRoute";
 import { AddHabitDialog, YesterdayReviewModal } from "@/components/habits";
 import { EditHabitDialog } from "@/components/habits/EditHabitDialog";
 import { SortableHabitItem } from "@/components/habits/SortableHabitItem";
@@ -33,7 +34,7 @@ import {
   Loader2,
 } from "lucide-react";
 
-export default function ChecklistPage() {
+function ChecklistContent() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const { habits, summary, loading, error, check, uncheck, create, update, archive, reorder, refresh } = useHabits();
@@ -388,5 +389,13 @@ function HabitSection({ title, emoji, habits, onCheck, onUncheck, onArchive, onE
         </DndContext>
       </CardContent>
     </Card>
+  );
+}
+
+export default function ChecklistPage() {
+  return (
+    <ProtectedRoute featureCode="nav_checklist">
+      <ChecklistContent />
+    </ProtectedRoute>
   );
 }

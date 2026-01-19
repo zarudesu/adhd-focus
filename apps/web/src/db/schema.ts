@@ -12,6 +12,8 @@ import {
   date,
   jsonb,
   pgEnum,
+  index,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import type { AdapterAccountType } from "@auth/core/adapters";
@@ -188,7 +190,9 @@ export const projects = pgTable("project", {
 
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("project_user_id_idx").on(table.userId),
+]);
 
 export const tasks = pgTable("task", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -226,7 +230,15 @@ export const tasks = pgTable("task", {
 
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("task_user_id_idx").on(table.userId),
+  index("task_status_idx").on(table.status),
+  index("task_scheduled_date_idx").on(table.scheduledDate),
+  index("task_completed_at_idx").on(table.completedAt),
+  index("task_project_id_idx").on(table.projectId),
+  // Composite index for common query: user's tasks by status
+  index("task_user_status_idx").on(table.userId, table.status),
+]);
 
 export const focusSessions = pgTable("focus_session", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -243,7 +255,11 @@ export const focusSessions = pgTable("focus_session", {
   completed: boolean("completed").default(false),
 
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("focus_session_user_id_idx").on(table.userId),
+  index("focus_session_task_id_idx").on(table.taskId),
+  index("focus_session_started_at_idx").on(table.startedAt),
+]);
 
 export const dailyStats = pgTable("daily_stat", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -257,7 +273,12 @@ export const dailyStats = pgTable("daily_stat", {
   focusMinutes: integer("focus_minutes").default(0),
   streakMaintained: boolean("streak_maintained").default(false),
   xpEarned: integer("xp_earned").default(0),
-});
+}, (table) => [
+  index("daily_stat_user_id_idx").on(table.userId),
+  index("daily_stat_date_idx").on(table.date),
+  // Composite index for user's stats by date range
+  uniqueIndex("daily_stat_user_date_idx").on(table.userId, table.date),
+]);
 
 // ===================
 // Gamification Tables
@@ -303,7 +324,10 @@ export const userFeatures = pgTable("user_feature", {
     .references(() => users.id, { onDelete: "cascade" }),
   featureCode: text("feature_code").notNull(),
   unlockedAt: timestamp("unlocked_at").defaultNow(),
-});
+}, (table) => [
+  index("user_feature_user_id_idx").on(table.userId),
+  uniqueIndex("user_feature_user_code_idx").on(table.userId, table.featureCode),
+]);
 
 // Achievements definitions
 export const achievements = pgTable("achievement", {
@@ -344,7 +368,10 @@ export const userAchievements = pgTable("user_achievement", {
     .notNull()
     .references(() => achievements.id, { onDelete: "cascade" }),
   unlockedAt: timestamp("unlocked_at").defaultNow(),
-});
+}, (table) => [
+  index("user_achievement_user_id_idx").on(table.userId),
+  uniqueIndex("user_achievement_user_ach_idx").on(table.userId, table.achievementId),
+]);
 
 // Creatures definitions
 export const creatures = pgTable("creature", {
@@ -382,7 +409,10 @@ export const userCreatures = pgTable("user_creature", {
     .references(() => creatures.id, { onDelete: "cascade" }),
   count: integer("count").default(1),
   firstCaughtAt: timestamp("first_caught_at").defaultNow(),
-});
+}, (table) => [
+  index("user_creature_user_id_idx").on(table.userId),
+  uniqueIndex("user_creature_user_creature_idx").on(table.userId, table.creatureId),
+]);
 
 // Visual reward log (for statistics and ensuring variety)
 export const rewardLogs = pgTable("reward_log", {
@@ -394,7 +424,10 @@ export const rewardLogs = pgTable("reward_log", {
   rarity: rarityEnum("rarity").notNull(),
   triggeredBy: text("triggered_by"), // "task_complete", "achievement", "level_up"
   seenAt: timestamp("seen_at").defaultNow(),
-});
+}, (table) => [
+  index("reward_log_user_id_idx").on(table.userId),
+  index("reward_log_seen_at_idx").on(table.seenAt),
+]);
 
 // ===================
 // Daily Checklist (Habits)
@@ -443,7 +476,10 @@ export const habits = pgTable("habit", {
 
   createdAt: timestamp("created_at").defaultNow(),
   archivedAt: timestamp("archived_at"),
-});
+}, (table) => [
+  index("habit_user_id_idx").on(table.userId),
+  index("habit_user_archived_idx").on(table.userId, table.isArchived),
+]);
 
 export const habitChecks = pgTable("habit_check", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -465,7 +501,12 @@ export const habitChecks = pgTable("habit_check", {
 
   // XP awarded (stored for history)
   xpAwarded: integer("xp_awarded").default(0),
-});
+}, (table) => [
+  index("habit_check_user_id_idx").on(table.userId),
+  index("habit_check_habit_id_idx").on(table.habitId),
+  index("habit_check_date_idx").on(table.date),
+  uniqueIndex("habit_check_habit_date_idx").on(table.habitId, table.date),
+]);
 
 // Yesterday review tracking
 export const dailyReviews = pgTable("daily_review", {
@@ -486,7 +527,10 @@ export const dailyReviews = pgTable("daily_review", {
   mood: text("mood"), // How they felt about the day
   notes: text("notes"),
   lessonsLearned: text("lessons_learned"),
-});
+}, (table) => [
+  index("daily_review_user_id_idx").on(table.userId),
+  uniqueIndex("daily_review_user_date_idx").on(table.userId, table.date),
+]);
 
 // ===================
 // Relations

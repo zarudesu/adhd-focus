@@ -19,6 +19,7 @@ ADHD users can be overwhelmed by too many options at once. We use **progressive 
 | **Scheduled** | 1 task scheduled (future) | `tasksScheduled >= 1` | Planning for future |
 | **Projects** | 10 tasks added | `tasksAdded >= 10` | Enough tasks to organize |
 | **Completed** | 1 task completed | `totalTasksCompleted >= 1` | First win |
+| **Daily Checklist** | 3 tasks completed | `totalTasksCompleted >= 3` | Ready for habits |
 | **Quick Actions** | 10 tasks completed | `totalTasksCompleted >= 10` | Power user emerging |
 | **Focus Mode** | 5 tasks completed | `totalTasksCompleted >= 5` | Ready for deep work |
 | **Achievements** | 3 tasks added | `tasksAdded >= 3` | Show gamification early |
@@ -30,11 +31,12 @@ ADHD users can be overwhelmed by too many options at once. We use **progressive 
 ```
 Day 1-2: Capture & Triage
 ├── INBOX (always available) - Capture everything
-├── Unlock: Add first task → ACHIEVEMENTS appears (see progress)
+├── Unlock: Add 3 tasks → ACHIEVEMENTS appears (see progress)
 ├── Unlock: Move task to today → TODAY appears
 └── Unlock: Complete task → COMPLETED appears
 
 Day 3-7: Building Habits
+├── Unlock: Complete 3 tasks → DAILY CHECKLIST appears
 ├── Unlock: Schedule for tomorrow → SCHEDULED appears
 ├── Unlock: Complete 5 tasks → FOCUS MODE appears
 ├── Unlock: Add 10 tasks → PROJECTS appears
@@ -56,6 +58,7 @@ Week 2+: Power User
 - **Achievements**: Early gamification hook. Unlocks after 3 tasks added.
 
 ### Tier 3: Planning Features (Day 2-3)
+- **Daily Checklist**: Build habits. Unlocks after 3 tasks completed.
 - **Scheduled**: Future planning. Unlocks when user schedules a task for a FUTURE date (not today).
 - **Focus Mode**: Deep work timer. Unlocks after 5 completions show readiness.
 
@@ -163,6 +166,7 @@ const features = [
   { code: 'nav_scheduled', name: 'Scheduled', unlockTasksScheduled: 1 },
   { code: 'nav_projects', name: 'Projects', unlockTasksAdded: 10 },
   { code: 'nav_completed', name: 'Completed', unlockTasksCompleted: 1 },
+  { code: 'nav_checklist', name: 'Daily Checklist', unlockTasksCompleted: 3 },
   { code: 'nav_quick_actions', name: 'Quick Actions', unlockTasksCompleted: 10 },
   { code: 'nav_focus', name: 'Focus Mode', unlockTasksCompleted: 5 },
   { code: 'nav_achievements', name: 'Achievements', unlockTasksAdded: 3 },

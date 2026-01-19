@@ -6,7 +6,7 @@
  * With beautiful shimmer animations
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Sparkles, Star } from 'lucide-react';
 import type { Creature } from '@/db/schema';
@@ -68,19 +68,36 @@ function ShimmeringCreatureName({
 export function CreatureCaughtToast({ creature, isNew, count, onClose }: CreatureCaughtToastProps) {
   const [isExiting, setIsExiting] = useState(false);
 
+  // Use ref to track if component is still mounted
+  const isMountedRef = useRef(true);
+
+  // Store onClose in a ref to avoid stale closures
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  const handleClose = useCallback(() => {
+    if (!isMountedRef.current) return;
+    setIsExiting(true);
+    setTimeout(() => {
+      if (isMountedRef.current) {
+        onCloseRef.current();
+      }
+    }, 400);
+  }, []);
+
   useEffect(() => {
+    isMountedRef.current = true;
+
     // Auto-close after 4 seconds
     const closeTimer = setTimeout(() => {
       handleClose();
     }, 4000);
 
-    return () => clearTimeout(closeTimer);
-  }, []);
-
-  const handleClose = () => {
-    setIsExiting(true);
-    setTimeout(onClose, 400);
-  };
+    return () => {
+      isMountedRef.current = false;
+      clearTimeout(closeTimer);
+    };
+  }, [handleClose]);
 
   const rarityColors: Record<string, string> = {
     common: 'from-slate-500 to-slate-600',

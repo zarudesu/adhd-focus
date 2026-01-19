@@ -5,6 +5,12 @@ import { users, userFeatures, features, dailyStats } from '@/db/schema';
 import { eq, and, lte } from 'drizzle-orm';
 import { levelFromXp } from '@/lib/gamification';
 import { logError } from '@/lib/logger';
+import { z } from 'zod';
+
+const xpSchema = z.object({
+  amount: z.number().min(0).max(10000), // Cap XP amount
+  reason: z.string().optional(),
+});
 
 export async function POST(request: Request) {
   try {
@@ -15,106 +21,122 @@ export async function POST(request: Request) {
 
     const userId = session.user.id;
     const body = await request.json();
-    const { amount, reason } = body;
 
-    if (typeof amount !== 'number' || amount < 0) {
-      return NextResponse.json({ error: 'Invalid XP amount' }, { status: 400 });
+    // Validate input
+    const parseResult = xpSchema.safeParse(body);
+    if (!parseResult.success) {
+      return NextResponse.json(
+        { error: parseResult.error.issues[0]?.message || 'Invalid input' },
+        { status: 400 }
+      );
     }
 
-    // Get current user stats
-    const [user] = await db
-      .select({
-        xp: users.xp,
-        level: users.level,
-      })
-      .from(users)
-      .where(eq(users.id, userId))
-      .limit(1);
+    const { amount, reason } = parseResult.data;
 
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    const currentXp = user.xp || 0;
-    const currentLevel = user.level || 1;
-    const newXp = currentXp + amount;
-    const newLevel = levelFromXp(newXp);
-    const leveledUp = newLevel > currentLevel;
-
-    // Update user XP and level
-    await db
-      .update(users)
-      .set({
-        xp: newXp,
-        level: newLevel,
-        updatedAt: new Date(),
-      })
-      .where(eq(users.id, userId));
-
-    // Update daily stats
-    const today = new Date().toISOString().split('T')[0];
-    const [existingDailyStat] = await db
-      .select()
-      .from(dailyStats)
-      .where(and(eq(dailyStats.userId, userId), eq(dailyStats.date, today)))
-      .limit(1);
-
-    if (existingDailyStat) {
-      await db
-        .update(dailyStats)
-        .set({
-          xpEarned: (existingDailyStat.xpEarned || 0) + amount,
+    // Use transaction for atomicity
+    const result = await db.transaction(async (tx) => {
+      // Get current user stats
+      const [user] = await tx
+        .select({
+          xp: users.xp,
+          level: users.level,
         })
-        .where(eq(dailyStats.id, existingDailyStat.id));
-    } else {
-      await db.insert(dailyStats).values({
-        userId,
-        date: today,
-        xpEarned: amount,
-      });
-    }
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
 
-    // If leveled up, check for new feature unlocks
-    let newUnlocks: string[] = [];
-    if (leveledUp) {
-      // Get features that unlock at or below new level
-      const unlockableFeatures = await db
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      const currentXp = user.xp || 0;
+      const currentLevel = user.level || 1;
+      const newXp = currentXp + amount;
+      const newLevel = levelFromXp(newXp);
+      const leveledUp = newLevel > currentLevel;
+
+      // Update user XP and level
+      await tx
+        .update(users)
+        .set({
+          xp: newXp,
+          level: newLevel,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, userId));
+
+      // Update daily stats
+      const today = new Date().toISOString().split('T')[0];
+      const [existingDailyStat] = await tx
         .select()
-        .from(features)
-        .where(lte(features.unlockLevel, newLevel));
+        .from(dailyStats)
+        .where(and(eq(dailyStats.userId, userId), eq(dailyStats.date, today)))
+        .limit(1);
 
-      // Get already unlocked features
-      const alreadyUnlocked = await db
-        .select({ featureCode: userFeatures.featureCode })
-        .from(userFeatures)
-        .where(eq(userFeatures.userId, userId));
+      if (existingDailyStat) {
+        await tx
+          .update(dailyStats)
+          .set({
+            xpEarned: (existingDailyStat.xpEarned || 0) + amount,
+          })
+          .where(eq(dailyStats.id, existingDailyStat.id));
+      } else {
+        await tx.insert(dailyStats).values({
+          userId,
+          date: today,
+          xpEarned: amount,
+        });
+      }
 
-      const alreadyUnlockedCodes = new Set(alreadyUnlocked.map((f) => f.featureCode));
+      // If leveled up, check for new feature unlocks
+      const newUnlocks: string[] = [];
+      if (leveledUp) {
+        // Get features that unlock at or below new level
+        const unlockableFeatures = await tx
+          .select()
+          .from(features)
+          .where(lte(features.unlockLevel, newLevel));
 
-      // Find new unlocks
-      for (const feature of unlockableFeatures) {
-        if (!alreadyUnlockedCodes.has(feature.code)) {
-          await db.insert(userFeatures).values({
-            userId,
-            featureCode: feature.code,
-          });
-          newUnlocks.push(feature.code);
+        // Get already unlocked features
+        const alreadyUnlocked = await tx
+          .select({ featureCode: userFeatures.featureCode })
+          .from(userFeatures)
+          .where(eq(userFeatures.userId, userId));
+
+        const alreadyUnlockedCodes = new Set(alreadyUnlocked.map((f) => f.featureCode));
+
+        // Find new unlocks
+        for (const feature of unlockableFeatures) {
+          if (!alreadyUnlockedCodes.has(feature.code)) {
+            await tx.insert(userFeatures).values({
+              userId,
+              featureCode: feature.code,
+            });
+            newUnlocks.push(feature.code);
+          }
         }
       }
-    }
+
+      return {
+        previousXp: currentXp,
+        newXp,
+        xpGained: amount,
+        previousLevel: currentLevel,
+        newLevel,
+        leveledUp,
+        newUnlocks,
+        reason,
+      };
+    });
 
     return NextResponse.json({
       success: true,
-      previousXp: currentXp,
-      newXp,
-      xpGained: amount,
-      previousLevel: currentLevel,
-      newLevel,
-      leveledUp,
-      newUnlocks,
-      reason,
+      ...result,
     });
   } catch (error) {
+    if (error instanceof Error && error.message === 'User not found') {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
     logError('POST /api/gamification/xp', error);
     return NextResponse.json({ error: 'Failed to award XP' }, { status: 500 });
   }

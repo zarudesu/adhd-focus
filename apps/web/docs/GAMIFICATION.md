@@ -1,7 +1,7 @@
 # ADHD Focus - Gamification System
 
 > **Документация для разработки геймификации**
-> Последнее обновление: 2026-01-17
+> Последнее обновление: 2026-01-19
 
 ## Концепция
 
@@ -112,6 +112,7 @@ reward_logs
 | Today | 1 task assigned to today |
 | Scheduled | 1 task scheduled for **future** date |
 | Completed | 1 task completed |
+| Daily Checklist | 3 tasks completed |
 | Achievements | 3 tasks added |
 | Focus Mode | 5 tasks completed |
 | Projects | 10 tasks added |
@@ -266,22 +267,35 @@ const {
 src/
 ├── db/
 │   ├── schema.ts                    # Gamification tables
-│   └── seed-gamification.ts         # Seed data
+│   ├── seed-gamification.ts         # Seed data
+│   └── generate-achievements.ts     # Achievement generator (1000+)
 ├── hooks/
 │   ├── useFeatures.ts               # Feature unlocking
 │   ├── useGamification.ts           # XP, achievements, creatures
+│   ├── useHabits.ts                 # Daily checklist habits
 │   └── useTasks.ts                  # Task completion with XP integration
 ├── components/gamification/
 │   ├── FeatureGate.tsx              # Feature gating component
+│   ├── ProtectedRoute.tsx           # Page-level feature protection
 │   ├── LevelProgress.tsx            # Level progress bar (sidebar)
 │   ├── LevelUpModal.tsx             # Level up celebration modal
-│   ├── RewardAnimation.tsx          # Sci-Fi visual reward effects (Phase 2)
+│   ├── RewardAnimation.tsx          # Sci-Fi visual reward effects
+│   ├── AchievementToast.tsx         # Achievement unlock toast with shimmer
+│   ├── CreatureCaughtToast.tsx      # Creature caught toast with rarity effects
 │   └── GamificationProvider.tsx     # Context for gamification events
+├── app/(dashboard)/dashboard/
+│   ├── achievements/page.tsx        # Achievements list UI
+│   ├── creatures/page.tsx           # Creature collection UI
+│   └── checklist/page.tsx           # Daily habits checklist
 └── app/api/gamification/
     ├── stats/route.ts
     ├── xp/route.ts
-    ├── achievements/check/route.ts
-    ├── creatures/spawn/route.ts
+    ├── achievements/
+    │   ├── route.ts                 # GET achievements
+    │   └── check/route.ts           # POST check achievements
+    ├── creatures/
+    │   ├── route.ts                 # GET creatures
+    │   └── spawn/route.ts           # POST spawn creature
     └── rewards/log/route.ts
 ```
 
@@ -310,20 +324,22 @@ src/
 - [x] Интеграция в GamificationProvider
 - [x] CSS анимации в globals.css (700+ lines)
 
-### Phase 3: Achievements
-- [ ] Achievement check при событиях
-- [ ] Achievement unlock toast
-- [ ] Achievements page UI
+### Phase 3: Achievements ✅
+- [x] Achievement check при событиях
+- [x] Achievement unlock toast (max 2 per action)
+- [x] Achievements page UI (/dashboard/achievements)
+- [x] AchievementToast component с shimmer анимациями
 
-### Phase 4: Creatures
-- [ ] Creature spawn при задачах
-- [ ] Creature collection UI
-- [ ] "Caught!" animation
+### Phase 4: Creatures ✅
+- [x] Creature spawn при задачах
+- [x] Creature collection UI (/dashboard/creatures)
+- [x] CreatureCaughtToast с rarity-based анимациями
 
-### Phase 5: Feature Gates
-- [ ] Интегрировать FeatureGate во все UI
-- [ ] Feature unlock modal
-- [ ] Progressive sidebar
+### Phase 5: Feature Gates ✅
+- [x] ProtectedRoute для навигации
+- [x] FeatureGate для UI элементов
+- [x] Feature unlock celebration modal
+- [x] Progressive sidebar (скрытые пункты до unlock)
 
 ---
 

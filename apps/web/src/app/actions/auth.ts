@@ -5,16 +5,48 @@
  * Using server actions for proper cookie handling
  */
 
+import { headers } from 'next/headers';
 import { signIn, signOut } from '@/lib/auth';
 import { AuthError } from 'next-auth';
 import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import { registerUser } from '@/app/api/auth/register/route';
 import { logError } from '@/lib/logger';
+import { rateLimiters, getClientIP } from '@/lib/rate-limit';
+import { z } from 'zod';
 
 export type AuthState = {
   error?: string;
   success?: boolean;
 };
+
+// Validation schemas
+const loginSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(1, 'Password is required'),
+  redirectTo: z.string().optional().default('/dashboard/inbox'),
+});
+
+const registerSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  redirectTo: z.string().optional().default('/dashboard/inbox'),
+});
+
+/**
+ * Helper to safely extract form data with validation
+ */
+function parseFormData<T extends z.ZodSchema>(formData: FormData, schema: T): z.infer<T> | { error: string } {
+  const raw: Record<string, unknown> = {};
+  formData.forEach((value, key) => {
+    raw[key] = typeof value === 'string' ? value : undefined;
+  });
+
+  const result = schema.safeParse(raw);
+  if (!result.success) {
+    return { error: result.error.issues[0]?.message || 'Invalid input' };
+  }
+  return result.data;
+}
 
 /**
  * Server action for credentials login
@@ -25,9 +57,24 @@ export async function authenticate(
   formData: FormData
 ): Promise<AuthState> {
   try {
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
-    const redirectTo = formData.get('redirectTo') as string || '/dashboard/inbox';
+    // Rate limiting
+    const headersList = await headers();
+    const ip = getClientIP(headersList);
+    const rateLimit = rateLimiters.login(ip);
+
+    if (!rateLimit.allowed) {
+      return {
+        error: `Too many login attempts. Please try again in ${Math.ceil(rateLimit.retryAfter! / 60)} minutes.`
+      };
+    }
+
+    // Validate form data
+    const parsed = parseFormData(formData, loginSchema);
+    if ('error' in parsed) {
+      return { error: parsed.error };
+    }
+
+    const { email, password, redirectTo } = parsed;
 
     await signIn('credentials', {
       email,
@@ -75,9 +122,24 @@ export async function register(
   formData: FormData
 ): Promise<AuthState> {
   try {
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
-    const redirectTo = formData.get('redirectTo') as string || '/dashboard/inbox';
+    // Rate limiting
+    const headersList = await headers();
+    const ip = getClientIP(headersList);
+    const rateLimit = rateLimiters.register(ip);
+
+    if (!rateLimit.allowed) {
+      return {
+        error: `Too many registration attempts. Please try again in ${Math.ceil(rateLimit.retryAfter! / 60)} minutes.`
+      };
+    }
+
+    // Validate form data
+    const parsed = parseFormData(formData, registerSchema);
+    if ('error' in parsed) {
+      return { error: parsed.error };
+    }
+
+    const { email, password, redirectTo } = parsed;
 
     // Call registration logic directly (no HTTP call)
     const result = await registerUser({ email, password });

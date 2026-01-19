@@ -143,65 +143,79 @@ export async function POST(request: Request) {
       currentMonth: now.getMonth(),
     };
 
-    // Check each locked achievement
+    // Check each locked achievement and use transaction for unlocking
     const newlyUnlocked: Achievement[] = [];
+
+    const userStats = {
+      level: user.level || 1,
+      totalTasksCompleted: user.totalTasksCompleted || 0,
+      currentStreak: user.currentStreak || 0,
+      longestStreak: user.longestStreak || 0,
+      habitsCompleted: user.habitsCompleted || 0,
+      habitsCreated: user.habitsCreated || 0,
+      habitStreak: user.habitStreak || 0,
+      longestHabitStreak: user.longestHabitStreak || 0,
+      allHabitsCompletedDays: user.allHabitsCompletedDays || 0,
+    };
+
+    // Find achievements that should be unlocked
+    const achievementsToUnlock: Achievement[] = [];
 
     for (const achievement of lockedAchievements) {
       const condition = achievement.conditionValue as AchievementCondition;
       if (!condition) continue;
 
-      const meets = checkCondition(
-        condition,
-        achievement.conditionType,
-        {
-          level: user.level || 1,
-          totalTasksCompleted: user.totalTasksCompleted || 0,
-          currentStreak: user.currentStreak || 0,
-          longestStreak: user.longestStreak || 0,
-          // Habit stats
-          habitsCompleted: user.habitsCompleted || 0,
-          habitsCreated: user.habitsCreated || 0,
-          habitStreak: user.habitStreak || 0,
-          longestHabitStreak: user.longestHabitStreak || 0,
-          allHabitsCompletedDays: user.allHabitsCompletedDays || 0,
-        },
-        context
-      );
-
+      const meets = checkCondition(condition, achievement.conditionType, userStats, context);
       if (meets) {
-        // Unlock achievement
-        await db.insert(userAchievements).values({
-          userId,
-          achievementId: achievement.id,
-        });
+        achievementsToUnlock.push(achievement);
+      }
+    }
 
-        // If achievement unlocks a feature, unlock it
-        if (achievement.unlocksFeature) {
-          await db.insert(userFeatures).values({
+    // Unlock all qualifying achievements in a single transaction
+    if (achievementsToUnlock.length > 0) {
+      await db.transaction(async (tx) => {
+        let totalXpToAdd = 0;
+
+        for (const achievement of achievementsToUnlock) {
+          // Unlock achievement
+          await tx.insert(userAchievements).values({
             userId,
-            featureCode: achievement.unlocksFeature,
-          }).onConflictDoNothing();
+            achievementId: achievement.id,
+          });
+
+          // If achievement unlocks a feature, unlock it
+          if (achievement.unlocksFeature) {
+            await tx.insert(userFeatures).values({
+              userId,
+              featureCode: achievement.unlocksFeature,
+            }).onConflictDoNothing();
+          }
+
+          // Accumulate XP
+          if (achievement.xpReward && achievement.xpReward > 0) {
+            totalXpToAdd += achievement.xpReward;
+          }
+
+          newlyUnlocked.push(achievement);
         }
 
-        // Award XP
-        if (achievement.xpReward && achievement.xpReward > 0) {
-          const [currentUser] = await db
+        // Award all XP at once
+        if (totalXpToAdd > 0) {
+          const [currentUser] = await tx
             .select({ xp: users.xp })
             .from(users)
             .where(eq(users.id, userId))
             .limit(1);
 
-          await db
+          await tx
             .update(users)
             .set({
-              xp: (currentUser?.xp || 0) + achievement.xpReward,
+              xp: (currentUser?.xp || 0) + totalXpToAdd,
               updatedAt: new Date(),
             })
             .where(eq(users.id, userId));
         }
-
-        newlyUnlocked.push(achievement);
-      }
+      });
     }
 
     return NextResponse.json({

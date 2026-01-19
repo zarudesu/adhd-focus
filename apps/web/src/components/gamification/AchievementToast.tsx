@@ -6,7 +6,7 @@
  * With beautiful shimmer animations
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Trophy, Star, Sparkles } from 'lucide-react';
 import type { Achievement } from '@/db/schema';
@@ -66,19 +66,36 @@ function ShimmeringAchievementText({
 export function AchievementToast({ achievement, onClose }: AchievementToastProps) {
   const [isExiting, setIsExiting] = useState(false);
 
+  // Use ref to track if component is still mounted
+  const isMountedRef = useRef(true);
+
+  // Store onClose in a ref to avoid stale closures
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  const handleClose = useCallback(() => {
+    if (!isMountedRef.current) return;
+    setIsExiting(true);
+    setTimeout(() => {
+      if (isMountedRef.current) {
+        onCloseRef.current();
+      }
+    }, 400);
+  }, []);
+
   useEffect(() => {
+    isMountedRef.current = true;
+
     // Auto-close after 5 seconds
     const closeTimer = setTimeout(() => {
       handleClose();
     }, 5000);
 
-    return () => clearTimeout(closeTimer);
-  }, []);
-
-  const handleClose = () => {
-    setIsExiting(true);
-    setTimeout(onClose, 400);
-  };
+    return () => {
+      isMountedRef.current = false;
+      clearTimeout(closeTimer);
+    };
+  }, [handleClose]);
 
   const rarityColors: Record<string, string> = {
     progress: 'from-green-500 to-emerald-600',

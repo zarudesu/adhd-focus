@@ -1,7 +1,7 @@
 # CLAUDE.md - AI Assistant Instructions
 
 > **READ THIS FILE FIRST** in every new session or after context compaction.
-> Last updated: 2026-01-17
+> Last updated: 2026-01-19
 
 ## CRITICAL: When Fixing Bugs
 
@@ -112,7 +112,9 @@ cd apps/web && npm run dev
 | Focus Mode | **DONE** | Pomodoro timer, work/break modes, task selection, session tracking, stats |
 | Achievements | **DONE** | List of achievements with progress, unlocked status |
 | Creatures | **DONE** | Collection of creatures, spawn mechanics |
-| Statistics | **DONE** | Streak, level, XP, pomodoros, focus time, weekly charts, achievements |
+| Statistics | **DONE** | Streak, level, XP, pomodoros, focus time, weekly charts, achievements, habits |
+| Checklist | **DONE** | Daily habits with drag-drop reorder, time of day sections, streaks, yesterday review |
+| Landing | **DONE** | Minimalist single input, localStorage tasks, celebration modal, registration flow |
 
 ### Backend - API Routes
 
@@ -134,17 +136,23 @@ cd apps/web && npm run dev
 | POST /api/gamification/creatures/spawn | **DONE** |
 | POST /api/gamification/rewards/log | **DONE** |
 | GET /api/stats | **DONE** |
+| GET/POST /api/habits | **DONE** |
+| PATCH/DELETE /api/habits/[id] | **DONE** |
+| POST /api/habits/[id]/check | **DONE** |
+| POST /api/habits/reorder | **DONE** |
+| GET/POST /api/habits/review | **DONE** |
 
 ### Key Files Changed Recently
-- `src/lib/logger.ts` - Safe logging utility (sanitizes PII in production)
-- `src/app/(dashboard)/dashboard/stats/page.tsx` - Statistics with focus stats, weekly charts
-- `src/app/api/stats/route.ts` - Historical daily stats API
-- `src/hooks/useFocusTimer.ts` - Pomodoro timer hook with work/break modes
-- `src/app/api/focus/sessions/route.ts` - Focus sessions API (GET/POST)
-- `src/app/api/focus/sessions/[id]/route.ts` - Session update API (PATCH)
-- `src/app/(dashboard)/dashboard/focus/page.tsx` - Focus Mode UI with timer
-- `src/components/gamification/GamificationProvider.tsx` - XP/rewards context
-- `src/app/api/gamification/*` - 5 gamification API endpoints
+- `src/app/page.tsx` - Minimalist landing page with localStorage task capture
+- `src/components/landing/UnlockModal.tsx` - Celebration modal for registration
+- `src/lib/pending-tasks.ts` - localStorage helpers for pre-registration tasks
+- `src/app/sync/page.tsx` - Syncs localStorage tasks to API after registration
+- `src/app/(dashboard)/dashboard/checklist/page.tsx` - Daily habits UI
+- `src/hooks/useHabits.ts` - Habits CRUD + check/uncheck + reorder
+- `src/hooks/useYesterdayReview.ts` - Yesterday habits review modal
+- `src/app/api/habits/*` - Habits API endpoints
+- `src/components/gamification/GamificationProvider.tsx` - XP/rewards context (max 2 achievements per action)
+- `src/components/gamification/ProtectedRoute.tsx` - Page-level feature gating
 
 ### Known Issues (Code Review 2026-01-15)
 
@@ -184,6 +192,8 @@ cd apps/web && npm run dev
 ```
 apps/web/src/
 ├── app/
+│   ├── page.tsx                  # Landing page (minimalist input)
+│   ├── sync/page.tsx             # Sync localStorage tasks after registration
 │   ├── (dashboard)/dashboard/    # Protected pages
 │   │   ├── page.tsx              # Today
 │   │   ├── inbox/
@@ -195,10 +205,11 @@ apps/web/src/
 │   │   │   ├── page.tsx          # Projects list
 │   │   │   └── [id]/page.tsx     # Project detail
 │   │   ├── completed/page.tsx    # Completed tasks
+│   │   ├── checklist/page.tsx    # Daily habits
 │   │   ├── focus/page.tsx        # Focus Mode (Pomodoro)
 │   │   ├── achievements/page.tsx # Achievements list
 │   │   ├── creatures/page.tsx    # Creatures collection
-│   │   ├── stats/page.tsx        # Statistics (TODO)
+│   │   ├── stats/page.tsx        # Statistics
 │   │   └── settings/
 │   │       ├── page.tsx          # Settings
 │   │       └── integrations/     # Integrations
@@ -206,6 +217,7 @@ apps/web/src/
 │   │   ├── auth/                 # NextAuth + register
 │   │   ├── tasks/                # Tasks CRUD
 │   │   ├── projects/             # Projects CRUD
+│   │   ├── habits/               # Habits CRUD + check + reorder + review
 │   │   ├── profile/              # Profile GET/PATCH
 │   │   ├── focus/sessions/       # Focus sessions
 │   │   └── gamification/         # Stats, XP, achievements, creatures, rewards
@@ -213,11 +225,15 @@ apps/web/src/
 ├── components/
 │   ├── tasks/                    # TaskCard, TaskList, AddTaskDialog
 │   ├── inbox/                    # InboxProcessor
-│   ├── gamification/             # FeatureGate, GamificationProvider
+│   ├── habits/                   # AddHabitDialog, SortableHabitItem, YesterdayReviewModal
+│   ├── landing/                  # UnlockModal
+│   ├── gamification/             # FeatureGate, ProtectedRoute, GamificationProvider
 │   └── ui/                       # shadcn components
 ├── hooks/
 │   ├── useTasks.ts               # Tasks CRUD + filters
 │   ├── useProjects.ts            # Projects CRUD
+│   ├── useHabits.ts              # Habits CRUD + check/reorder
+│   ├── useYesterdayReview.ts     # Habits review modal
 │   ├── useProfile.ts             # User preferences
 │   ├── useFocusTimer.ts          # Pomodoro timer
 │   ├── useFeatures.ts            # Feature unlocks
@@ -225,9 +241,10 @@ apps/web/src/
 │   └── useAuth.ts                # Auth state
 ├── db/
 │   ├── index.ts                  # Drizzle client
-│   └── schema.ts                 # Database schema (incl. gamification)
+│   └── schema.ts                 # Database schema (incl. gamification, habits)
 └── lib/
     ├── auth.ts                   # NextAuth config
+    ├── pending-tasks.ts          # localStorage helpers
     └── utils.ts                  # Utilities
 ```
 
@@ -328,6 +345,7 @@ ADHD brain overwhelms from too many options. Solution:
 | Today | 1 task assigned to today |
 | Scheduled | 1 task scheduled for **future** date |
 | Completed | 1 task completed |
+| Checklist | 3 tasks completed |
 | Achievements | 3 tasks added |
 | Focus Mode | 5 tasks completed |
 | Projects | 10 tasks added |

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { GamificationProvider } from "@/components/gamification/GamificationProvider";
+import { DashboardErrorBoundary } from "@/components/layout/dashboard-error-boundary";
 import { auth } from "@/lib/auth";
 
 export default async function DashboardLayout({
@@ -30,7 +31,11 @@ export default async function DashboardLayout({
             avatar_url: session.user.image ?? undefined,
           }}
         />
-        <SidebarInset>{children}</SidebarInset>
+        <SidebarInset>
+          <DashboardErrorBoundary>
+            {children}
+          </DashboardErrorBoundary>
+        </SidebarInset>
       </SidebarProvider>
     </GamificationProvider>
   );
