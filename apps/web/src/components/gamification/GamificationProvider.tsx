@@ -148,8 +148,24 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
     }
 
     // Phase 3: Queue new achievements for toast display
+    // Limit to max 2 toasts to prevent spam when multiple achievements unlock at once
     if (event.newAchievements && event.newAchievements.length > 0) {
-      setPendingAchievements((prev) => [...prev, ...event.newAchievements!]);
+      setPendingAchievements((prev) => {
+        const newAchievements = event.newAchievements!;
+        const combined = [...prev, ...newAchievements];
+        // Keep only the first 2 most important (mastery > secret > streak > progress)
+        const priorityOrder: Record<string, number> = {
+          ultra_secret: 6,
+          secret: 5,
+          mastery: 4,
+          hidden: 3,
+          streak: 2,
+          progress: 1,
+        };
+        return combined
+          .sort((a, b) => (priorityOrder[b.category] || 0) - (priorityOrder[a.category] || 0))
+          .slice(0, 2);
+      });
     }
 
     // Phase 4: Queue creature caught for toast display

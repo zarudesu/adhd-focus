@@ -87,6 +87,9 @@ export function AddTaskDialog({
   const { projects } = useProjects();
   const { isUnlocked } = useFeatures();
   const projectsUnlocked = isUnlocked('nav_projects');
+  const energyUnlocked = isUnlocked('energy_basic');
+  const priorityUnlocked = isUnlocked('priority_basic');
+  const timeEstimateUnlocked = isUnlocked('task_time_estimate');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [energy, setEnergy] = useState<EnergyLevel>('medium');
@@ -273,66 +276,74 @@ export function AddTaskDialog({
             </div>
           )}
 
-          {/* Quick options row */}
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-            {/* Energy selector */}
-            <div className="flex-1 min-w-0">
-              <Label className="text-xs text-muted-foreground mb-1.5 block">Energy</Label>
-              <div className="flex gap-1">
-                {ENERGY_OPTIONS.map((option) => (
-                  <Button
-                    key={option.value}
-                    type="button"
-                    variant={energy === option.value ? 'default' : 'outline'}
-                    size="sm"
-                    className="flex-1 gap-1 px-2 sm:px-3"
-                    onClick={() => setEnergy(option.value)}
-                  >
-                    {option.icon}
-                    <span className="text-xs">{option.label}</span>
-                  </Button>
-                ))}
-              </div>
-            </div>
+          {/* Quick options row - only show if features unlocked */}
+          {(energyUnlocked || priorityUnlocked) && (
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+              {/* Energy selector - requires energy_basic feature */}
+              {energyUnlocked && (
+                <div className="flex-1 min-w-0">
+                  <Label className="text-xs text-muted-foreground mb-1.5 block">Energy</Label>
+                  <div className="flex gap-1">
+                    {ENERGY_OPTIONS.map((option) => (
+                      <Button
+                        key={option.value}
+                        type="button"
+                        variant={energy === option.value ? 'default' : 'outline'}
+                        size="sm"
+                        className="flex-1 gap-1 px-2 sm:px-3"
+                        onClick={() => setEnergy(option.value)}
+                      >
+                        {option.icon}
+                        <span className="text-xs">{option.label}</span>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-            {/* Priority selector */}
-            <div className="flex-1 min-w-0">
-              <Label className="text-xs text-muted-foreground mb-1.5 block">Priority</Label>
+              {/* Priority selector - requires priority_basic feature */}
+              {priorityUnlocked && (
+                <div className="flex-1 min-w-0">
+                  <Label className="text-xs text-muted-foreground mb-1.5 block">Priority</Label>
+                  <div className="flex gap-1">
+                    {PRIORITY_OPTIONS.map((option) => (
+                      <Button
+                        key={option.value}
+                        type="button"
+                        variant={priority === option.value ? 'default' : 'outline'}
+                        size="sm"
+                        className="flex-1 px-2 sm:px-3"
+                        onClick={() => setPriority(option.value)}
+                      >
+                        <span className="text-xs">{option.label}</span>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Time estimate - requires task_time_estimate feature */}
+          {timeEstimateUnlocked && (
+            <div>
+              <Label className="text-xs text-muted-foreground mb-1.5 block">Time estimate</Label>
               <div className="flex gap-1">
-                {PRIORITY_OPTIONS.map((option) => (
+                {TIME_PRESETS.map((mins) => (
                   <Button
-                    key={option.value}
+                    key={mins}
                     type="button"
-                    variant={priority === option.value ? 'default' : 'outline'}
+                    variant={estimatedMinutes === mins ? 'default' : 'outline'}
                     size="sm"
                     className="flex-1 px-2 sm:px-3"
-                    onClick={() => setPriority(option.value)}
+                    onClick={() => setEstimatedMinutes(estimatedMinutes === mins ? undefined : mins)}
                   >
-                    <span className="text-xs">{option.label}</span>
+                    <span className="text-xs">{mins}m</span>
                   </Button>
                 ))}
               </div>
             </div>
-          </div>
-
-          {/* Time estimate */}
-          <div>
-            <Label className="text-xs text-muted-foreground mb-1.5 block">Time estimate</Label>
-            <div className="flex gap-1">
-              {TIME_PRESETS.map((mins) => (
-                <Button
-                  key={mins}
-                  type="button"
-                  variant={estimatedMinutes === mins ? 'default' : 'outline'}
-                  size="sm"
-                  className="flex-1 px-2 sm:px-3"
-                  onClick={() => setEstimatedMinutes(estimatedMinutes === mins ? undefined : mins)}
-                >
-                  <span className="text-xs">{mins}m</span>
-                </Button>
-              ))}
-            </div>
-          </div>
+          )}
 
           {/* Expandable section */}
           <Button
