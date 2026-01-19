@@ -152,6 +152,59 @@ function RainbowBorder() {
   );
 }
 
+// Shimmering text effect for achievement names
+function ShimmeringText({
+  text,
+  shimmerType,
+  className,
+}: {
+  text: string;
+  shimmerType: 'gold' | 'silver' | 'rainbow' | 'bronze';
+  className?: string;
+}) {
+  const gradients = {
+    gold: 'from-yellow-400 via-amber-300 via-yellow-500 to-orange-400',
+    silver: 'from-slate-300 via-white via-slate-400 to-slate-300',
+    rainbow: 'from-red-400 via-yellow-400 via-green-400 via-blue-400 to-purple-400',
+    bronze: 'from-orange-400 via-amber-300 via-orange-500 to-yellow-600',
+  };
+
+  return (
+    <motion.span
+      className={cn(
+        'relative inline-block font-semibold bg-clip-text text-transparent',
+        `bg-gradient-to-r ${gradients[shimmerType]}`,
+        'bg-[length:200%_100%]',
+        className
+      )}
+      animate={{
+        backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+      }}
+      transition={{
+        duration: 3,
+        repeat: Infinity,
+        ease: 'easeInOut',
+      }}
+    >
+      {text}
+      {/* Sparkle overlay */}
+      <motion.span
+        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/60 to-transparent bg-[length:50%_100%]"
+        style={{ mixBlendMode: 'overlay' }}
+        animate={{
+          backgroundPosition: ['-100% 0%', '200% 0%'],
+        }}
+        transition={{
+          duration: 2,
+          repeat: Infinity,
+          repeatDelay: 2,
+          ease: 'easeInOut',
+        }}
+      />
+    </motion.span>
+  );
+}
+
 // Metallic shine effect for icon
 function MetallicIcon({
   icon,
@@ -269,14 +322,17 @@ function AchievementCard({ achievement }: { achievement: Achievement }) {
           {/* Content */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h3
-                className={cn(
-                  'font-semibold truncate',
-                  achievement.isUnlocked ? 'text-foreground' : 'text-muted-foreground'
-                )}
-              >
-                {achievement.name}
-              </h3>
+              {achievement.isUnlocked ? (
+                <ShimmeringText
+                  text={achievement.name}
+                  shimmerType={shimmerType}
+                  className="truncate"
+                />
+              ) : (
+                <h3 className="font-semibold truncate text-muted-foreground">
+                  {achievement.name}
+                </h3>
+              )}
               {achievement.isUnlocked && (
                 <motion.div
                   initial={{ scale: 0 }}
