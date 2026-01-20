@@ -54,10 +54,10 @@ export default function InboxProcessPage() {
     loading,
     moveToToday,
     scheduleTask,
+    snoozeTask,
     deleteTask,
     complete,
     update,
-    archive,
   } = useTasks();
   const { projects } = useProjects();
   const { handleTaskComplete } = useGamificationEvents();
@@ -144,14 +144,12 @@ export default function InboxProcessPage() {
     handleAction(() => scheduleTask(currentTask.id, format(date, 'yyyy-MM-dd')));
   };
 
-  // Not Today - snooze until tomorrow (for now just archives)
+  // Not Today - snooze task in inbox until tomorrow
   const handleNotToday = () => {
     if (!currentTask) return;
-    // TODO: Implement proper snooze with snoozedUntil field
-    // For now, schedule for tomorrow
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    handleAction(() => scheduleTask(currentTask.id, format(tomorrow, 'yyyy-MM-dd')));
+    handleAction(() => snoozeTask(currentTask.id, format(tomorrow, 'yyyy-MM-dd')));
   };
 
   // Complete task

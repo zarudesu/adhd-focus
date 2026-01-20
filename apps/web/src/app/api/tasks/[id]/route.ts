@@ -25,6 +25,7 @@ const updateTaskSchema = z.object({
   dueDate: z.string().nullable().optional(),
   scheduledDate: z.string().nullable().optional(),
   completedAt: z.string().nullable().optional(),
+  snoozedUntil: z.string().nullable().optional(), // For "Not Today" - hide from inbox until this date
   projectId: z.string().uuid().nullable().optional(),
   tags: z.array(z.string()).optional(),
   sortOrder: z.number().optional(),
@@ -83,6 +84,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (data.pomodorosCompleted !== undefined) updateData.pomodorosCompleted = data.pomodorosCompleted;
     if (data.dueDate !== undefined) updateData.dueDate = data.dueDate;
     if (data.scheduledDate !== undefined) updateData.scheduledDate = data.scheduledDate;
+    if (data.snoozedUntil !== undefined) updateData.snoozedUntil = data.snoozedUntil;
     if (data.projectId !== undefined) updateData.projectId = data.projectId;
     if (data.tags !== undefined) updateData.tags = data.tags;
     if (data.sortOrder !== undefined) updateData.sortOrder = data.sortOrder;

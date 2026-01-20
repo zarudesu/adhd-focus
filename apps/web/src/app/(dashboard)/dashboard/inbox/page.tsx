@@ -11,7 +11,9 @@ import { useProfile } from "@/hooks/useProfile";
 import { useFeatures } from "@/hooks/useFeatures";
 import { useGamificationEvents } from "@/components/gamification/GamificationProvider";
 import type { Task } from "@/db/schema";
-import { Plus, Sparkles, AlertTriangle } from "lucide-react";
+import { Plus, Sparkles, AlertTriangle, EyeOff, Eye } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 // Map landing page preference to route and feature code
 const LANDING_PAGE_ROUTES: Record<string, { route: string; featureCode: string }> = {
@@ -28,21 +30,24 @@ export default function InboxPage() {
   const router = useRouter();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [showSnoozed, setShowSnoozed] = useState(false);
   const hasCheckedLanding = useRef(false);
 
   const { profile, loading: profileLoading } = useProfile();
   const { navFeatures, loading: featuresLoading } = useFeatures();
   const {
     inboxTasks,
+    snoozedTasks,
     loading,
     error,
     complete,
     uncomplete,
     deleteTask,
     moveToToday,
+    unsnoozeTask,
     update,
     create,
-  } = useTasks();
+  } = useTasks({ showSnoozed });
   const { handleTaskComplete } = useGamificationEvents();
 
   // Check if user should be redirected to their preferred landing page
@@ -191,9 +196,28 @@ export default function InboxPage() {
 
         {/* Task list */}
         <div>
-          <h3 className="text-sm font-medium text-muted-foreground mb-2">
-            Or pick one:
-          </h3>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-medium text-muted-foreground">
+              Or pick one:
+            </h3>
+            {/* Show Not Today toggle - only if there are snoozed tasks */}
+            {snoozedTasks.length > 0 && (
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="show-snoozed"
+                  checked={showSnoozed}
+                  onCheckedChange={setShowSnoozed}
+                />
+                <Label
+                  htmlFor="show-snoozed"
+                  className="text-sm text-muted-foreground cursor-pointer flex items-center gap-1"
+                >
+                  {showSnoozed ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                  Not Today ({snoozedTasks.length})
+                </Label>
+              </div>
+            )}
+          </div>
           <TaskList
             tasks={inboxTasks}
             loading={loading}

@@ -216,6 +216,7 @@ export const tasks = pgTable("task", {
   dueDate: date("due_date"),
   scheduledDate: date("scheduled_date"),
   completedAt: timestamp("completed_at"),
+  snoozedUntil: date("snoozed_until"), // For "Not Today" - hide from inbox until this date
 
   // Organization
   projectId: uuid("project_id").references(() => projects.id, { onDelete: "set null" }),

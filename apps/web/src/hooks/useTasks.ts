@@ -48,6 +48,7 @@ interface UpdateTaskInput {
   projectId?: string | null;
   tags?: string[];
   sortOrder?: number;
+  snoozedUntil?: string | null;
 }
 
 // Result of completing a task with gamification
@@ -69,6 +70,7 @@ export interface CompleteResult {
 interface UseTasksOptions {
   filters?: TaskFilters;
   autoFetch?: boolean;
+  showSnoozed?: boolean; // Include snoozed tasks in inboxTasks
 }
 
 interface UseTasksReturn {
@@ -85,9 +87,12 @@ interface UseTasksReturn {
   moveToInbox: (id: string) => Promise<Task>;
   moveToSomeday: (id: string) => Promise<Task>;
   scheduleTask: (id: string, date: string) => Promise<Task>;
+  snoozeTask: (id: string, until: string) => Promise<Task>;
+  unsnoozeTask: (id: string) => Promise<Task>;
   archive: (id: string) => Promise<Task>;
   todayTasks: Task[];
   inboxTasks: Task[];
+  snoozedTasks: Task[];
   scheduledTasks: Task[];
   currentTask: Task | null;
 }
@@ -110,7 +115,7 @@ async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
 }
 
 export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
-  const { filters = {}, autoFetch = true } = options;
+  const { filters = {}, autoFetch = true, showSnoozed = false } = options;
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(false);
@@ -346,6 +351,19 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
     });
   }, [update]);
 
+  const snoozeTask = useCallback(async (id: string, until: string): Promise<Task> => {
+    // Snooze keeps task in inbox but hides it until the specified date
+    return update(id, {
+      snoozedUntil: until,
+    });
+  }, [update]);
+
+  const unsnoozeTask = useCallback(async (id: string): Promise<Task> => {
+    return update(id, {
+      snoozedUntil: null,
+    });
+  }, [update]);
+
   // Memoize today's date string to prevent filter recalculations
   const today = useMemo(() => new Date().toISOString().split('T')[0], []);
 
@@ -363,9 +381,29 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
     [tasks, today]
   );
 
+  // Inbox tasks: status is inbox, no project, and not snoozed (unless showSnoozed is true)
   const inboxTasks = useMemo(
-    () => tasks.filter((t) => t.status === 'inbox' && !t.projectId),
-    [tasks]
+    () => tasks.filter((t) => {
+      if (t.status !== 'inbox' || t.projectId) return false;
+      // Check if snoozed
+      if (t.snoozedUntil && !showSnoozed) {
+        // Hide if snoozedUntil is in the future
+        return t.snoozedUntil <= today;
+      }
+      return true;
+    }),
+    [tasks, showSnoozed, today]
+  );
+
+  // Snoozed tasks: inbox tasks with snoozedUntil in the future
+  const snoozedTasks = useMemo(
+    () => tasks.filter((t) =>
+      t.status === 'inbox' &&
+      !t.projectId &&
+      t.snoozedUntil &&
+      t.snoozedUntil > today
+    ),
+    [tasks, today]
   );
 
   const scheduledTasks = useMemo(
@@ -392,9 +430,12 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
     moveToInbox,
     moveToSomeday,
     scheduleTask,
+    snoozeTask,
+    unsnoozeTask,
     archive,
     todayTasks,
     inboxTasks,
+    snoozedTasks,
     scheduledTasks,
     currentTask,
   };
