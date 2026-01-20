@@ -177,7 +177,7 @@ export function TaskCard({
           )}
 
           {/* Estimated time */}
-          {task.estimatedMinutes && (
+          {task.estimatedMinutes && task.estimatedMinutes > 0 && (
             <span className="flex items-center gap-1 text-xs text-muted-foreground">
               <Clock className="h-3 w-3" />
               {task.estimatedMinutes}m
