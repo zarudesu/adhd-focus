@@ -76,7 +76,7 @@ export function AchievementToast({ achievement, onClose }: AchievementToastProps
             )}
             {achievement.xpReward && achievement.xpReward > 0 && (
               <p className="text-xs text-success mt-1 font-medium">
-                +{achievement.xpReward} XP
+                +{achievement.xpReward} mindfulness
               </p>
             )}
           </div>

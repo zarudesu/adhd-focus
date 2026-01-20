@@ -63,7 +63,7 @@ export function LevelUpModal({
           </DialogTitle>
 
           <DialogDescription className="text-sm text-muted-foreground">
-            You&apos;ve built more trust with the system.
+            The system trusts you more.
           </DialogDescription>
         </DialogHeader>
 

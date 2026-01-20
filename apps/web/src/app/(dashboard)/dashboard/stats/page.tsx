@@ -271,7 +271,7 @@ function StatsContent() {
                 <div className="mt-2">
                   <Progress value={levelProgress.progress} className="h-1.5" />
                   <p className="text-xs text-muted-foreground mt-1">
-                    {levelProgress.xpInLevel} / {levelProgress.xpNeeded} XP
+                    {levelProgress.xpInLevel} / {levelProgress.xpNeeded}
                   </p>
                 </div>
               </CardContent>
@@ -413,14 +413,14 @@ function StatsContent() {
             </Card>
           )}
 
-          {/* XP & Creatures Summary */}
+          {/* Mindfulness & Creatures */}
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle>Experience</CardTitle>
+                <CardTitle>Mindfulness</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{state?.xp || 0} XP</div>
+                <div className="text-3xl font-bold">{state?.xp || 0}</div>
                 <p className="text-sm text-muted-foreground mt-1">
                   Level {state?.level || 1} • {levelProgress.xpNeeded - levelProgress.xpInLevel} to next
                 </p>

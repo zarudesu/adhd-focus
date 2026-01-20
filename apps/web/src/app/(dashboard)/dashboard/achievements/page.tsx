@@ -95,10 +95,10 @@ function AchievementCard({ achievement }: { achievement: Achievement }) {
             </div>
           )}
 
-          {/* XP reward and unlock date */}
+          {/* Mindfulness reward and unlock date */}
           <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
             {achievement.xpReward && achievement.xpReward > 0 && (
-              <span>+{achievement.xpReward} XP</span>
+              <span>+{achievement.xpReward} mindfulness</span>
             )}
             {achievement.isUnlocked && achievement.unlockedAt && (
               <span>

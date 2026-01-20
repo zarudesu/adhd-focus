@@ -122,11 +122,11 @@ function CreatureCard({ creature }: { creature: CreatureData }) {
           </p>
         )}
 
-        {/* XP Multiplier bonus */}
+        {/* Mindfulness multiplier */}
         {creature.isCaught && creature.xpMultiplier && creature.xpMultiplier > 100 && (
           <div className="mt-2 flex items-center justify-center gap-1 text-xs text-primary">
             <Sparkles className="h-3 w-3" />
-            {(creature.xpMultiplier / 100).toFixed(1)}x XP
+            {(creature.xpMultiplier / 100).toFixed(1)}x mindfulness
           </div>
         )}
       </div>

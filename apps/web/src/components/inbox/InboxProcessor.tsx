@@ -189,14 +189,39 @@ export function InboxProcessor({
   if (isComplete) {
     return (
       <div className="fixed inset-0 bg-background z-50 flex flex-col items-center justify-center p-4">
-        <div className="text-center space-y-4">
-          <div className="text-6xl mb-4">🎉</div>
-          <h2 className="text-2xl font-bold">Inbox Clear!</h2>
-          <p className="text-muted-foreground">
-            You processed {shuffledTasks.length} tasks. Great job!
+        <div className="text-center space-y-6 max-w-sm">
+          {/* Calm checkmark - acknowledgment without celebration */}
+          <div className="flex items-center justify-center">
+            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+              <svg
+                className="h-8 w-8 text-primary"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <h2 className="text-xl font-medium">Inbox cleared</h2>
+            <p className="text-muted-foreground leading-relaxed">
+              {shuffledTasks.length === 1
+                ? 'One task sorted. That\'s a step forward.'
+                : shuffledTasks.length <= 3
+                  ? `${shuffledTasks.length} tasks sorted. That\'s meaningful progress.`
+                  : `${shuffledTasks.length} tasks processed. That was a big step — thank you for taking it.`}
+            </p>
+          </div>
+
+          <p className="text-sm text-muted-foreground/70">
+            Now you can return to your work with a clear mind.
           </p>
-          <Button onClick={onClose} size="lg">
-            Done
+
+          <Button onClick={onClose} size="lg" className="mt-4">
+            Continue
           </Button>
         </div>
       </div>

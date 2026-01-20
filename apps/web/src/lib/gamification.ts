@@ -26,25 +26,18 @@ export const XP_CONFIG = {
 // Rarity types
 export type RewardRarity = 'common' | 'uncommon' | 'rare' | 'legendary' | 'mythic';
 
-// Level calculation formula: XP = floor(100 * (level ^ 1.5))
+// Level calculation: Linear progression - same effort every level
+// Each level requires exactly 100 mindfulness points
+// This ensures users don't feel pressure to work more as they progress
+const XP_PER_LEVEL = 100;
+
 export function xpForLevel(level: number): number {
   if (level <= 1) return 0;
-  return Math.floor(100 * Math.pow(level, 1.5));
+  return (level - 1) * XP_PER_LEVEL;
 }
 
 export function levelFromXp(xp: number): number {
-  // Binary search for level
-  let low = 1;
-  let high = 100;
-  while (low < high) {
-    const mid = Math.floor((low + high + 1) / 2);
-    if (xpForLevel(mid) <= xp) {
-      low = mid;
-    } else {
-      high = mid - 1;
-    }
-  }
-  return low;
+  return Math.floor(xp / XP_PER_LEVEL) + 1;
 }
 
 // Reward effect rarity weights
