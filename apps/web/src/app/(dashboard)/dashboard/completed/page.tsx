@@ -16,6 +16,7 @@ function CompletedContent() {
     error,
     uncomplete,
     deleteTask,
+    archive,
     update,
   } = useTasks({ filters: { status: 'done' } });
 
@@ -104,6 +105,7 @@ function CompletedContent() {
                 tasks={groupedTasks[date]}
                 onUncomplete={uncomplete}
                 onDelete={deleteTask}
+                onArchive={archive}
                 onTaskClick={setEditingTask}
               />
             </div>

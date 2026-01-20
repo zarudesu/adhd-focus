@@ -16,6 +16,7 @@ export interface TaskListProps {
   onComplete?: (id: string) => void;
   onUncomplete?: (id: string) => void;
   onDelete?: (id: string) => void;
+  onArchive?: (id: string) => void;
   onMoveToToday?: (id: string) => void;
   onMoveToInbox?: (id: string) => void;
   onStartFocus?: (id: string) => void;
@@ -56,6 +57,7 @@ export function TaskList({
   onComplete,
   onUncomplete,
   onDelete,
+  onArchive,
   onMoveToToday,
   onMoveToInbox,
   onStartFocus,
@@ -124,6 +126,7 @@ export function TaskList({
               onComplete={onComplete}
               onUncomplete={onUncomplete}
               onDelete={onDelete}
+              onArchive={onArchive}
               onMoveToToday={onMoveToToday}
               onMoveToInbox={onMoveToInbox}
               onStartFocus={onStartFocus}

@@ -134,6 +134,20 @@ export default function InboxPage() {
           </div>
         )}
 
+        {/* Big centered Add button when empty or few tasks */}
+        {inboxTasks.length < 3 && (
+          <div className="flex justify-center py-8">
+            <Button
+              size="lg"
+              onClick={() => setShowAddDialog(true)}
+              className="h-16 px-8 text-lg gap-3"
+            >
+              <Plus className="h-6 w-6" />
+              Add a thought
+            </Button>
+          </div>
+        )}
+
         {/* Process CTA */}
         {inboxTasks.length > 0 && (
           <Card className="border-2 border-primary/20 bg-primary/5">

@@ -85,6 +85,7 @@ interface UseTasksReturn {
   moveToInbox: (id: string) => Promise<Task>;
   moveToSomeday: (id: string) => Promise<Task>;
   scheduleTask: (id: string, date: string) => Promise<Task>;
+  archive: (id: string) => Promise<Task>;
   todayTasks: Task[];
   inboxTasks: Task[];
   scheduledTasks: Task[];
@@ -339,6 +340,12 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
     });
   }, [update]);
 
+  const archive = useCallback(async (id: string): Promise<Task> => {
+    return update(id, {
+      status: 'archived',
+    });
+  }, [update]);
+
   // Memoize today's date string to prevent filter recalculations
   const today = useMemo(() => new Date().toISOString().split('T')[0], []);
 
@@ -385,6 +392,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
     moveToInbox,
     moveToSomeday,
     scheduleTask,
+    archive,
     todayTasks,
     inboxTasks,
     scheduledTasks,

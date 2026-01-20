@@ -10,7 +10,8 @@ import { useTasks } from "@/hooks/useTasks";
 import { useProjects } from "@/hooks/useProjects";
 import { useGamificationEvents } from "@/components/gamification/GamificationProvider";
 import type { Task } from "@/db/schema";
-import { Plus, Settings, ArrowLeft, FolderOpen } from "lucide-react";
+import { Plus, Settings, ArrowLeft, FolderOpen, Eye, EyeOff } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 
 function ProjectDetailContent() {
   const params = useParams();
@@ -19,6 +20,7 @@ function ProjectDetailContent() {
 
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [hideCompleted, setHideCompleted] = useState(false);
 
   const { projects, loading: projectsLoading } = useProjects();
   const project = projects.find(p => p.id === projectId);
@@ -78,7 +80,27 @@ function ProjectDetailContent() {
         }
         description={project?.description || `${activeTasks.length} active tasks`}
         actions={
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
+            {completedTasks.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setHideCompleted(!hideCompleted)}
+                className="gap-1.5"
+              >
+                {hideCompleted ? (
+                  <>
+                    <Eye className="h-4 w-4" />
+                    <span className="hidden sm:inline">Show done</span>
+                  </>
+                ) : (
+                  <>
+                    <EyeOff className="h-4 w-4" />
+                    <span className="hidden sm:inline">Hide done</span>
+                  </>
+                )}
+              </Button>
+            )}
             <Button size="sm" variant="outline">
               <Settings className="h-4 w-4" />
             </Button>
@@ -154,19 +176,26 @@ function ProjectDetailContent() {
             )}
 
             {/* Completed tasks */}
-            {completedTasks.length > 0 && (
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">
-                  Completed ({completedTasks.length})
-                </h3>
-                <TaskList
-                  tasks={completedTasks}
-                  onUncomplete={uncomplete}
-                  onDelete={deleteTask}
-                  onTaskClick={setEditingTask}
-                />
-              </div>
-            )}
+            <AnimatePresence>
+              {completedTasks.length > 0 && !hideCompleted && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                    Completed ({completedTasks.length})
+                  </h3>
+                  <TaskList
+                    tasks={completedTasks}
+                    onUncomplete={uncomplete}
+                    onDelete={deleteTask}
+                    onTaskClick={setEditingTask}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </>
         )}
       </main>

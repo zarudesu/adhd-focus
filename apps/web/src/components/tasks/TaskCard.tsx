@@ -20,6 +20,7 @@ import {
   Sun,
   Trash2,
   Play,
+  Archive,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFeatures } from '@/hooks/useFeatures';
@@ -47,6 +48,7 @@ export interface TaskCardProps {
   onComplete?: (id: string) => void;
   onUncomplete?: (id: string) => void;
   onDelete?: (id: string) => void;
+  onArchive?: (id: string) => void;
   onMoveToToday?: (id: string) => void;
   onMoveToInbox?: (id: string) => void;
   onStartFocus?: (id: string) => void;
@@ -59,6 +61,7 @@ export function TaskCard({
   onComplete,
   onUncomplete,
   onDelete,
+  onArchive,
   onMoveToToday,
   onMoveToInbox,
   onStartFocus,
@@ -234,8 +237,14 @@ export function TaskCard({
               Move to Inbox
             </DropdownMenuItem>
           )}
-          {(onStartFocus || onMoveToToday || onMoveToInbox) && onDelete && (
+          {(onStartFocus || onMoveToToday || onMoveToInbox) && (onDelete || onArchive) && (
             <DropdownMenuSeparator />
+          )}
+          {onArchive && task.status === 'done' && (
+            <DropdownMenuItem onClick={() => onArchive(task.id)}>
+              <Archive className="h-4 w-4 mr-2" />
+              Archive
+            </DropdownMenuItem>
           )}
           {onDelete && (
             <DropdownMenuItem

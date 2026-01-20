@@ -11,14 +11,15 @@ import { useGamificationEvents } from "@/components/gamification/GamificationPro
 import { EndOfDayReview, CloseDayButton } from "@/components/gamification/EndOfDayReview";
 import { TodayIntro, useTodayIntro } from "@/components/gamification/TodayIntro";
 import type { Task } from "@/db/schema";
-import { Inbox } from "lucide-react";
-import { AnimatePresence } from "framer-motion";
+import { Inbox, Eye, EyeOff } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 
 const MAX_DAILY_TASKS = 3;
 
 function TodayContent() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [showEndOfDay, setShowEndOfDay] = useState(false);
+  const [hideCompleted, setHideCompleted] = useState(false);
   const [daySummary, setDaySummary] = useState({
     tasksCompleted: 0,
     totalTasks: 0,
@@ -110,7 +111,29 @@ function TodayContent() {
         title="Today"
         description={`Focus on what matters most (${activeCount}/${MAX_DAILY_TASKS} tasks)`}
         actions={
-          <CloseDayButton onClick={() => setShowEndOfDay(true)} />
+          <div className="flex items-center gap-2">
+            {completedCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setHideCompleted(!hideCompleted)}
+                className="gap-1.5"
+              >
+                {hideCompleted ? (
+                  <>
+                    <Eye className="h-4 w-4" />
+                    <span className="hidden sm:inline">Show done</span>
+                  </>
+                ) : (
+                  <>
+                    <EyeOff className="h-4 w-4" />
+                    <span className="hidden sm:inline">Hide done</span>
+                  </>
+                )}
+              </Button>
+            )}
+            <CloseDayButton onClick={() => setShowEndOfDay(true)} />
+          </div>
         }
       />
 
@@ -173,19 +196,27 @@ function TodayContent() {
         />
 
         {/* Completed tasks section */}
-        {completedCount > 0 && (
-          <div className="mt-6">
-            <h3 className="text-sm font-medium text-muted-foreground mb-2">
-              Completed ({completedCount})
-            </h3>
-            <TaskList
-              tasks={todayTasks.filter(t => t.status === 'done')}
-              onUncomplete={uncomplete}
-              onDelete={deleteTask}
-              onTaskClick={setEditingTask}
-            />
-          </div>
-        )}
+        <AnimatePresence>
+          {completedCount > 0 && !hideCompleted && (
+            <motion.div
+              className="mt-6"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                Completed ({completedCount})
+              </h3>
+              <TaskList
+                tasks={todayTasks.filter(t => t.status === 'done')}
+                onUncomplete={uncomplete}
+                onDelete={deleteTask}
+                onTaskClick={setEditingTask}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
     </>
   );
