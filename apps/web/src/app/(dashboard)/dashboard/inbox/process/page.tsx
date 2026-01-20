@@ -20,36 +20,68 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { AddTaskDialog } from '@/components/tasks';
 import { useTasks } from '@/hooks/useTasks';
+import { useProjects } from '@/hooks/useProjects';
+import { useGamificationEvents } from '@/components/gamification/GamificationProvider';
+import type { Task } from '@/db/schema';
 import {
   Sun,
   Calendar as CalendarIcon,
-  Archive,
+  EyeOff,
   Trash2,
   ChevronLeft,
-  ChevronRight,
-  Zap,
-  Battery,
-  BatteryLow,
   CheckCircle2,
   Loader2,
+  Pencil,
+  Check,
+  FolderKanban,
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 export default function InboxProcessPage() {
   const router = useRouter();
-  const { inboxTasks, loading, moveToToday, scheduleTask, moveToSomeday, deleteTask, fetch } = useTasks();
+  const {
+    inboxTasks,
+    loading,
+    moveToToday,
+    scheduleTask,
+    deleteTask,
+    complete,
+    update,
+    archive,
+  } = useTasks();
+  const { projects } = useProjects();
+  const { handleTaskComplete } = useGamificationEvents();
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [processedCount, setProcessedCount] = useState(0);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [selectedProject, setSelectedProject] = useState<string | null>(null);
+
   const totalTasks = inboxTasks.length + processedCount;
 
   // Current task
   const currentTask = inboxTasks[currentIndex];
   const isComplete = inboxTasks.length === 0;
+
+  // Reset selected project when task changes
+  useEffect(() => {
+    if (currentTask) {
+      setSelectedProject(currentTask.projectId || null);
+    }
+  }, [currentTask?.id]);
 
   // Block navigation
   useEffect(() => {
@@ -91,40 +123,77 @@ export default function InboxProcessPage() {
     }
   }, [currentTask, processing, currentIndex, inboxTasks.length]);
 
-  const handleToday = () => handleAction(() => moveToToday(currentTask.id));
+  // Move to today (with optional project assignment)
+  const handleToday = async () => {
+    if (!currentTask) return;
 
+    // If project selected, assign it first
+    if (selectedProject && selectedProject !== currentTask.projectId) {
+      await update(currentTask.id, { projectId: selectedProject });
+    }
+
+    handleAction(() => moveToToday(currentTask.id));
+  };
+
+  // Schedule for later
   const handleSchedule = (daysFromNow: number) => {
+    if (!currentTask) return;
     setShowCalendar(false);
     const date = new Date();
     date.setDate(date.getDate() + daysFromNow);
     handleAction(() => scheduleTask(currentTask.id, format(date, 'yyyy-MM-dd')));
   };
 
-  const handleSomeday = () => handleAction(() => moveToSomeday(currentTask.id));
+  // Not Today - snooze until tomorrow (for now just archives)
+  const handleNotToday = () => {
+    if (!currentTask) return;
+    // TODO: Implement proper snooze with snoozedUntil field
+    // For now, schedule for tomorrow
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    handleAction(() => scheduleTask(currentTask.id, format(tomorrow, 'yyyy-MM-dd')));
+  };
 
+  // Complete task
+  const handleComplete = async () => {
+    if (!currentTask) return;
+
+    setProcessing(true);
+    try {
+      const result = await complete(currentTask.id);
+      setProcessedCount(c => c + 1);
+
+      // Trigger gamification
+      handleTaskComplete({
+        levelUp: result.levelUp ? {
+          newLevel: result.newLevel,
+          unlockedFeatures: [],
+        } : undefined,
+        xpAwarded: result.xpAwarded,
+        newAchievements: result.newAchievements,
+        creature: result.creature,
+      });
+
+      if (currentIndex >= inboxTasks.length - 1) {
+        setCurrentIndex(Math.max(0, inboxTasks.length - 2));
+      }
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  // Delete task
   const handleDelete = () => handleAction(() => deleteTask(currentTask.id));
 
-  // Skip to next/prev (without processing)
-  const handleNext = () => {
-    if (currentIndex < inboxTasks.length - 1) {
-      setCurrentIndex(i => i + 1);
+  // Edit task
+  const handleEdit = () => {
+    if (currentTask) {
+      setEditingTask(currentTask);
     }
   };
 
-  const handlePrev = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(i => i - 1);
-    }
-  };
-
-  // Energy icon
-  const getEnergyIcon = (energy?: string | null) => {
-    switch (energy) {
-      case 'low': return <BatteryLow className="h-4 w-4" />;
-      case 'high': return <Zap className="h-4 w-4" />;
-      default: return <Battery className="h-4 w-4" />;
-    }
-  };
+  // Check if "Next" conditions are met (project assigned)
+  const canProceed = selectedProject !== null;
 
   // Loading state
   if (loading) {
@@ -184,6 +253,19 @@ export default function InboxProcessPage() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Edit Task Dialog */}
+      <AddTaskDialog
+        open={!!editingTask}
+        onOpenChange={(open) => !open && setEditingTask(null)}
+        onSubmit={async (input) => {
+          if (editingTask) {
+            await update(editingTask.id, input);
+          }
+        }}
+        task={editingTask}
+        defaultStatus="inbox"
+      />
+
       {/* Header with progress */}
       <header className="border-b bg-card p-4">
         <div className="max-w-2xl mx-auto">
@@ -201,67 +283,90 @@ export default function InboxProcessPage() {
         </div>
       </header>
 
-      {/* Main content - Task card */}
+      {/* Main content */}
       <main className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          {/* Navigation arrows */}
-          <div className="flex items-center gap-4">
+        <div className="w-full max-w-md space-y-4">
+
+          {/* Task card - green border, clean content */}
+          <Card className={cn(
+            "border-2 border-primary/50 bg-primary/5",
+            "transition-all"
+          )}>
+            <CardContent className="p-6">
+              {/* Task title */}
+              <h2 className="text-xl font-semibold mb-2">{currentTask?.title}</h2>
+
+              {/* Description if exists */}
+              {currentTask?.description && (
+                <p className="text-muted-foreground text-sm mb-4">
+                  {currentTask.description}
+                </p>
+              )}
+
+              {/* Project selector inside card */}
+              <div className="flex items-center gap-2">
+                <FolderKanban className="h-4 w-4 text-muted-foreground" />
+                <Select
+                  value={selectedProject || "none"}
+                  onValueChange={(v) => setSelectedProject(v === "none" ? null : v)}
+                >
+                  <SelectTrigger className="flex-1 h-9">
+                    <SelectValue placeholder="Select project..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No project</SelectItem>
+                    {projects.map((project) => (
+                      <SelectItem key={project.id} value={project.id}>
+                        {project.emoji} {project.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Quick actions row - edit, complete, delete */}
+          <div className="flex justify-center gap-2">
             <Button
-              variant="ghost"
-              size="icon"
-              onClick={handlePrev}
-              disabled={currentIndex === 0 || processing}
-              className="shrink-0"
+              variant="outline"
+              size="sm"
+              onClick={handleEdit}
+              disabled={processing}
             >
-              <ChevronLeft className="h-5 w-5" />
+              <Pencil className="h-4 w-4 mr-1" />
+              Edit
             </Button>
-
-            {/* Task card */}
-            <Card className="flex-1">
-              <CardContent className="p-6">
-                <h2 className="text-xl font-semibold mb-3">{currentTask?.title}</h2>
-
-                {currentTask?.description && (
-                  <p className="text-muted-foreground text-sm mb-4">
-                    {currentTask.description}
-                  </p>
-                )}
-
-                <div className="flex flex-wrap gap-2">
-                  <span className="inline-flex items-center gap-1 text-xs bg-muted px-2 py-1 rounded-full">
-                    {getEnergyIcon(currentTask?.energyRequired)}
-                    {currentTask?.energyRequired || 'Medium'}
-                  </span>
-                  <span className="inline-flex items-center text-xs bg-muted px-2 py-1 rounded-full">
-                    {currentTask?.priority || 'Should'}
-                  </span>
-                  {currentTask?.estimatedMinutes && (
-                    <span className="inline-flex items-center text-xs bg-muted px-2 py-1 rounded-full">
-                      {currentTask.estimatedMinutes}m
-                    </span>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
             <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleNext}
-              disabled={currentIndex >= inboxTasks.length - 1 || processing}
-              className="shrink-0"
+              variant="outline"
+              size="sm"
+              onClick={handleComplete}
+              disabled={processing}
+              className="text-green-600 hover:text-green-700 hover:bg-green-50"
             >
-              <ChevronRight className="h-5 w-5" />
+              <Check className="h-4 w-4 mr-1" />
+              Done
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDelete}
+              disabled={processing}
+              className="text-destructive hover:text-destructive"
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              Delete
             </Button>
           </div>
 
-          {/* Action buttons */}
-          <div className="grid grid-cols-2 gap-3 mt-6">
+          {/* Main action buttons */}
+          <div className="grid grid-cols-2 gap-3">
             <Button
               size="lg"
               onClick={handleToday}
               disabled={processing}
-              className="h-16 text-base"
+              variant="outline"
+              className="h-14 text-base"
             >
               {processing ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
@@ -279,7 +384,7 @@ export default function InboxProcessPage() {
                   size="lg"
                   variant="outline"
                   disabled={processing}
-                  className="h-16 text-base"
+                  className="h-14 text-base"
                 >
                   <CalendarIcon className="h-5 w-5 mr-2" />
                   Schedule
@@ -322,30 +427,15 @@ export default function InboxProcessPage() {
             <Button
               size="lg"
               variant="secondary"
-              onClick={handleSomeday}
+              onClick={handleNotToday}
               disabled={processing}
-              className="h-16 text-base"
+              className="h-14 text-base col-span-2"
             >
-              <Archive className="h-5 w-5 mr-2" />
-              Someday
-            </Button>
-
-            <Button
-              size="lg"
-              variant="ghost"
-              onClick={handleDelete}
-              disabled={processing}
-              className="h-16 text-base text-muted-foreground hover:text-destructive"
-            >
-              <Trash2 className="h-5 w-5 mr-2" />
-              Delete
+              <EyeOff className="h-5 w-5 mr-2" />
+              Not Today
             </Button>
           </div>
 
-          {/* Skip hint */}
-          <p className="text-center text-xs text-muted-foreground mt-4">
-            Use arrows to skip tasks you're unsure about
-          </p>
         </div>
       </main>
     </div>
