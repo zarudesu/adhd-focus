@@ -33,6 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useTheme } from "next-themes";
 
 // Landing page options with their nav feature codes
 const LANDING_PAGE_OPTIONS = [
@@ -46,6 +47,7 @@ const LANDING_PAGE_OPTIONS = [
 export default function SettingsPage() {
   const { profile, loading, error, saving, update, updatePreference } = useProfile();
   const { navFeatures, loading: featuresLoading } = useFeatures();
+  const { theme, setTheme } = useTheme();
   const [name, setName] = useState<string>('');
 
   // Initialize name when profile loads
@@ -214,10 +216,8 @@ export default function SettingsPage() {
                   </p>
                 </div>
                 <Select
-                  value={prefs?.theme || 'system'}
-                  onValueChange={(value: 'light' | 'dark' | 'system') =>
-                    updatePreference('theme', value)
-                  }
+                  value={theme || 'dark'}
+                  onValueChange={(value: string) => setTheme(value)}
                 >
                   <SelectTrigger className="w-32">
                     <SelectValue />
