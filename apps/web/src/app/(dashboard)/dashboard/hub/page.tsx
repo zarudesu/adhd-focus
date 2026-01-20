@@ -9,7 +9,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import Link from 'next/link';
+import Link from 'next/link'; // Used by SortableNavCard
 import {
   DndContext,
   closestCenter,
@@ -145,6 +145,14 @@ const NAV_CONFIG: Record<string, NavItemConfig> = {
     description: 'Insights',
     gradient: 'from-cyan-500/20 to-cyan-600/10',
   },
+  nav_settings: {
+    code: 'nav_settings',
+    href: '/dashboard/settings',
+    icon: Settings,
+    label: 'Settings',
+    description: 'Customize',
+    gradient: 'from-slate-500/20 to-slate-600/10',
+  },
 };
 
 // Default order for nav items
@@ -160,6 +168,7 @@ const DEFAULT_ORDER = [
   'nav_achievements',
   'nav_creatures',
   'nav_stats',
+  'nav_settings',
 ];
 
 const STORAGE_KEY = 'hub-nav-order';
@@ -181,7 +190,7 @@ function SortableNavCard({
     transform,
     transition,
     isDragging: isCurrentlyDragging,
-  } = useSortable({ id: navItem.code, disabled: !isUnlocked });
+  } = useSortable({ id: navItem.code });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -193,18 +202,35 @@ function SortableNavCard({
 
   if (!isUnlocked) {
     return (
-      <div
-        className={cn(
-          'relative p-4 rounded-xl border border-dashed border-muted-foreground/30',
-          'flex flex-col items-center justify-center text-center',
-          'bg-muted/20 opacity-50 cursor-not-allowed',
-          'min-h-[120px]'
-        )}
-      >
-        <Lock className="h-6 w-6 text-muted-foreground mb-2" />
-        <span className="text-sm font-medium text-muted-foreground">
-          Locked
-        </span>
+      <div ref={setNodeRef} style={style} className="relative group">
+        {/* Drag handle - visible on hover */}
+        <div
+          {...attributes}
+          {...listeners}
+          className={cn(
+            'absolute -top-2 -right-2 z-10 p-1.5 rounded-full',
+            'bg-background border shadow-sm cursor-grab active:cursor-grabbing',
+            'opacity-0 group-hover:opacity-100 transition-opacity',
+            isCurrentlyDragging && 'opacity-100'
+          )}
+        >
+          <GripVertical className="h-3 w-3 text-muted-foreground" />
+        </div>
+
+        <div
+          className={cn(
+            'relative p-4 rounded-xl border border-dashed border-muted-foreground/30',
+            'flex flex-col items-center justify-center text-center',
+            'bg-muted/20 opacity-50',
+            'min-h-[120px]',
+            isCurrentlyDragging && 'shadow-xl scale-105 opacity-70'
+          )}
+        >
+          <Lock className="h-6 w-6 text-muted-foreground mb-2" />
+          <span className="text-sm font-medium text-muted-foreground">
+            Locked
+          </span>
+        </div>
       </div>
     );
   }
@@ -291,8 +317,10 @@ export default function HubPage() {
 
   // Check if a nav item is unlocked
   const isNavItemUnlocked = (code: string): boolean => {
+    // Settings and Inbox are always unlocked
+    if (code === 'nav_settings' || code === 'nav_inbox') return true;
     const feature = navFeatures.find((f) => f.code === code);
-    return feature?.isUnlocked ?? code === 'nav_inbox';
+    return feature?.isUnlocked ?? false;
   };
 
   // Get ordered nav items (only those with config)
@@ -302,10 +330,6 @@ export default function HubPage() {
       .map((code) => NAV_CONFIG[code]);
   }, [order]);
 
-  // Only unlocked items should be in sortable context
-  const sortableItems = useMemo(() => {
-    return order.filter((code) => isNavItemUnlocked(code));
-  }, [order, navFeatures]);
 
   // Handle drag end
   const handleDragEnd = (event: DragEndEvent) => {
@@ -349,7 +373,7 @@ export default function HubPage() {
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
         >
-          <SortableContext items={sortableItems} strategy={rectSortingStrategy}>
+          <SortableContext items={order} strategy={rectSortingStrategy}>
             <motion.div
               className="grid grid-cols-2 sm:grid-cols-3 gap-3"
               initial={{ opacity: 0 }}
@@ -363,25 +387,6 @@ export default function HubPage() {
                   isUnlocked={isNavItemUnlocked(navItem.code)}
                 />
               ))}
-
-              {/* Settings - always available, not draggable */}
-              <Link href="/dashboard/settings">
-                <div
-                  className={cn(
-                    'relative p-4 rounded-xl border bg-gradient-to-br',
-                    'from-slate-500/20 to-slate-600/10',
-                    'flex flex-col items-center justify-center text-center',
-                    'transition-all hover:scale-[1.02] hover:shadow-lg hover:border-primary/30',
-                    'cursor-pointer min-h-[120px]'
-                  )}
-                >
-                  <Settings className="h-8 w-8 mb-2 text-primary" />
-                  <span className="font-medium">Settings</span>
-                  <span className="text-xs text-muted-foreground mt-0.5">
-                    Customize
-                  </span>
-                </div>
-              </Link>
             </motion.div>
           </SortableContext>
         </DndContext>
