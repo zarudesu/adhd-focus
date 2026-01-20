@@ -20,6 +20,7 @@ import { CalmReview, type CalmReviewProps } from './CalmReview';
 import { AchievementToastStack } from './AchievementToast';
 import { CreatureToastStack, type CaughtCreatureData } from './CreatureCaughtToast';
 import { useGamification } from '@/hooks/useGamification';
+import { useFeatures } from '@/hooks/useFeatures';
 import type { Achievement, Creature } from '@/db/schema';
 
 // Types for Calm Review triggers
@@ -65,6 +66,8 @@ interface GamificationContextType {
   loading: boolean;
   levelProgress: { currentLevel: number; xpInLevel: number; xpNeeded: number; progress: number };
   refresh: () => Promise<void>;
+  // Refresh both gamification and features (for menu updates)
+  refreshAll: () => Promise<void>;
 }
 
 const GamificationContext = createContext<GamificationContextType | null>(null);
@@ -84,6 +87,13 @@ interface GamificationProviderProps {
 export function GamificationProvider({ children }: GamificationProviderProps) {
   // Centralized gamification state
   const { state, loading, levelProgress, refresh } = useGamification();
+  // Features state (for menu/nav updates)
+  const { refreshFeatures } = useFeatures();
+
+  // Refresh both gamification and features state
+  const refreshAll = useCallback(async () => {
+    await Promise.all([refresh(), refreshFeatures()]);
+  }, [refresh, refreshFeatures]);
 
   const [levelUpModal, setLevelUpModal] = useState<{
     open: boolean;
@@ -137,17 +147,20 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
   const handleReviewComplete = useCallback(() => {
     setCalmReview((prev) => ({ ...prev, visible: false }));
 
-    // Refresh stats after review completes
-    refresh();
+    // Refresh stats and features after review completes (updates menu)
+    refreshAll();
 
     // Show pending level up after review
     if (pendingLevelUp) {
       showLevelUp(pendingLevelUp.newLevel, pendingLevelUp.unlockedFeatures);
       setPendingLevelUp(null);
     }
-  }, [pendingLevelUp, showLevelUp, refresh]);
+  }, [pendingLevelUp, showLevelUp, refreshAll]);
 
   const handleTaskComplete = useCallback((event: GamificationEvent) => {
+    // Track if we need to refresh features (for menu updates)
+    let needsRefresh = false;
+
     // Show Calm Review if requested - reflection, not reward
     if (event.review) {
       setCalmReview({
@@ -163,10 +176,11 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
           unlockedFeatures: event.levelUp.unlockedFeatures || [],
         });
       }
+      // refreshAll will be called in handleReviewComplete
     } else if (event.levelUp) {
       // No review, show level up immediately
       showLevelUp(event.levelUp.newLevel, event.levelUp.unlockedFeatures);
-      refresh();
+      needsRefresh = true; // Level up can unlock features
     }
 
     // Phase 3: Queue new achievements for toast display
@@ -188,6 +202,7 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
           .sort((a, b) => (priorityOrder[b.category] || 0) - (priorityOrder[a.category] || 0))
           .slice(0, 2);
       });
+      needsRefresh = true; // Achievements can unlock features
     }
 
     // Phase 4: Queue creature caught for toast display
@@ -198,7 +213,14 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
         count: event.creature!.newCount,
       }]);
     }
-  }, [showLevelUp, refresh]);
+
+    // Always refresh features after task completion events (updates menu)
+    // Features can unlock based on: tasks completed, level up, achievements
+    // This ensures newly unlocked features appear in sidebar without page reload
+    if (needsRefresh || event.xpAwarded) {
+      refreshAll();
+    }
+  }, [showLevelUp, refreshAll]);
 
   // Dismiss achievement from queue
   const dismissAchievement = useCallback((code: string) => {
@@ -211,7 +233,7 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
   }, []);
 
   return (
-    <GamificationContext.Provider value={{ showLevelUp, handleTaskComplete, showCalmReview, state, loading, levelProgress, refresh }}>
+    <GamificationContext.Provider value={{ showLevelUp, handleTaskComplete, showCalmReview, state, loading, levelProgress, refresh, refreshAll }}>
       {children}
 
       {/* Calm Review - Reflection, not reward */}

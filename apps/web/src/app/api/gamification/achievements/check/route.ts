@@ -13,6 +13,9 @@ import { eq, notInArray } from 'drizzle-orm';
 import { logError } from '@/lib/logger';
 
 // Check if a user meets an achievement condition
+// NOTE: Only checks conditions we can properly validate with current user stats.
+// Achievements with filters (priority, energy, duration, timeframe) require
+// detailed task queries which are not implemented yet - these return false.
 function checkCondition(
   condition: AchievementCondition,
   conditionType: string,
@@ -38,6 +41,15 @@ function checkCondition(
 ): boolean {
   switch (conditionType) {
     case 'task_count':
+      // IMPORTANT: Only check TOTAL task count achievements without filters
+      // Skip achievements with priority, energy, duration, or non-total timeframes
+      // These require detailed task queries which are not implemented yet
+      if (condition.priority || condition.energy || condition.duration) {
+        return false; // Cannot verify without task-level queries
+      }
+      if (condition.timeframe && condition.timeframe !== 'total') {
+        return false; // Cannot verify daily/weekly/hourly without detailed stats
+      }
       return condition.count !== undefined && userStats.totalTasksCompleted >= condition.count;
 
     case 'streak_days':
@@ -61,6 +73,13 @@ function checkCondition(
 
     // Habit achievements
     case 'habit_count':
+      // Only check total habit completions without filters
+      if (condition.timeframe && condition.timeframe !== 'total') {
+        return false;
+      }
+      if (condition.allDone || condition.timeOfDay) {
+        return false; // Cannot verify without detailed queries
+      }
       return condition.count !== undefined && userStats.habitsCompleted >= condition.count;
 
     case 'habit_create':

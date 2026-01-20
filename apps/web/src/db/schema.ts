@@ -745,6 +745,10 @@ export interface AchievementCondition {
   all?: boolean;
   complete?: boolean;
   minutes?: number;
+
+  // For habit achievements
+  allDone?: boolean; // All habits completed
+  timeOfDay?: 'morning' | 'afternoon' | 'evening';
 }
 
 export interface CreatureSpawnCondition {
