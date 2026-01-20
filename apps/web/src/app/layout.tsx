@@ -11,8 +11,8 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "ADHD Focus",
-    template: "%s | ADHD Focus",
+    default: "beatyour8",
+    template: "%s | beatyour8",
   },
   description: "Task management designed for ADHD minds",
 };
