@@ -25,6 +25,7 @@ export default function Home() {
   const [task, setTask] = useState('');
   const [tasks, setTasks] = useState<PendingTask[]>([]);
   const [showModal, setShowModal] = useState(false);
+  const [showEncouragement, setShowEncouragement] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Load existing tasks on mount
@@ -51,8 +52,13 @@ export default function Home() {
     setTasks(updatedTasks);
     setTask('');
 
-    // Show modal on first task, then every 3 tasks
-    if (updatedTasks.length === 1 || updatedTasks.length % 3 === 0) {
+    // First task: show encouraging message
+    if (updatedTasks.length === 1) {
+      setShowEncouragement(true);
+    }
+
+    // Third task and every 3 tasks after: show registration modal
+    if (updatedTasks.length >= 3 && updatedTasks.length % 3 === 0) {
       setTimeout(() => setShowModal(true), 300);
     }
   };
@@ -61,6 +67,25 @@ export default function Home() {
 
   return (
     <div className="landing-dark flex min-h-screen flex-col items-center justify-center px-6 bg-[#1A1A1A]">
+      {/* Encouraging message after first task */}
+      <AnimatePresence>
+        {showEncouragement && (
+          <motion.div
+            className="absolute top-8 left-0 right-0 text-center px-6"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+          >
+            <p className="text-sm text-[#9CA3AF] leading-relaxed max-w-sm mx-auto">
+              Это место для сбора текущих дел.
+              <br />
+              <span className="text-[#D9F968]/70">Просто сгрузи сюда свои мысли — я помогу дальше.</span>
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Main content - organic, centered */}
       <div className="w-full max-w-md text-center">
         {/* Logo with draw animation */}
