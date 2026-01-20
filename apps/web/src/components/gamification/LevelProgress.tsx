@@ -35,7 +35,7 @@ export function LevelProgress({ compact = false }: LevelProgressProps) {
   if (compact) {
     return (
       <div className="flex items-center gap-2 px-4 py-2">
-        <span className="text-xs text-muted-foreground">L{currentLevel}</span>
+        <span className="text-xs text-muted-foreground">Mindfulness {currentLevel}</span>
         <Progress value={progress} className="h-1.5 flex-1" />
       </div>
     );
@@ -44,7 +44,7 @@ export function LevelProgress({ compact = false }: LevelProgressProps) {
   return (
     <div className="px-4 py-3">
       <div className="flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">Level {currentLevel}</span>
+        <span className="text-muted-foreground">Mindfulness Level {currentLevel}</span>
         <span className="text-xs text-muted-foreground">
           {xpInLevel} / {xpNeeded}
         </span>

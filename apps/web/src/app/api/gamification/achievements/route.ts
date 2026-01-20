@@ -56,29 +56,36 @@ export async function GET() {
       const unlockedAt = unlockedMap.get(ach.id) || null;
 
       // Calculate progress for countable achievements
+      // NOTE: Only show progress for achievements we can accurately track
+      // Achievements with filters (priority, energy, duration, non-total timeframe)
+      // cannot be tracked without detailed task queries
       let progress: { current: number; target: number } | null = null;
-      const condition = ach.conditionValue as Record<string, number> | null;
+      const condition = ach.conditionValue as Record<string, unknown> | null;
 
       if (condition && !isUnlocked) {
-        if (ach.conditionType === 'task_count' && condition.count) {
+        // Only show progress for TOTAL task count without filters
+        const hasFilters = condition.priority || condition.energy || condition.duration;
+        const hasTimeframe = condition.timeframe && condition.timeframe !== 'total';
+
+        if (ach.conditionType === 'task_count' && condition.count && !hasFilters && !hasTimeframe) {
           progress = {
-            current: Math.min(user?.totalTasksCompleted || 0, condition.count),
-            target: condition.count,
+            current: Math.min(user?.totalTasksCompleted || 0, condition.count as number),
+            target: condition.count as number,
           };
         } else if (ach.conditionType === 'streak_days' && condition.days) {
           progress = {
-            current: Math.min(user?.currentStreak || 0, condition.days),
-            target: condition.days,
+            current: Math.min(user?.currentStreak || 0, condition.days as number),
+            target: condition.days as number,
           };
         } else if (ach.conditionType === 'longest_streak' && condition.days) {
           progress = {
-            current: Math.min(user?.longestStreak || 0, condition.days),
-            target: condition.days,
+            current: Math.min(user?.longestStreak || 0, condition.days as number),
+            target: condition.days as number,
           };
         } else if (ach.conditionType === 'level' && condition.level) {
           progress = {
-            current: Math.min(user?.level || 1, condition.level),
-            target: condition.level,
+            current: Math.min(user?.level || 1, condition.level as number),
+            target: condition.level as number,
           };
         }
       }

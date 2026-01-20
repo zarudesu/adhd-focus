@@ -190,7 +190,7 @@ function ChecklistContent() {
                     <>
                       <Trophy className="h-5 w-5 text-yellow-500" />
                       <span className="font-semibold text-green-700 dark:text-green-400">
-                        All done! +25 XP
+                        All done! +25 mindfulness
                       </span>
                     </>
                   ) : (

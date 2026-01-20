@@ -34,6 +34,7 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar";
 import { LevelProgress } from "@/components/gamification/LevelProgress";
+import { useGamificationEvents } from "@/components/gamification/GamificationProvider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -42,7 +43,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useFeatures } from "@/hooks/useFeatures";
 
 // Map nav codes to URLs and icons
 const NAV_CONFIG: Record<string, { url: string; icon: typeof Sun; group: 'tasks' | 'tools' }> = {
@@ -69,7 +69,7 @@ interface AppSidebarProps {
 
 export function AppSidebar({ user }: AppSidebarProps) {
   const pathname = usePathname();
-  const { navFeatures, loading } = useFeatures();
+  const { navFeatures, featuresLoading: loading } = useGamificationEvents();
 
   const isActive = (url: string) => {
     if (url === "/dashboard") {

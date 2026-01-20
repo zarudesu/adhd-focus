@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { PageHeader } from "@/components/layout/page-header";
 import { ProtectedRoute } from '@/components/gamification/ProtectedRoute';
@@ -8,13 +8,24 @@ import { Button } from "@/components/ui/button";
 import { TaskList, AddTaskDialog } from "@/components/tasks";
 import { useTasks } from "@/hooks/useTasks";
 import { useGamificationEvents } from "@/components/gamification/GamificationProvider";
+import { EndOfDayReview, CloseDayButton } from "@/components/gamification/EndOfDayReview";
+import { TodayIntro, useTodayIntro } from "@/components/gamification/TodayIntro";
 import type { Task } from "@/db/schema";
 import { Inbox } from "lucide-react";
+import { AnimatePresence } from "framer-motion";
 
 const MAX_DAILY_TASKS = 3;
 
 function TodayContent() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [showEndOfDay, setShowEndOfDay] = useState(false);
+  const [daySummary, setDaySummary] = useState({
+    tasksCompleted: 0,
+    totalTasks: 0,
+    mindfulnessEarned: 0,
+    focusMinutes: 0,
+    streakDays: 0,
+  });
   const {
     todayTasks,
     loading,
@@ -25,7 +36,53 @@ function TodayContent() {
     moveToInbox,
     update,
   } = useTasks();
-  const { handleTaskComplete } = useGamificationEvents();
+  const { handleTaskComplete, showCalmReview, state } = useGamificationEvents();
+
+  // Today intro for first-time users
+  const { showIntro, checked, dismissIntro } = useTodayIntro();
+
+  // Fetch today's stats when opening end of day review
+  useEffect(() => {
+    if (showEndOfDay) {
+      const completedToday = todayTasks.filter(t => t.status === 'done').length;
+      const totalToday = todayTasks.length;
+
+      // Fetch today's detailed stats
+      fetch('/api/stats?days=1')
+        .then(res => res.json())
+        .then(data => {
+          const todayStats = data.dailyStats?.[0] || {};
+          setDaySummary({
+            tasksCompleted: completedToday,
+            totalTasks: totalToday,
+            mindfulnessEarned: todayStats.xpEarned || 0,
+            focusMinutes: todayStats.focusMinutes || 0,
+            streakDays: state?.currentStreak || 0,
+          });
+        })
+        .catch(() => {
+          // Fallback to basic stats
+          setDaySummary({
+            tasksCompleted: completedToday,
+            totalTasks: totalToday,
+            mindfulnessEarned: 0,
+            focusMinutes: 0,
+            streakDays: state?.currentStreak || 0,
+          });
+        });
+    }
+  }, [showEndOfDay, todayTasks, state?.currentStreak]);
+
+  // Handle closing the day
+  const handleCloseDay = useCallback(() => {
+    setShowEndOfDay(false);
+    // Show calm review with day_end trigger
+    showCalmReview('day_end', {
+      tasksCompleted: daySummary.tasksCompleted,
+      totalTasks: daySummary.totalTasks,
+      isPartial: daySummary.tasksCompleted < daySummary.totalTasks,
+    });
+  }, [showCalmReview, daySummary]);
 
   // Wrapper to handle task completion with gamification
   const handleComplete = useCallback(async (id: string) => {
@@ -52,7 +109,28 @@ function TodayContent() {
       <PageHeader
         title="Today"
         description={`Focus on what matters most (${activeCount}/${MAX_DAILY_TASKS} tasks)`}
+        actions={
+          <CloseDayButton onClick={() => setShowEndOfDay(true)} />
+        }
       />
+
+      {/* End of Day Review Modal */}
+      <EndOfDayReview
+        open={showEndOfDay}
+        onClose={() => setShowEndOfDay(false)}
+        onCloseDay={handleCloseDay}
+        summary={daySummary}
+      />
+
+      {/* First-time intro when user has tasks */}
+      <AnimatePresence>
+        {checked && showIntro && todayTasks.length > 0 && !loading && (
+          <TodayIntro
+            taskCount={todayTasks.filter(t => t.status !== 'done').length}
+            onDismiss={dismissIntro}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Edit Task Dialog */}
       <AddTaskDialog

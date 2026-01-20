@@ -56,6 +56,14 @@ interface GamificationState {
   totalCreatures: number;
 }
 
+interface NavFeature {
+  code: string;
+  name: string;
+  icon: string | null;
+  isUnlocked: boolean;
+  celebrationText: string | null;
+}
+
 interface GamificationContextType {
   showLevelUp: (newLevel: number, unlockedFeatures?: string[]) => void;
   handleTaskComplete: (event: GamificationEvent) => void;
@@ -68,6 +76,9 @@ interface GamificationContextType {
   refresh: () => Promise<void>;
   // Refresh both gamification and features (for menu updates)
   refreshAll: () => Promise<void>;
+  // Navigation features (shared state for sidebar)
+  navFeatures: NavFeature[];
+  featuresLoading: boolean;
 }
 
 const GamificationContext = createContext<GamificationContextType | null>(null);
@@ -87,8 +98,8 @@ interface GamificationProviderProps {
 export function GamificationProvider({ children }: GamificationProviderProps) {
   // Centralized gamification state
   const { state, loading, levelProgress, refresh } = useGamification();
-  // Features state (for menu/nav updates)
-  const { refreshFeatures } = useFeatures();
+  // Features state (for menu/nav updates) - shared with sidebar
+  const { refreshFeatures, navFeatures, loading: featuresLoading } = useFeatures();
 
   // Refresh both gamification and features state
   const refreshAll = useCallback(async () => {
@@ -233,7 +244,7 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
   }, []);
 
   return (
-    <GamificationContext.Provider value={{ showLevelUp, handleTaskComplete, showCalmReview, state, loading, levelProgress, refresh, refreshAll }}>
+    <GamificationContext.Provider value={{ showLevelUp, handleTaskComplete, showCalmReview, state, loading, levelProgress, refresh, refreshAll, navFeatures, featuresLoading }}>
       {children}
 
       {/* Calm Review - Reflection, not reward */}

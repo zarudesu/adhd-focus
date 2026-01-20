@@ -406,3 +406,17 @@
   background: var(--success);
   border-radius: 0 0 var(--radius) var(--radius);
 }
+
+/* Subtle shimmer for unlocked achievements */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 3s ease-in-out infinite;
+}
