@@ -25,7 +25,7 @@ export default function Home() {
   const [task, setTask] = useState('');
   const [tasks, setTasks] = useState<PendingTask[]>([]);
   const [showModal, setShowModal] = useState(false);
-  const [showEncouragement, setShowEncouragement] = useState(false);
+  const [showContinueMessage, setShowContinueMessage] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Load existing tasks on mount
@@ -52,9 +52,9 @@ export default function Home() {
     setTasks(updatedTasks);
     setTask('');
 
-    // First task: show encouraging message
-    if (updatedTasks.length === 1) {
-      setShowEncouragement(true);
+    // After first task: show continue message
+    if (updatedTasks.length >= 1) {
+      setShowContinueMessage(true);
     }
 
     // Third task and every 3 tasks after: show registration modal
@@ -67,35 +67,52 @@ export default function Home() {
 
   return (
     <div className="landing-dark flex min-h-screen flex-col items-center justify-center px-6 bg-[#1A1A1A]">
-      {/* Encouraging message after first task */}
-      <AnimatePresence>
-        {showEncouragement && (
-          <motion.div
-            className="absolute top-8 left-0 right-0 text-center px-6"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.5, ease: 'easeOut' }}
-          >
-            <p className="text-sm text-[#9CA3AF] leading-relaxed max-w-sm mx-auto">
-              Это место для сбора текущих дел.
-              <br />
-              <span className="text-[#D9F968]/70">Просто сгрузи сюда свои мысли — я помогу дальше.</span>
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Main content - organic, centered */}
       <div className="w-full max-w-md text-center">
         {/* Logo with draw animation */}
         <motion.div
-          className="mb-16 flex justify-center"
+          className="mb-6 flex justify-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}
         >
           <BeatLogo size="xl" />
+        </motion.div>
+
+        {/* Tagline below logo - changes after tasks */}
+        <motion.div
+          className="mb-12"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+        >
+          <AnimatePresence mode="wait">
+            {showContinueMessage ? (
+              <motion.p
+                key="continue"
+                className="text-sm text-[#D9F968]/70"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+              >
+                Feels lighter, right? Keep going.
+              </motion.p>
+            ) : (
+              <motion.p
+                key="intro"
+                className="text-sm text-[#9CA3AF] leading-relaxed"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+              >
+                A place to unload your thoughts.
+                <br />
+                <span className="text-[#6B7280]">Just dump them here — I'll help from there.</span>
+              </motion.p>
+            )}
+          </AnimatePresence>
         </motion.div>
 
         {/* Input form - the capture pool */}
