@@ -268,6 +268,24 @@ export default function SettingsPage() {
 
               <Separator />
 
+              {/* Reduce Animations */}
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Reduce Animations</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Calmer, minimal motion
+                  </p>
+                </div>
+                <Switch
+                  checked={prefs?.reduceAnimations ?? false}
+                  onCheckedChange={(checked) =>
+                    updatePreference('reduceAnimations', checked)
+                  }
+                />
+              </div>
+
+              <Separator />
+
               {/* Default Landing Page */}
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">

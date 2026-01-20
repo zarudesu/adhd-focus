@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useFocusTimer, TimerMode } from "@/hooks/useFocusTimer";
 import { useTasks } from "@/hooks/useTasks";
+import { CalmReview } from "@/components/focus/CalmReview";
 import {
   Play,
   Pause,
@@ -23,6 +24,8 @@ import { cn } from "@/lib/utils";
 
 function FocusContent() {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [showReview, setShowReview] = useState(false);
+  const [lastCompletedMinutes, setLastCompletedMinutes] = useState(0);
   const [sessionStats, setSessionStats] = useState<{
     todayPomodoros: number;
     todayMinutes: number;
@@ -50,6 +53,9 @@ function FocusContent() {
   } = useFocusTimer({
     taskId: selectedTaskId,
     onPomodoroComplete: () => {
+      // Show calm review instead of celebration
+      setLastCompletedMinutes(workDuration);
+      setShowReview(true);
       // Refresh stats when pomodoro completes
       fetchSessionStats();
     },
@@ -301,6 +307,14 @@ function FocusContent() {
           </Card>
         </div>
       </main>
+
+      {/* Calm Review after pomodoro - not celebratory */}
+      <CalmReview
+        open={showReview}
+        onClose={() => setShowReview(false)}
+        minutes={lastCompletedMinutes}
+        taskTitle={selectedTask?.title}
+      />
     </>
   );
 }

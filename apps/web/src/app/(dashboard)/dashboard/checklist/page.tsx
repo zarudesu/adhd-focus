@@ -70,11 +70,13 @@ function ChecklistContent() {
       });
     }
 
-    // Extra celebration if all habits done!
+    // beatyour8: When all habits done, show Calm Review (not celebration)
     if (result.allHabitsDone) {
       handleTaskComplete({
         xpAwarded: result.bonusXp,
-        reward: { rarity: 'rare', effect: 'stars' },
+        review: {
+          trigger: 'habit_done',
+        },
       });
     }
   }, [check, handleTaskComplete]);

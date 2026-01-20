@@ -17,7 +17,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Timer, Loader2, AlertCircle, Sparkles } from 'lucide-react';
+import { Timer, Loader2, AlertCircle } from 'lucide-react';
 import { hasPendingTasks, getPendingTaskCount } from '@/lib/pending-tasks';
 
 // Animation variants for staggered children
@@ -117,15 +117,10 @@ function SignupForm() {
               <motion.div variants={itemVariants}>
                 <CardDescription className="mt-2">
                   {pendingCount > 0 ? (
-                    <motion.span
-                      className="flex items-center justify-center gap-2"
-                      initial={{ scale: 1 }}
-                      animate={{ scale: [1, 1.02, 1] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                    >
-                      <Sparkles className="h-4 w-4 text-yellow-500" />
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-success" />
                       {pendingCount} thought{pendingCount !== 1 ? 's' : ''} waiting to be saved
-                    </motion.span>
+                    </span>
                   ) : (
                     'Start managing tasks your way'
                   )}

@@ -4,11 +4,12 @@
  * Level Progress Component
  * Shows current level and XP progress bar
  * Uses shared state from GamificationProvider
+ *
+ * Design: Calm, minimal - no flashy icons
  */
 
 import { useGamificationEvents } from './GamificationProvider';
 import { Progress } from '@/components/ui/progress';
-import { Sparkles } from 'lucide-react';
 
 interface LevelProgressProps {
   compact?: boolean;
@@ -20,7 +21,7 @@ export function LevelProgress({ compact = false }: LevelProgressProps) {
   if (loading) {
     return (
       <div className="px-4 py-2">
-        <div className="h-8 animate-pulse rounded bg-muted" />
+        <div className="h-6 animate-pulse rounded bg-muted" />
       </div>
     );
   }
@@ -34,10 +35,8 @@ export function LevelProgress({ compact = false }: LevelProgressProps) {
   if (compact) {
     return (
       <div className="flex items-center gap-2 px-4 py-2">
-        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-          {currentLevel}
-        </div>
-        <Progress value={progress} className="h-2 flex-1" />
+        <span className="text-xs text-muted-foreground">L{currentLevel}</span>
+        <Progress value={progress} className="h-1.5 flex-1" />
       </div>
     );
   }
@@ -45,18 +44,12 @@ export function LevelProgress({ compact = false }: LevelProgressProps) {
   return (
     <div className="px-4 py-3">
       <div className="flex items-center justify-between text-sm">
-        <div className="flex items-center gap-1.5">
-          <Sparkles className="h-4 w-4 text-primary" />
-          <span className="font-medium">Level {currentLevel}</span>
-        </div>
+        <span className="text-muted-foreground">Level {currentLevel}</span>
         <span className="text-xs text-muted-foreground">
-          {xpInLevel} / {xpNeeded} XP
+          {xpInLevel} / {xpNeeded}
         </span>
       </div>
-      <Progress value={progress} className="mt-2 h-2" />
-      <div className="mt-1 text-xs text-muted-foreground">
-        {state.xp.toLocaleString()} total XP
-      </div>
+      <Progress value={progress} className="mt-2 h-1.5" />
     </div>
   );
 }

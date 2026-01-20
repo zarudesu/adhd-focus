@@ -26,19 +26,19 @@ import { cn } from '@/lib/utils';
 type EnergyLevel = 'low' | 'medium' | 'high';
 type Priority = 'must' | 'should' | 'want' | 'someday';
 
-// Energy level config
+// Energy level config - neutral, calm colors
 const ENERGY_CONFIG: Record<EnergyLevel, { label: string; className: string }> = {
-  low: { label: 'Low', className: 'bg-gray-100 text-gray-600 hover:bg-gray-200' },
-  medium: { label: 'Med', className: 'bg-amber-100 text-amber-700 hover:bg-amber-200' },
-  high: { label: 'High', className: 'bg-red-100 text-red-700 hover:bg-red-200' },
+  low: { label: 'Low', className: 'bg-muted text-muted-foreground' },
+  medium: { label: 'Med', className: 'bg-muted text-muted-foreground' },
+  high: { label: 'High', className: 'bg-muted text-muted-foreground' },
 };
 
-// Priority config
+// Priority config - neutral, no urgency colors
 const PRIORITY_CONFIG: Record<Priority, { label: string; className: string }> = {
-  must: { label: 'Must', className: 'bg-red-100 text-red-700' },
-  should: { label: 'Should', className: 'bg-amber-100 text-amber-700' },
-  want: { label: 'Want', className: 'bg-blue-100 text-blue-700' },
-  someday: { label: 'Someday', className: 'bg-gray-100 text-gray-600' },
+  must: { label: 'Must', className: 'bg-muted text-foreground' },
+  should: { label: 'Should', className: 'bg-muted text-muted-foreground' },
+  want: { label: 'Want', className: 'bg-muted text-muted-foreground' },
+  someday: { label: 'Someday', className: 'bg-muted text-muted-foreground' },
 };
 
 export interface TaskCardProps {

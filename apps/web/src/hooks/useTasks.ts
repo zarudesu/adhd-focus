@@ -8,11 +8,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Task, Achievement, Creature } from '@/db/schema';
-import {
-  calculateTaskXp,
-  rollRewardEffect,
-  type RewardRarity,
-} from './useGamification';
+import { calculateTaskXp } from './useGamification';
 
 interface TaskFilters {
   status?: string | string[];
@@ -55,12 +51,13 @@ interface UpdateTaskInput {
 }
 
 // Result of completing a task with gamification
+// beatyour8 Philosophy: No dopamine rewards on task completion
+// XP and achievements are tracked silently, level ups are acknowledged calmly
 export interface CompleteResult {
   task: Task;
   xpAwarded: number;
   levelUp: boolean;
   newLevel: number;
-  reward: { rarity: RewardRarity; effect: string };
   newAchievements: Achievement[];
   creature: {
     creature: Creature;
@@ -201,12 +198,12 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
     });
 
     // Default result (for unauthenticated users or errors)
+    // beatyour8: No visual reward - just track progress silently
     let result: CompleteResult = {
       task: updatedTask,
       xpAwarded: 0,
       levelUp: false,
       newLevel: 1,
-      reward: { rarity: 'common', effect: 'sparkle' },
       newAchievements: [],
       creature: null,
     };
@@ -255,21 +252,10 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
         result.newLevel = xpData.newLevel || 1;
       }
 
-      // 3. Roll visual reward
-      result.reward = rollRewardEffect();
+      // beatyour8: No visual reward on task completion
+      // Progress is tracked silently, reflection happens at meaningful moments
 
-      // Log the reward
-      await window.fetch('/api/gamification/rewards/log', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          rarity: result.reward.rarity,
-          effect: result.reward.effect,
-          trigger: 'task_complete',
-        }),
-      });
-
-      // 4. Check achievements
+      // 3. Check achievements
       const achieveRes = await window.fetch('/api/gamification/achievements/check', {
         method: 'POST',
       });

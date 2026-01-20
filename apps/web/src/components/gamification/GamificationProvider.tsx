@@ -2,18 +2,29 @@
 
 /**
  * Gamification Provider
- * Provides context for gamification events (level up, achievements, creatures)
- * Phase 2: Now includes visual reward animations
- * Also manages gamification state centrally for sidebar updates
+ * beatyour8 Philosophy: Not rewards, but meaning
+ *
+ * ADHD brains don't get dopamine from completion.
+ * We provide cognitive replacement - understanding WHY it was enough.
+ *
+ * This provider manages:
+ * - Calm Review: Reflection moments that return meaning
+ * - Level ups: Trust building with the system
+ * - Achievements: Quiet acknowledgments
+ * - Creatures: Collection (shown subtly)
  */
 
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
 import { LevelUpModal } from './LevelUpModal';
-import { RewardAnimation } from './RewardAnimation';
+import { CalmReview, type CalmReviewProps } from './CalmReview';
 import { AchievementToastStack } from './AchievementToast';
 import { CreatureToastStack, type CaughtCreatureData } from './CreatureCaughtToast';
-import { useGamification, type RewardRarity } from '@/hooks/useGamification';
+import { useGamification } from '@/hooks/useGamification';
 import type { Achievement, Creature } from '@/db/schema';
+
+// Types for Calm Review triggers
+type ReviewTrigger = CalmReviewProps['trigger'];
+type ReviewContext = CalmReviewProps['context'];
 
 interface GamificationEvent {
   levelUp?: {
@@ -21,9 +32,10 @@ interface GamificationEvent {
     unlockedFeatures?: string[];
   };
   xpAwarded?: number;
-  reward?: {
-    rarity: RewardRarity;
-    effect: string;
+  // New: Calm Review instead of reward
+  review?: {
+    trigger: ReviewTrigger;
+    context?: ReviewContext;
   };
   newAchievements?: Achievement[];
   creature?: {
@@ -46,6 +58,8 @@ interface GamificationState {
 interface GamificationContextType {
   showLevelUp: (newLevel: number, unlockedFeatures?: string[]) => void;
   handleTaskComplete: (event: GamificationEvent) => void;
+  // Calm Review - show reflection at meaningful moments
+  showCalmReview: (trigger: ReviewTrigger, context?: ReviewContext) => void;
   // Shared state
   state: GamificationState | null;
   loading: boolean;
@@ -81,15 +95,14 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
     unlockedFeatures: [],
   });
 
-  // Phase 2: Reward animation state
-  const [rewardAnimation, setRewardAnimation] = useState<{
+  // Calm Review state - reflection moments that return meaning
+  const [calmReview, setCalmReview] = useState<{
     visible: boolean;
-    effect: string;
-    rarity: RewardRarity;
+    trigger: ReviewTrigger;
+    context?: ReviewContext;
   }>({
     visible: false,
-    effect: 'sparkle',
-    rarity: 'common',
+    trigger: 'task_complete',
   });
 
   // Queue for pending events (level up shown after reward animation)
@@ -112,13 +125,22 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
     });
   }, []);
 
-  const handleRewardComplete = useCallback(() => {
-    setRewardAnimation((prev) => ({ ...prev, visible: false }));
+  // Show Calm Review at meaningful moments
+  const showCalmReview = useCallback((trigger: ReviewTrigger, context?: ReviewContext) => {
+    setCalmReview({
+      visible: true,
+      trigger,
+      context,
+    });
+  }, []);
 
-    // Refresh stats after animation completes
+  const handleReviewComplete = useCallback(() => {
+    setCalmReview((prev) => ({ ...prev, visible: false }));
+
+    // Refresh stats after review completes
     refresh();
 
-    // Show pending level up after reward animation
+    // Show pending level up after review
     if (pendingLevelUp) {
       showLevelUp(pendingLevelUp.newLevel, pendingLevelUp.unlockedFeatures);
       setPendingLevelUp(null);
@@ -126,15 +148,15 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
   }, [pendingLevelUp, showLevelUp, refresh]);
 
   const handleTaskComplete = useCallback((event: GamificationEvent) => {
-    // Phase 2: Show visual reward first
-    if (event.reward) {
-      setRewardAnimation({
+    // Show Calm Review if requested - reflection, not reward
+    if (event.review) {
+      setCalmReview({
         visible: true,
-        effect: event.reward.effect,
-        rarity: event.reward.rarity,
+        trigger: event.review.trigger,
+        context: event.review.context,
       });
 
-      // If there's also a level up, queue it for after animation
+      // If there's also a level up, queue it for after review
       if (event.levelUp) {
         setPendingLevelUp({
           newLevel: event.levelUp.newLevel,
@@ -142,7 +164,7 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
         });
       }
     } else if (event.levelUp) {
-      // No reward, show level up immediately
+      // No review, show level up immediately
       showLevelUp(event.levelUp.newLevel, event.levelUp.unlockedFeatures);
       refresh();
     }
@@ -189,15 +211,15 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
   }, []);
 
   return (
-    <GamificationContext.Provider value={{ showLevelUp, handleTaskComplete, state, loading, levelProgress, refresh }}>
+    <GamificationContext.Provider value={{ showLevelUp, handleTaskComplete, showCalmReview, state, loading, levelProgress, refresh }}>
       {children}
 
-      {/* Phase 2: Reward Animation */}
-      {rewardAnimation.visible && (
-        <RewardAnimation
-          effect={rewardAnimation.effect}
-          rarity={rewardAnimation.rarity}
-          onComplete={handleRewardComplete}
+      {/* Calm Review - Reflection, not reward */}
+      {calmReview.visible && (
+        <CalmReview
+          trigger={calmReview.trigger}
+          context={calmReview.context}
+          onComplete={handleReviewComplete}
         />
       )}
 

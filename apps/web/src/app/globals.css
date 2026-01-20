@@ -6,8 +6,10 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, monospace;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -48,71 +50,114 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+
+  /* beatyour8 Brand Colors - Organic Bioluminescence */
+  --focus-green: #D9F968;
+  --focus-green-dark: #A8D836;
+  --deep-graphite: #1A1A1A;
+  --warm-charcoal: #232323;
+
+  /* Light Theme - Calm, minimal */
+  --background: #F6F7F9;
+  --foreground: #1F2933;
+  --card: #FFFFFF;
+  --card-foreground: #1F2933;
+  --popover: #FFFFFF;
+  --popover-foreground: #1F2933;
+  --primary: #3A6FF8;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F0F1F3;
+  --secondary-foreground: #1F2933;
+  --muted: #F0F1F3;
+  --muted-foreground: #6B7280;
+  --accent: #F0F1F3;
+  --accent-foreground: #1F2933;
+  --destructive: #EF4444;
+  --success: #D9F968;
+  --warning: #F5A524;
+  --border: #E5E7EB;
+  --input: #E5E7EB;
+  --ring: #3A6FF8;
+
+  /* Charts - Muted, single accent */
+  --chart-1: #3A6FF8;
+  --chart-2: #D9F968;
+  --chart-3: #6B7280;
+  --chart-4: #9CA3AF;
+  --chart-5: #D1D5DB;
+
+  /* Sidebar */
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #1F2933;
+  --sidebar-primary: #3A6FF8;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #F0F1F3;
+  --sidebar-accent-foreground: #1F2933;
+  --sidebar-border: #E5E7EB;
+  --sidebar-ring: #3A6FF8;
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* Dark Theme - Organic Dark Mode, Soft Biomorphism */
+  --background: #1A1A1A;
+  --foreground: #E5E7EB;
+  --card: #232323;
+  --card-foreground: #E5E7EB;
+  --popover: #232323;
+  --popover-foreground: #E5E7EB;
+  --primary: #D9F968;
+  --primary-foreground: #1A1A1A;
+  --secondary: #2A2A2A;
+  --secondary-foreground: #E5E7EB;
+  --muted: #2A2A2A;
+  --muted-foreground: #9CA3AF;
+  --accent: #2A2A2A;
+  --accent-foreground: #E5E7EB;
+  --destructive: #F87171;
+  --success: #D9F968;
+  --warning: #FBBF24;
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.08);
+  --ring: #D9F968;
+
+  /* Charts - Muted, single accent */
+  --chart-1: #D9F968;
+  --chart-2: #A8D836;
+  --chart-3: #9CA3AF;
+  --chart-4: #6B7280;
+  --chart-5: #4B5563;
+
+  /* Sidebar */
+  --sidebar: #232323;
+  --sidebar-foreground: #E5E7EB;
+  --sidebar-primary: #D9F968;
+  --sidebar-primary-foreground: #1A1A1A;
+  --sidebar-accent: #2A2A2A;
+  --sidebar-accent-foreground: #E5E7EB;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: #D9F968;
+}
+
+/* Landing Page - Always dark organic mode */
+.landing-dark {
+  --background: #1A1A1A;
+  --foreground: #E5E7EB;
+  --card: #232323;
+  --card-foreground: #E5E7EB;
+  --popover: #232323;
+  --popover-foreground: #E5E7EB;
+  --primary: #D9F968;
+  --primary-foreground: #1A1A1A;
+  --secondary: #2A2A2A;
+  --secondary-foreground: #E5E7EB;
+  --muted: #2A2A2A;
+  --muted-foreground: #9CA3AF;
+  --accent: #2A2A2A;
+  --accent-foreground: #E5E7EB;
+  --success: #D9F968;
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(217, 249, 104, 0.1);
+  --ring: #D9F968;
 }
 
 @layer base {
@@ -124,787 +169,240 @@
   }
 }
 
-/* Gamification animations */
-@keyframes fall {
-  0% {
-    transform: translateY(0) rotate(0deg);
+/* =====================================================
+   beatyour8 - Calm, Minimal Animations
+   Philosophy: Help start action in 8 seconds
+   No shimmer, no rainbow, no pressure
+   ===================================================== */
+
+/* Simple fade animations */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
     opacity: 1;
+    transform: translateY(0);
   }
-  100% {
-    transform: translateY(100vh) rotate(720deg);
+}
+
+@keyframes fade-in-scale {
+  from {
     opacity: 0;
+    transform: scale(0.95);
   }
-}
-
-.animate-fall {
-  animation: fall linear forwards;
-}
-
-/* =====================================================
-   REWARD ANIMATION SYSTEM - Sci-Fi Effects
-   ===================================================== */
-
-/* Overlay */
-.reward-animation-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
-  transition: opacity 0.3s ease;
-  cursor: pointer;
-}
-
-.reward-animation-overlay.visible {
-  opacity: 1;
-}
-
-.reward-animation-overlay.hidden {
-  opacity: 0;
-  pointer-events: none;
-}
-
-.reward-rarity-badge {
-  position: absolute;
-  bottom: 20%;
-  font-size: 1.5rem;
-  font-weight: 900;
-  letter-spacing: 0.3em;
-  text-shadow: 0 0 20px currentColor, 0 0 40px currentColor;
-  animation: badge-pulse 1s ease-in-out infinite;
-}
-
-@keyframes badge-pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.8; transform: scale(1.05); }
-}
-
-/* =====================================================
-   SPARKLE EFFECT
-   ===================================================== */
-.reward-sparkle {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-}
-
-.sparkle-particle {
-  position: absolute;
-  border-radius: 50%;
-  animation: sparkle-float 2s ease-out forwards;
-}
-
-@keyframes sparkle-float {
-  0% {
-    opacity: 0;
-    transform: scale(0) translateY(0);
-  }
-  20% {
+  to {
     opacity: 1;
-    transform: scale(1) translateY(-20px);
+    transform: scale(1);
   }
-  100% {
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out forwards;
+}
+
+.animate-fade-out {
+  animation: fade-out 0.2s ease-out forwards;
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.3s ease-out forwards;
+}
+
+.animate-fade-in-scale {
+  animation: fade-in-scale 0.2s ease-out forwards;
+}
+
+/* Success checkmark animation - calm, single color */
+@keyframes check-appear {
+  from {
     opacity: 0;
-    transform: scale(0.5) translateY(-100px);
+    transform: scale(0.8);
   }
-}
-
-/* =====================================================
-   GLITCH EFFECT
-   ===================================================== */
-.reward-glitch {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-}
-
-.glitch-overlay {
-  position: absolute;
-  inset: 0;
-  opacity: 0.3;
-  mix-blend-mode: screen;
-}
-
-.glitch-1 {
-  animation: glitch-shift-1 0.3s steps(2) infinite;
-}
-
-.glitch-2 {
-  animation: glitch-shift-2 0.4s steps(3) infinite;
-}
-
-@keyframes glitch-shift-1 {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  50% { transform: translateX(5px); }
-  75% { transform: translateX(-3px); }
-}
-
-@keyframes glitch-shift-2 {
-  0%, 100% { transform: translateX(0); }
-  33% { transform: translateX(8px); }
-  66% { transform: translateX(-8px); }
-}
-
-.glitch-scanlines {
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0, 255, 136, 0.03) 2px,
-    rgba(0, 255, 136, 0.03) 4px
-  );
-  animation: scanlines-move 0.1s linear infinite;
-}
-
-@keyframes scanlines-move {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(4px); }
-}
-
-.glitch-text {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 3rem;
-  font-weight: 900;
-  color: #00ff88;
-  text-shadow:
-    2px 0 #ff0088,
-    -2px 0 #00ffff,
-    0 0 20px #00ff88;
-  animation: glitch-text 0.5s steps(5) infinite;
-}
-
-@keyframes glitch-text {
-  0%, 100% {
-    text-shadow: 2px 0 #ff0088, -2px 0 #00ffff, 0 0 20px #00ff88;
-    transform: translate(-50%, -50%) skewX(0deg);
-  }
-  20% {
-    text-shadow: -2px 0 #ff0088, 2px 0 #00ffff, 0 0 20px #00ff88;
-    transform: translate(-52%, -50%) skewX(-5deg);
-  }
-  40% {
-    text-shadow: 2px 0 #ff0088, -2px 0 #00ffff, 0 0 20px #00ff88;
-    transform: translate(-48%, -50%) skewX(5deg);
-  }
-}
-
-/* =====================================================
-   PORTAL EFFECT
-   ===================================================== */
-.reward-portal {
-  position: relative;
-  width: 300px;
-  height: 300px;
-}
-
-.portal-ring {
-  position: absolute;
-  inset: 0;
-  border: 3px solid;
-  border-radius: 50%;
-  animation: portal-spin 2s linear infinite;
-}
-
-.ring-1 { animation-duration: 3s; }
-.ring-2 {
-  inset: 20px;
-  animation-duration: 2.5s;
-  animation-direction: reverse;
-}
-.ring-3 {
-  inset: 40px;
-  animation-duration: 2s;
-}
-
-@keyframes portal-spin {
-  0% { transform: rotate(0deg) scale(0.8); opacity: 0; }
-  20% { opacity: 1; }
-  100% { transform: rotate(360deg) scale(1.2); opacity: 0; }
-}
-
-.portal-center {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 60px;
-  height: 60px;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  animation: portal-pulse 1s ease-in-out infinite;
-  box-shadow: 0 0 60px currentColor;
-}
-
-@keyframes portal-pulse {
-  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
-  50% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
-}
-
-.portal-particles {
-  position: absolute;
-  inset: 0;
-}
-
-.portal-particle {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 6px;
-  height: 6px;
-  background: var(--color);
-  border-radius: 50%;
-  box-shadow: 0 0 10px var(--color);
-  animation: portal-particle-orbit 2s linear infinite;
-  animation-delay: var(--delay);
-}
-
-@keyframes portal-particle-orbit {
-  0% {
-    transform: rotate(var(--angle)) translateX(0) scale(0);
-    opacity: 0;
-  }
-  50% {
+  to {
     opacity: 1;
-  }
-  100% {
-    transform: rotate(calc(var(--angle) + 360deg)) translateX(var(--distance)) scale(1);
-    opacity: 0;
+    transform: scale(1);
   }
 }
 
-/* =====================================================
-   WARP EFFECT (Hyperspace)
-   ===================================================== */
-.reward-warp {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
+.animate-check {
+  animation: check-appear 0.3s ease-out forwards;
 }
 
-.warp-line {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 2px;
-  height: 0;
-  background: linear-gradient(to top, transparent, var(--color));
-  transform-origin: bottom center;
-  transform: rotate(var(--angle)) translateY(0);
-  animation: warp-stretch 1s ease-out forwards;
-  animation-delay: var(--delay);
-}
-
-@keyframes warp-stretch {
-  0% {
-    height: 0;
-    opacity: 0;
-  }
-  30% {
-    height: 50px;
-    opacity: 1;
-  }
-  100% {
-    height: 300px;
-    opacity: 0;
-    transform: rotate(var(--angle)) translateY(-200px);
-  }
-}
-
-.warp-flash {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at center, white, transparent 70%);
-  animation: warp-flash 0.5s ease-out forwards;
-  animation-delay: 0.3s;
-  opacity: 0;
-}
-
-@keyframes warp-flash {
-  0% { opacity: 0; transform: scale(0); }
-  50% { opacity: 0.8; }
-  100% { opacity: 0; transform: scale(3); }
-}
-
-/* =====================================================
-   DATA STREAM EFFECT (Matrix)
-   ===================================================== */
-.reward-datastream {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  font-family: monospace;
-  font-size: 14px;
-}
-
-.data-column {
-  position: absolute;
-  top: -100%;
-  width: 20px;
-  text-align: center;
-  animation: data-fall 2s linear forwards;
-  writing-mode: vertical-rl;
-  opacity: 0.8;
-}
-
-@keyframes data-fall {
-  0% { top: -100%; opacity: 0; }
-  10% { opacity: 0.8; }
-  90% { opacity: 0.8; }
-  100% { top: 100%; opacity: 0; }
-}
-
-/* =====================================================
-   HEX GRID EFFECT
-   ===================================================== */
-.reward-hexgrid {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-}
-
-.hex-cell {
-  position: absolute;
-  width: 40px;
-  height: 46px;
-  border: 2px solid;
-  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-  animation: hex-appear 1s ease-out forwards;
-  opacity: 0;
-}
-
-@keyframes hex-appear {
-  0% {
-    opacity: 0;
-    transform: scale(0) rotate(60deg);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.2) rotate(0deg);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(1) rotate(0deg);
-  }
-}
-
-/* =====================================================
-   CIRCUIT EFFECT
-   ===================================================== */
-.reward-circuit {
-  position: relative;
-  width: 400px;
-  height: 400px;
-}
-
-.circuit-svg {
-  width: 100%;
-  height: 100%;
-}
-
-.circuit-path {
-  fill: none;
-  stroke-width: 3;
-  stroke-dasharray: 500;
-  stroke-dashoffset: 500;
-  animation: circuit-draw 2s ease-out forwards;
-}
-
-.path-1 { animation-delay: 0s; }
-.path-2 { animation-delay: 0.3s; }
-.path-3 { animation-delay: 0.6s; }
-
-@keyframes circuit-draw {
-  0% { stroke-dashoffset: 500; opacity: 0; }
-  10% { opacity: 1; }
-  100% { stroke-dashoffset: 0; opacity: 1; }
-}
-
-.circuit-node {
-  opacity: 0;
-  animation: node-appear 0.5s ease-out forwards;
-}
-
-.node-1 { animation-delay: 0.2s; }
-.node-2 { animation-delay: 0.8s; }
-.node-3 { animation-delay: 1.2s; }
-
-@keyframes node-appear {
-  0% { opacity: 0; r: 0; }
-  50% { opacity: 1; }
-  100% { opacity: 1; }
-}
-
-/* =====================================================
-   ENERGY WAVE EFFECT
-   ===================================================== */
-.reward-energy {
-  position: relative;
-  width: 300px;
-  height: 300px;
-}
-
-.energy-wave {
-  position: absolute;
-  inset: 0;
-  border: 3px solid;
-  border-radius: 50%;
-  animation: energy-expand 2s ease-out infinite;
-}
-
-.wave-1 { animation-delay: 0s; }
-.wave-2 { animation-delay: 0.4s; }
-.wave-3 { animation-delay: 0.8s; }
-
-@keyframes energy-expand {
-  0% {
-    transform: scale(0.3);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1.5);
-    opacity: 0;
-  }
-}
-
-.energy-core {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 40px;
-  height: 40px;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  box-shadow: 0 0 40px currentColor, 0 0 80px currentColor;
-  animation: core-pulse 0.5s ease-in-out infinite;
-}
-
-@keyframes core-pulse {
-  0%, 100% { transform: translate(-50%, -50%) scale(1); }
-  50% { transform: translate(-50%, -50%) scale(1.2); }
-}
-
-/* =====================================================
-   HOLOGRAM EFFECT
-   ===================================================== */
-.reward-hologram {
-  position: relative;
-  width: 200px;
-  height: 250px;
-}
-
-.hologram-container {
-  position: relative;
-  width: 100%;
-  height: 200px;
-  animation: hologram-flicker 0.1s steps(2) infinite;
-}
-
-@keyframes hologram-flicker {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.95; }
-}
-
-.hologram-check {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 100px;
-  font-weight: bold;
-  animation: hologram-appear 1s ease-out forwards;
-  text-shadow: 0 0 30px currentColor;
-}
-
-@keyframes hologram-appear {
-  0% {
-    transform: translate(-50%, -50%) scale(0) rotateY(90deg);
-    opacity: 0;
-  }
-  50% {
-    transform: translate(-50%, -50%) scale(1.2) rotateY(0deg);
-    opacity: 1;
-  }
-  100% {
-    transform: translate(-50%, -50%) scale(1) rotateY(0deg);
-    opacity: 1;
-  }
-}
-
-.hologram-scanline {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    transparent 50%,
-    rgba(0, 255, 136, 0.05) 50%
-  );
-  background-size: 100% 4px;
-}
-
-.hologram-base {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 120px;
-  height: 10px;
-  border: 2px solid;
-  border-radius: 50%;
-  box-shadow: 0 0 20px currentColor;
-}
-
-/* =====================================================
-   PLASMA EFFECT
-   ===================================================== */
-.reward-plasma {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  filter: blur(20px);
-}
-
-.plasma-blob {
-  position: absolute;
-  width: 200px;
-  height: 200px;
-  border-radius: 50%;
-  animation: plasma-move 3s ease-in-out infinite;
-}
-
-.blob-1 {
-  top: 20%;
-  left: 20%;
-  animation-delay: 0s;
-}
-
-.blob-2 {
-  top: 40%;
-  right: 20%;
-  animation-delay: 1s;
-}
-
-.blob-3 {
-  bottom: 20%;
-  left: 40%;
-  animation-delay: 2s;
-}
-
-@keyframes plasma-move {
-  0%, 100% {
-    transform: scale(1) translate(0, 0);
-  }
-  25% {
-    transform: scale(1.3) translate(30px, -30px);
-  }
-  50% {
-    transform: scale(0.8) translate(-20px, 20px);
-  }
-  75% {
-    transform: scale(1.1) translate(20px, 30px);
-  }
-}
-
-/* =====================================================
-   QUANTUM EFFECT
-   ===================================================== */
-.reward-quantum {
-  position: relative;
-  width: 300px;
-  height: 300px;
-}
-
-.quantum-orbital {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  border: 2px solid;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.orbital-1 {
-  width: 100px;
-  height: 100px;
-  animation: quantum-orbit 2s linear infinite;
-}
-
-.orbital-2 {
-  width: 180px;
-  height: 180px;
-  transform: translate(-50%, -50%) rotateX(60deg);
-  animation: quantum-orbit 3s linear infinite reverse;
-}
-
-.orbital-3 {
-  width: 260px;
-  height: 260px;
-  transform: translate(-50%, -50%) rotateY(60deg);
-  animation: quantum-orbit 4s linear infinite;
-}
-
-@keyframes quantum-orbit {
-  0% { transform: translate(-50%, -50%) rotateZ(0deg); }
-  100% { transform: translate(-50%, -50%) rotateZ(360deg); }
-}
-
-.quantum-electron {
-  position: absolute;
-  top: -5px;
-  left: 50%;
-  width: 10px;
-  height: 10px;
-  margin-left: -5px;
-  border-radius: 50%;
-  box-shadow: 0 0 15px currentColor;
-}
-
-.quantum-nucleus {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 30px;
-  height: 30px;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  box-shadow: 0 0 40px currentColor, 0 0 80px currentColor;
-  animation: nucleus-pulse 1s ease-in-out infinite;
-}
-
-@keyframes nucleus-pulse {
-  0%, 100% { transform: translate(-50%, -50%) scale(1); }
-  50% { transform: translate(-50%, -50%) scale(1.3); }
-}
-
-/* =====================================================
-   TAKEOVER EFFECT (Ultimate)
-   ===================================================== */
-.reward-takeover {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-}
-
-.takeover-flash {
-  position: absolute;
-  inset: 0;
-  background: white;
-  animation: takeover-flash 0.3s ease-out forwards;
-  animation-delay: 0.5s;
-  opacity: 0;
-}
-
-@keyframes takeover-flash {
-  0% { opacity: 0; }
-  50% { opacity: 1; }
-  100% { opacity: 0; }
-}
-
-.takeover-text {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  font-size: 4rem;
-  font-weight: 900;
-  letter-spacing: 0.2em;
-  animation: takeover-text 1s ease-out forwards;
-  animation-delay: 0.8s;
-  opacity: 0;
-}
-
-@keyframes takeover-text {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(2);
-    filter: blur(10px);
-  }
-  100% {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-    filter: blur(0);
-  }
-}
-
-.takeover-text span {
-  text-shadow: 0 0 30px currentColor, 0 0 60px currentColor;
-}
-
-/* =====================================================
-   ACHIEVEMENT TOAST ANIMATIONS
-   ===================================================== */
-
-@keyframes shimmer {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-.animate-shimmer {
-  animation: shimmer 2s ease-in-out infinite;
-}
-
+/* Progress bar shrink (for toast timers) */
 @keyframes shrink-width {
-  0% {
-    width: 100%;
-  }
-  100% {
-    width: 0%;
-  }
+  from { width: 100%; }
+  to { width: 0%; }
 }
 
 .animate-shrink-width {
   animation: shrink-width linear forwards;
 }
 
-@keyframes bounce-gentle {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-5px);
-  }
+/* Gentle pulse - for important elements, used sparingly */
+@keyframes pulse-gentle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
 }
 
-.animate-bounce-gentle {
-  animation: bounce-gentle 1s ease-in-out infinite;
+.animate-pulse-gentle {
+  animation: pulse-gentle 2s ease-in-out infinite;
 }
 
-/* =====================================================
-   CREATURE TOAST ANIMATIONS
-   ===================================================== */
-
-@keyframes float {
-  0%, 100% {
-    transform: translateY(100%) scale(0);
+/* Toast slide in */
+@keyframes slide-in-right {
+  from {
     opacity: 0;
+    transform: translateX(100%);
   }
-  10% {
+  to {
     opacity: 1;
-  }
-  50% {
-    transform: translateY(-50px) scale(1);
-    opacity: 0.8;
-  }
-  100% {
-    transform: translateY(-100px) scale(0.5);
-    opacity: 0;
+    transform: translateX(0);
   }
 }
 
-.animate-float {
-  animation: float ease-in-out infinite;
+@keyframes slide-out-right {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out forwards;
+}
+
+.animate-slide-out-right {
+  animation: slide-out-right 0.2s ease-out forwards;
+}
+
+/* Simple reward overlay - calm celebration */
+.reward-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
+  animation: fade-in 0.2s ease-out forwards;
+  cursor: pointer;
+}
+
+.reward-overlay.hidden {
+  animation: fade-out 0.2s ease-out forwards;
+  pointer-events: none;
+}
+
+/* Calm success message */
+.reward-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem;
+  background: var(--card);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+  animation: fade-in-scale 0.3s ease-out forwards;
+}
+
+.reward-success-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--success);
+  color: white;
+  border-radius: 50%;
+  animation: check-appear 0.3s ease-out 0.1s forwards;
+  opacity: 0;
+}
+
+.reward-success-text {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: var(--foreground);
+}
+
+/* Toast container */
+.toast-container {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  z-index: 9998;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Simple toast */
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  animation: slide-in-right 0.3s ease-out forwards;
+}
+
+.toast.success {
+  border-left: 3px solid var(--success);
+}
+
+.toast.exit {
+  animation: slide-out-right 0.2s ease-out forwards;
+}
+
+.toast-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  color: var(--success);
+}
+
+.toast-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.toast-title {
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--foreground);
+}
+
+.toast-description {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+  margin-top: 0.125rem;
+}
+
+.toast-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: var(--success);
+  border-radius: 0 0 var(--radius) var(--radius);
 }

@@ -1,24 +1,37 @@
 /**
  * Pending Tasks - localStorage helpers
- * Stores tasks before user registration
+ * beatyour8 Philosophy: Capture thoughts before registration
+ *
+ * Users can add tasks on landing page without auth.
+ * Tasks sync to their account after registration.
  */
 
-export type PendingTask = {
+export interface PendingTask {
+  id: string;
   title: string;
   createdAt: string;
-};
+}
 
 const STORAGE_KEY = 'adhd-focus-pending-tasks';
 
-export function addPendingTask(title: string): void {
-  if (typeof window === 'undefined') return;
+function generateId(): string {
+  return `pending-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
 
+export function addPendingTask(title: string): PendingTask {
   const tasks = getPendingTasks();
-  tasks.push({
+  const newTask: PendingTask = {
+    id: generateId(),
     title: title.trim(),
     createdAt: new Date().toISOString(),
-  });
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+  };
+  tasks.push(newTask);
+
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+  }
+
+  return newTask;
 }
 
 export function getPendingTasks(): PendingTask[] {

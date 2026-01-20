@@ -53,6 +53,7 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   notificationSound: true,
   theme: 'system',
   timezone: 'UTC',
+  reduceAnimations: false,
 };
 
 async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {

@@ -42,13 +42,13 @@ function ProjectDetailContent() {
     const result = await complete(id);
 
     // Always trigger gamification events (reward animation + optional level up)
+    // beatyour8: No visual reward - progress tracked silently
     handleTaskComplete({
       levelUp: result.levelUp ? {
         newLevel: result.newLevel,
         unlockedFeatures: [],
       } : undefined,
       xpAwarded: result.xpAwarded,
-      reward: result.reward,
       newAchievements: result.newAchievements,
       creature: result.creature,
     });

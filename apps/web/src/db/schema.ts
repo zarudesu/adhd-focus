@@ -689,6 +689,8 @@ export interface UserPreferences {
   timezone: string;
   /** Default landing page after login (only unlocked pages can be selected) */
   defaultLandingPage?: "inbox" | "today" | "scheduled" | "projects" | "completed";
+  /** Reduce animations for calmer experience */
+  reduceAnimations?: boolean;
 }
 
 // Gamification condition types

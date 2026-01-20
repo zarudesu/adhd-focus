@@ -176,10 +176,7 @@ function ProjectsContent() {
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <div
-                        className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
-                        style={{ backgroundColor: `${project.color}20` }}
-                      >
+                      <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl bg-muted">
                         {project.emoji}
                       </div>
                       <div>
@@ -216,15 +213,14 @@ function ProjectsContent() {
                     </DropdownMenu>
                   </div>
 
-                  {/* Progress bar */}
+                  {/* Progress bar - neutral, calm */}
                   {project.taskCount > 0 && (
                     <div className="mt-3">
-                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                      <div className="h-1 bg-muted rounded-full overflow-hidden">
                         <div
-                          className="h-full rounded-full transition-all"
+                          className="h-full rounded-full transition-all bg-primary"
                           style={{
                             width: `${(project.completedCount / project.taskCount) * 100}%`,
-                            backgroundColor: project.color || '#6366f1',
                           }}
                         />
                       </div>

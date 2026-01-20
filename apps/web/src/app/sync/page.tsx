@@ -9,7 +9,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Loader2, Sparkles, CheckCircle } from 'lucide-react';
+import { Loader2, Check } from 'lucide-react';
 import { getPendingTasks, clearPendingTasks, hasPendingTasks } from '@/lib/pending-tasks';
 
 export default function SyncPage() {
@@ -92,17 +92,12 @@ export default function SyncPage() {
 
         {status === 'done' && (
           <>
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: 'spring', stiffness: 200 }}
-            >
-              <CheckCircle className="mx-auto h-12 w-12 text-green-500" />
-            </motion.div>
-            <h1 className="mt-4 text-xl font-semibold">All set!</h1>
-            <p className="mt-2 text-muted-foreground flex items-center justify-center gap-2">
-              <Sparkles className="h-4 w-4 text-yellow-500" />
-              {syncedCount} thought{syncedCount !== 1 ? 's' : ''} captured
+            <div className="mx-auto h-12 w-12 rounded-full bg-success/10 flex items-center justify-center">
+              <Check className="h-6 w-6 text-success" />
+            </div>
+            <h1 className="mt-4 text-xl font-medium">Done.</h1>
+            <p className="mt-2 text-muted-foreground">
+              {syncedCount} thought{syncedCount !== 1 ? 's' : ''} saved
             </p>
           </>
         )}
