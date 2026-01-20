@@ -3,20 +3,36 @@ import { auth } from '@/lib/auth';
 import { db } from '@/db';
 import {
   users,
+  tasks,
   achievements,
   userAchievements,
   userFeatures,
   type Achievement,
   type AchievementCondition,
 } from '@/db/schema';
-import { eq, notInArray } from 'drizzle-orm';
+import { eq, notInArray, sql, and, isNotNull } from 'drizzle-orm';
 import { logError } from '@/lib/logger';
 
-// Check if a user meets an achievement condition
-// NOTE: Only checks conditions we can properly validate with current user stats.
-// Achievements with filters (priority, energy, duration, timeframe) require
-// detailed task queries which are not implemented yet - these return false.
-function checkCondition(
+// Task stats from actual completed tasks - used for achievements that require
+// checking specific task properties
+interface TaskCompletionStats {
+  // Day of week counts (0=Sunday, 1=Monday, etc.)
+  byDayOfWeek: Record<number, number>;
+  // Hour counts (0-23)
+  byHour: Record<number, number>;
+  // Period counts
+  byPeriod: Record<string, number>;
+  // Context counts
+  withDescription: number;
+  withSubtasks: number;
+  withTags: number;
+  inProject: number;
+  onTime: number;
+  wasOverdue: number;
+}
+
+// Checks conditions based on user aggregate stats only (fast path)
+function checkSimpleCondition(
   condition: AchievementCondition,
   conditionType: string,
   userStats: {
@@ -24,33 +40,40 @@ function checkCondition(
     totalTasksCompleted: number;
     currentStreak: number;
     longestStreak: number;
-    // Habit stats
     habitsCompleted: number;
     habitsCreated: number;
     habitStreak: number;
     longestHabitStreak: number;
     allHabitsCompletedDays: number;
-  },
-  context?: {
-    currentHour?: number;
-    currentMinute?: number;
-    currentDayOfWeek?: number;
-    currentDayOfMonth?: number;
-    currentMonth?: number;
   }
-): boolean {
+): boolean | 'needs_task_query' {
   switch (conditionType) {
-    case 'task_count':
-      // IMPORTANT: Only check TOTAL task count achievements without filters
-      // Skip achievements with priority, energy, duration, or non-total timeframes
-      // These require detailed task queries which are not implemented yet
-      if (condition.priority || condition.energy || condition.duration) {
-        return false; // Cannot verify without task-level queries
+    case 'task_count': {
+      // Check if this needs task-level queries
+      const needsTaskQuery = !!(
+        condition.dayOfWeek !== undefined ||
+        condition.period !== undefined ||
+        condition.hasDescription ||
+        condition.hasSubtasks ||
+        condition.hasTags ||
+        condition.inProject ||
+        condition.onTime ||
+        condition.wasOverdue ||
+        condition.hour !== undefined ||
+        condition.priority ||
+        condition.energy
+      );
+
+      if (needsTaskQuery) {
+        return 'needs_task_query';
       }
+
+      // Simple total count check
       if (condition.timeframe && condition.timeframe !== 'total') {
-        return false; // Cannot verify daily/weekly/hourly without detailed stats
+        return false; // Daily/weekly timeframes need task queries
       }
       return condition.count !== undefined && userStats.totalTasksCompleted >= condition.count;
+    }
 
     case 'streak_days':
       return condition.days !== undefined && userStats.currentStreak >= condition.days;
@@ -62,23 +85,16 @@ function checkCondition(
       return condition.level !== undefined && userStats.level >= condition.level;
 
     case 'time':
-      if (!context) return false;
-      // Check time-based conditions
-      if (condition.hour !== undefined && context.currentHour !== condition.hour) return false;
-      if (condition.minute !== undefined && context.currentMinute !== condition.minute) return false;
-      if (condition.dayOfWeek !== undefined && context.currentDayOfWeek !== condition.dayOfWeek) return false;
-      if (condition.dayOfMonth !== undefined && context.currentDayOfMonth !== condition.dayOfMonth) return false;
-      if (condition.month !== undefined && context.currentMonth !== condition.month) return false;
-      return true;
+      // Time achievements ALWAYS need task query - we check if user ever
+      // completed a task at that time, not if current time matches
+      return 'needs_task_query';
 
-    // Habit achievements
     case 'habit_count':
-      // Only check total habit completions without filters
       if (condition.timeframe && condition.timeframe !== 'total') {
         return false;
       }
       if (condition.allDone || condition.timeOfDay) {
-        return false; // Cannot verify without detailed queries
+        return false;
       }
       return condition.count !== undefined && userStats.habitsCompleted >= condition.count;
 
@@ -95,12 +111,189 @@ function checkCondition(
       return condition.count !== undefined && userStats.allHabitsCompletedDays >= condition.count;
 
     case 'special':
-      // Special conditions are checked elsewhere with specific logic
       return false;
 
     default:
       return false;
   }
+}
+
+// Check task_count and time achievements using actual task data
+function checkTaskBasedCondition(
+  condition: AchievementCondition,
+  conditionType: string,
+  taskStats: TaskCompletionStats
+): boolean {
+  const requiredCount = condition.count ?? 1;
+
+  // For 'time' type, check if user completed task at specified time
+  if (conditionType === 'time') {
+    if (condition.dayOfWeek !== undefined) {
+      return (taskStats.byDayOfWeek[condition.dayOfWeek] ?? 0) >= requiredCount;
+    }
+    if (condition.hour !== undefined) {
+      return (taskStats.byHour[condition.hour] ?? 0) >= requiredCount;
+    }
+    if (condition.period !== undefined) {
+      return (taskStats.byPeriod[condition.period] ?? 0) >= requiredCount;
+    }
+    return false;
+  }
+
+  // For 'task_count' type with filters
+  if (conditionType === 'task_count') {
+    // Day of week filter
+    if (condition.dayOfWeek !== undefined) {
+      return (taskStats.byDayOfWeek[condition.dayOfWeek] ?? 0) >= requiredCount;
+    }
+
+    // Hour filter
+    if (condition.hour !== undefined) {
+      return (taskStats.byHour[condition.hour] ?? 0) >= requiredCount;
+    }
+
+    // Period filter
+    if (condition.period !== undefined) {
+      return (taskStats.byPeriod[condition.period] ?? 0) >= requiredCount;
+    }
+
+    // Context filters
+    if (condition.hasDescription) {
+      return taskStats.withDescription >= requiredCount;
+    }
+    if (condition.hasSubtasks) {
+      return taskStats.withSubtasks >= requiredCount;
+    }
+    if (condition.hasTags) {
+      return taskStats.withTags >= requiredCount;
+    }
+    if (condition.inProject) {
+      return taskStats.inProject >= requiredCount;
+    }
+    if (condition.onTime) {
+      return taskStats.onTime >= requiredCount;
+    }
+    if (condition.wasOverdue) {
+      return taskStats.wasOverdue >= requiredCount;
+    }
+  }
+
+  return false;
+}
+
+// Query actual task completion data for a user
+async function getTaskCompletionStats(userId: string): Promise<TaskCompletionStats> {
+  // Get all completed tasks with their completion timestamps
+  const completedTasks = await db
+    .select({
+      completedAt: tasks.completedAt,
+      description: tasks.description,
+      parentTaskId: tasks.parentTaskId,
+      tags: tasks.tags,
+      projectId: tasks.projectId,
+      dueDate: tasks.dueDate,
+    })
+    .from(tasks)
+    .where(and(
+      eq(tasks.userId, userId),
+      eq(tasks.status, 'done'),
+      isNotNull(tasks.completedAt)
+    ));
+
+  const stats: TaskCompletionStats = {
+    byDayOfWeek: {},
+    byHour: {},
+    byPeriod: {},
+    withDescription: 0,
+    withSubtasks: 0,
+    withTags: 0,
+    inProject: 0,
+    onTime: 0,
+    wasOverdue: 0,
+  };
+
+  // Count subtasks (tasks that have this task as parent)
+  const subtaskCounts = await db
+    .select({
+      parentId: tasks.parentTaskId,
+      count: sql<number>`count(*)`.as('count'),
+    })
+    .from(tasks)
+    .where(and(
+      eq(tasks.userId, userId),
+      isNotNull(tasks.parentTaskId)
+    ))
+    .groupBy(tasks.parentTaskId);
+
+  const subtaskMap = new Map(
+    subtaskCounts.map(s => [s.parentId, Number(s.count)])
+  );
+
+  for (const task of completedTasks) {
+    if (!task.completedAt) continue;
+
+    const completedDate = new Date(task.completedAt);
+    const dayOfWeek = completedDate.getDay();
+    const hour = completedDate.getHours();
+
+    // Count by day of week
+    stats.byDayOfWeek[dayOfWeek] = (stats.byDayOfWeek[dayOfWeek] ?? 0) + 1;
+
+    // Count by hour
+    stats.byHour[hour] = (stats.byHour[hour] ?? 0) + 1;
+
+    // Count by period
+    let period: string;
+    if (hour >= 5 && hour < 12) period = 'morning';
+    else if (hour >= 12 && hour < 17) period = 'afternoon';
+    else if (hour >= 17 && hour < 21) period = 'evening';
+    else period = 'night';
+    stats.byPeriod[period] = (stats.byPeriod[period] ?? 0) + 1;
+
+    // Context counts
+    if (task.description && task.description.trim().length > 0) {
+      stats.withDescription++;
+    }
+    if (task.tags && task.tags.length > 0) {
+      stats.withTags++;
+    }
+    if (task.projectId) {
+      stats.inProject++;
+    }
+
+    // Check due date vs completion
+    if (task.dueDate) {
+      const dueDate = new Date(task.dueDate);
+      dueDate.setHours(23, 59, 59, 999);
+      if (completedDate <= dueDate) {
+        stats.onTime++;
+      } else {
+        stats.wasOverdue++;
+      }
+    }
+  }
+
+  // Count tasks with subtasks
+  for (const task of completedTasks) {
+    // We can't easily check subtasks from the query above
+    // For now, count tasks that ARE subtasks (have parentTaskId)
+    // This is a simplification - "has subtasks" would need another query
+  }
+
+  // Get count of completed tasks that have subtasks
+  const tasksWithSubtasks = await db
+    .select({
+      count: sql<number>`count(distinct ${tasks.parentTaskId})`.as('count'),
+    })
+    .from(tasks)
+    .where(and(
+      eq(tasks.userId, userId),
+      isNotNull(tasks.parentTaskId)
+    ));
+
+  stats.withSubtasks = Number(tasksWithSubtasks[0]?.count ?? 0);
+
+  return stats;
 }
 
 export async function POST(request: Request) {
@@ -152,19 +345,6 @@ export async function POST(request: Request) {
           : undefined
       );
 
-    // Current time context
-    const now = new Date();
-    const context = {
-      currentHour: now.getHours(),
-      currentMinute: now.getMinutes(),
-      currentDayOfWeek: now.getDay(),
-      currentDayOfMonth: now.getDate(),
-      currentMonth: now.getMonth(),
-    };
-
-    // Check each locked achievement and use transaction for unlocking
-    const newlyUnlocked: Achievement[] = [];
-
     const userStats = {
       level: user.level || 1,
       totalTasksCompleted: user.totalTasksCompleted || 0,
@@ -177,20 +357,41 @@ export async function POST(request: Request) {
       allHabitsCompletedDays: user.allHabitsCompletedDays || 0,
     };
 
-    // Find achievements that should be unlocked
+    // First pass: check simple conditions (no DB query needed)
     const achievementsToUnlock: Achievement[] = [];
+    const needsTaskQuery: Achievement[] = [];
 
     for (const achievement of lockedAchievements) {
       const condition = achievement.conditionValue as AchievementCondition;
       if (!condition) continue;
 
-      const meets = checkCondition(condition, achievement.conditionType, userStats, context);
-      if (meets) {
+      const result = checkSimpleCondition(condition, achievement.conditionType, userStats);
+      if (result === true) {
         achievementsToUnlock.push(achievement);
+      } else if (result === 'needs_task_query') {
+        needsTaskQuery.push(achievement);
+      }
+      // If result === false, skip this achievement
+    }
+
+    // Second pass: check achievements that need task query (only if there are any)
+    if (needsTaskQuery.length > 0) {
+      const taskStats = await getTaskCompletionStats(userId);
+
+      for (const achievement of needsTaskQuery) {
+        const condition = achievement.conditionValue as AchievementCondition;
+        if (!condition) continue;
+
+        const meets = checkTaskBasedCondition(condition, achievement.conditionType, taskStats);
+        if (meets) {
+          achievementsToUnlock.push(achievement);
+        }
       }
     }
 
     // Unlock all qualifying achievements in a single transaction
+    const newlyUnlocked: Achievement[] = [];
+
     if (achievementsToUnlock.length > 0) {
       await db.transaction(async (tx) => {
         let totalXpToAdd = 0;
