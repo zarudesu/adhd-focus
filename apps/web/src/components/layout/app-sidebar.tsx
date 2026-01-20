@@ -18,6 +18,7 @@ import {
   Zap,
   Ghost,
 } from "lucide-react";
+import { BeatLogo } from "@/components/brand/BeatLogo";
 
 import {
   Sidebar,
@@ -122,11 +123,9 @@ export function AppSidebar({ user }: AppSidebarProps) {
     return (
       <Sidebar>
         <SidebarHeader className="p-4">
-          <Link href="/dashboard/inbox" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Timer className="h-4 w-4" />
-            </div>
-            <span className="font-semibold">ADHD Focus</span>
+          <Link href="/dashboard/hub" className="flex items-center gap-2">
+            <BeatLogo size="sm" />
+            <span className="font-semibold">beatyour8</span>
           </Link>
         </SidebarHeader>
         <SidebarContent>
@@ -153,11 +152,9 @@ export function AppSidebar({ user }: AppSidebarProps) {
   return (
     <Sidebar>
       <SidebarHeader className="p-4">
-        <Link href="/dashboard/inbox" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Timer className="h-4 w-4" />
-          </div>
-          <span className="font-semibold">ADHD Focus</span>
+        <Link href="/dashboard/hub" className="flex items-center gap-2">
+          <BeatLogo size="sm" />
+          <span className="font-semibold">beatyour8</span>
         </Link>
       </SidebarHeader>
 

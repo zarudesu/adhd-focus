@@ -17,7 +17,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Timer, Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
+import { BeatLogo } from '@/components/brand/BeatLogo';
 
 // Animation variants for staggered children
 const containerVariants = {
@@ -79,13 +80,8 @@ function LoginForm() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: 'easeOut' }}
       >
-        <Link href="/" className="flex items-center gap-2 mb-8">
-          <motion.div
-            animate={{ rotate: [0, 10, -10, 0] }}
-            transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-          >
-            <Timer className="h-6 w-6" />
-          </motion.div>
+        <Link href="/" className="flex items-center gap-3 mb-8">
+          <BeatLogo size="sm" />
           <span className="text-xl font-bold">beatyour8</span>
         </Link>
       </motion.div>
