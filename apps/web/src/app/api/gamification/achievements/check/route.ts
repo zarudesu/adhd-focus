@@ -9,9 +9,43 @@ import {
   userFeatures,
   type Achievement,
   type AchievementCondition,
+  type UserPreferences,
 } from '@/db/schema';
 import { eq, notInArray, sql, and, isNotNull } from 'drizzle-orm';
 import { logError } from '@/lib/logger';
+
+// Helper to get day of week and hour in user's timezone
+function getDatePartsInTimezone(date: Date, timezone: string): { dayOfWeek: number; hour: number } {
+  try {
+    // Format the date in the user's timezone to get correct hour and day
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      weekday: 'short',
+      hour: 'numeric',
+      hour12: false,
+    });
+
+    const parts = formatter.formatToParts(date);
+    const weekdayPart = parts.find(p => p.type === 'weekday')?.value || '';
+    const hourPart = parts.find(p => p.type === 'hour')?.value || '0';
+
+    // Map weekday string to number (0=Sunday, 1=Monday, etc.)
+    const weekdayMap: Record<string, number> = {
+      'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6
+    };
+
+    return {
+      dayOfWeek: weekdayMap[weekdayPart] ?? date.getDay(),
+      hour: parseInt(hourPart, 10),
+    };
+  } catch {
+    // Fallback to UTC if timezone is invalid
+    return {
+      dayOfWeek: date.getUTCDay(),
+      hour: date.getUTCHours(),
+    };
+  }
+}
 
 // Task stats from actual completed tasks - used for achievements that require
 // checking specific task properties
@@ -233,8 +267,9 @@ async function getTaskCompletionStats(userId: string, userTimezone: string = 'UT
     if (!task.completedAt) continue;
 
     const completedDate = new Date(task.completedAt);
-    const dayOfWeek = completedDate.getDay();
-    const hour = completedDate.getHours();
+
+    // Get day of week and hour in user's timezone
+    const { dayOfWeek, hour } = getDatePartsInTimezone(completedDate, userTimezone);
 
     // Count by day of week
     stats.byDayOfWeek[dayOfWeek] = (stats.byDayOfWeek[dayOfWeek] ?? 0) + 1;
@@ -242,7 +277,7 @@ async function getTaskCompletionStats(userId: string, userTimezone: string = 'UT
     // Count by hour
     stats.byHour[hour] = (stats.byHour[hour] ?? 0) + 1;
 
-    // Count by period
+    // Count by period (based on user's local time)
     let period: string;
     if (hour >= 5 && hour < 12) period = 'morning';
     else if (hour >= 12 && hour < 17) period = 'afternoon';
@@ -305,7 +340,7 @@ export async function POST(request: Request) {
 
     const userId = session.user.id;
 
-    // Get user stats
+    // Get user stats and preferences (for timezone)
     const [user] = await db
       .select({
         level: users.level,
@@ -318,6 +353,8 @@ export async function POST(request: Request) {
         habitStreak: users.habitStreak,
         longestHabitStreak: users.longestHabitStreak,
         allHabitsCompletedDays: users.allHabitsCompletedDays,
+        // Preferences (for timezone)
+        preferences: users.preferences,
       })
       .from(users)
       .where(eq(users.id, userId))
@@ -376,7 +413,9 @@ export async function POST(request: Request) {
 
     // Second pass: check achievements that need task query (only if there are any)
     if (needsTaskQuery.length > 0) {
-      const taskStats = await getTaskCompletionStats(userId);
+      // Get user's timezone from preferences (default to UTC)
+      const userTimezone = (user.preferences as UserPreferences)?.timezone || 'UTC';
+      const taskStats = await getTaskCompletionStats(userId, userTimezone);
 
       for (const achievement of needsTaskQuery) {
         const condition = achievement.conditionValue as AchievementCondition;
