@@ -1,17 +1,19 @@
 'use client';
 
 /**
- * Achievements Page
- * Design Philosophy: Calm recognition, not celebration
- * Subtle shimmer effects for unlocked achievements
+ * Achievements Page - Redesigned
+ * Two-column layout: list on left, sparkling trophy on right
+ * Trophy shows count of new (unseen) achievements
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { PageHeader } from '@/components/layout/page-header';
 import { ProtectedRoute } from '@/components/gamification/ProtectedRoute';
-import { Trophy, Lock, Check } from 'lucide-react';
+import { Trophy, Lock, Check, Sparkles } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Achievement {
   id: string;
@@ -36,151 +38,211 @@ interface AchievementsData {
   };
 }
 
-const categoryLabels: Record<string, string> = {
-  progress: 'Progress',
-  streak: 'Consistency',
-  mastery: 'Mastery',
-  hidden: 'Hidden',
-  secret: 'Secret',
-  ultra_secret: 'Ultra Secret',
-};
+// LocalStorage key for seen achievements
+const SEEN_ACHIEVEMENTS_KEY = 'adhd-focus-seen-achievements';
+
+function getSeenAchievements(): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  const stored = localStorage.getItem(SEEN_ACHIEVEMENTS_KEY);
+  if (!stored) return new Set();
+  try {
+    return new Set(JSON.parse(stored));
+  } catch {
+    return new Set();
+  }
+}
+
+function markAchievementsSeen(ids: string[]) {
+  const current = getSeenAchievements();
+  ids.forEach(id => current.add(id));
+  localStorage.setItem(SEEN_ACHIEVEMENTS_KEY, JSON.stringify([...current]));
+}
 
 // Get tier based on category and XP reward
 function getAchievementTier(ach: Achievement): 'bronze' | 'silver' | 'gold' {
-  // Secret/ultra_secret/mastery = gold
   if (['mastery', 'secret', 'ultra_secret'].includes(ach.category)) return 'gold';
-  // Streak achievements = silver
   if (ach.category === 'streak') return 'silver';
-  // High XP rewards = gold, medium = silver, low = bronze
   const xp = ach.xpReward || 0;
   if (xp >= 100) return 'gold';
   if (xp >= 50) return 'silver';
   return 'bronze';
 }
 
-// Tier colors for unlocked achievements
-const tierStyles: Record<string, { border: string; bg: string; shimmer: string }> = {
+// Tier styles
+const tierStyles: Record<string, { border: string; bg: string; icon: string }> = {
   bronze: {
     border: 'border-amber-600/30',
     bg: 'bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20',
-    shimmer: 'before:from-amber-200/0 before:via-amber-200/30 before:to-amber-200/0',
+    icon: 'bg-amber-100 dark:bg-amber-900/30',
   },
   silver: {
     border: 'border-slate-400/40',
     bg: 'bg-gradient-to-br from-slate-50 to-zinc-100 dark:from-slate-900/30 dark:to-zinc-900/30',
-    shimmer: 'before:from-slate-200/0 before:via-slate-200/40 before:to-slate-200/0',
+    icon: 'bg-slate-100 dark:bg-slate-800/50',
   },
   gold: {
     border: 'border-yellow-500/40',
     bg: 'bg-gradient-to-br from-yellow-50 to-amber-50 dark:from-yellow-950/30 dark:to-amber-950/30',
-    shimmer: 'before:from-yellow-200/0 before:via-yellow-200/50 before:to-yellow-200/0',
+    icon: 'bg-yellow-100 dark:bg-yellow-900/30',
   },
 };
 
-function AchievementCard({ achievement }: { achievement: Achievement }) {
+function AchievementRow({ achievement, isNew }: { achievement: Achievement; isNew: boolean }) {
+  const tier = getAchievementTier(achievement);
+  const style = tierStyles[tier];
   const progressPercent = achievement.progress
     ? (achievement.progress.current / achievement.progress.target) * 100
     : 0;
 
-  const tier = getAchievementTier(achievement);
-  const style = tierStyles[tier];
-
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
       className={cn(
-        'relative rounded-lg border p-4 transition-all overflow-hidden',
+        'flex items-center gap-3 p-3 rounded-lg border transition-all',
         achievement.isUnlocked
-          ? cn(
-              style.bg,
-              style.border,
-              // Subtle shimmer animation for unlocked
-              'before:absolute before:inset-0 before:bg-gradient-to-r',
-              style.shimmer,
-              'before:animate-shimmer before:-translate-x-full'
-            )
-          : 'bg-muted/30 border-border opacity-60'
+          ? cn(style.bg, style.border)
+          : 'bg-muted/20 border-border/50 opacity-60'
       )}
     >
-      <div className="relative flex items-start gap-3">
-        {/* Icon */}
-        <div
-          className={cn(
-            'flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-xl',
-            achievement.isUnlocked
-              ? tier === 'gold'
-                ? 'bg-yellow-100 dark:bg-yellow-900/30'
-                : tier === 'silver'
-                  ? 'bg-slate-100 dark:bg-slate-800/50'
-                  : 'bg-amber-100 dark:bg-amber-900/30'
-              : 'bg-muted text-muted-foreground'
-          )}
-        >
-          {achievement.isUnlocked ? achievement.icon : <Lock className="h-4 w-4" />}
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <h3 className="font-medium truncate">{achievement.name}</h3>
-            {achievement.isUnlocked && (
-              <Check className="h-4 w-4 text-primary flex-shrink-0" />
-            )}
-          </div>
-          <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2">
-            {achievement.description}
-          </p>
-
-          {/* Progress bar for locked achievements */}
-          {!achievement.isUnlocked && achievement.progress && (
-            <div className="mt-2">
-              <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                <span>Progress</span>
-                <span>
-                  {achievement.progress.current} / {achievement.progress.target}
-                </span>
-              </div>
-              <Progress value={progressPercent} className="h-1" />
-            </div>
-          )}
-
-          {/* Mindfulness reward and unlock date */}
-          <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-            {achievement.xpReward && achievement.xpReward > 0 && (
-              <span>+{achievement.xpReward} mindfulness</span>
-            )}
-            {achievement.isUnlocked && achievement.unlockedAt && (
-              <span>
-                {new Date(achievement.unlockedAt).toLocaleDateString()}
-              </span>
-            )}
-          </div>
-        </div>
+      {/* Icon */}
+      <div
+        className={cn(
+          'flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-lg',
+          achievement.isUnlocked ? style.icon : 'bg-muted text-muted-foreground'
+        )}
+      >
+        {achievement.isUnlocked ? achievement.icon : <Lock className="h-4 w-4" />}
       </div>
-    </div>
+
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="font-medium truncate">{achievement.name}</span>
+          {achievement.isUnlocked && <Check className="h-4 w-4 text-primary flex-shrink-0" />}
+          {isNew && (
+            <Badge variant="default" className="text-[10px] px-1.5 py-0 h-4 bg-primary">
+              NEW
+            </Badge>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground truncate">{achievement.description}</p>
+
+        {/* Progress for locked */}
+        {!achievement.isUnlocked && achievement.progress && (
+          <div className="mt-1.5 flex items-center gap-2">
+            <Progress value={progressPercent} className="h-1 flex-1" />
+            <span className="text-[10px] text-muted-foreground">
+              {achievement.progress.current}/{achievement.progress.target}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Date or XP */}
+      <div className="text-right flex-shrink-0">
+        {achievement.isUnlocked && achievement.unlockedAt ? (
+          <span className="text-xs text-muted-foreground">
+            {new Date(achievement.unlockedAt).toLocaleDateString('ru-RU', {
+              day: 'numeric',
+              month: 'short',
+            })}
+          </span>
+        ) : achievement.xpReward ? (
+          <span className="text-xs text-muted-foreground">+{achievement.xpReward}</span>
+        ) : null}
+      </div>
+    </motion.div>
   );
 }
 
-function CategorySection({
-  category,
-  achievements,
-}: {
-  category: string;
-  achievements: Achievement[];
+// Sparkling Trophy Component
+function SparklingTrophy({ unlockedCount, totalCount, newCount }: {
+  unlockedCount: number;
+  totalCount: number;
+  newCount: number;
 }) {
-  const unlocked = achievements.filter((a) => a.isUnlocked).length;
-
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-3">
-        <h2 className="font-medium">{categoryLabels[category] || category}</h2>
-        <span className="text-sm text-muted-foreground">
-          {unlocked} / {achievements.length}
-        </span>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {achievements.map((ach) => (
-          <AchievementCard key={ach.id} achievement={ach} />
+    <div className="relative flex flex-col items-center justify-center">
+      {/* Sparkle particles */}
+      <div className="absolute inset-0 overflow-hidden">
+        {[...Array(6)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute"
+            style={{
+              left: `${20 + Math.random() * 60}%`,
+              top: `${10 + Math.random() * 60}%`,
+            }}
+            animate={{
+              scale: [0, 1, 0],
+              opacity: [0, 1, 0],
+              rotate: [0, 180],
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              delay: i * 0.4,
+              ease: 'easeInOut',
+            }}
+          >
+            <Sparkles className="h-4 w-4 text-yellow-400" />
+          </motion.div>
         ))}
+      </div>
+
+      {/* Trophy with glow */}
+      <motion.div
+        className="relative"
+        animate={{
+          scale: [1, 1.02, 1],
+        }}
+        transition={{
+          duration: 3,
+          repeat: Infinity,
+          ease: 'easeInOut',
+        }}
+      >
+        {/* Glow effect */}
+        <div className="absolute inset-0 blur-2xl bg-yellow-400/30 rounded-full scale-150" />
+
+        {/* Trophy */}
+        <div className="relative h-32 w-32 flex items-center justify-center rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 shadow-lg shadow-yellow-500/30">
+          <Trophy className="h-16 w-16 text-white drop-shadow-md" />
+        </div>
+
+        {/* New achievements badge */}
+        <AnimatePresence>
+          {newCount > 0 && (
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0 }}
+              className="absolute -top-1 -right-1 h-8 w-8 flex items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold shadow-lg"
+            >
+              {newCount}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+
+      {/* Stats below trophy */}
+      <div className="mt-6 text-center">
+        <motion.div
+          className="text-4xl font-bold"
+          key={unlockedCount}
+          initial={{ scale: 1.2 }}
+          animate={{ scale: 1 }}
+        >
+          {unlockedCount}
+        </motion.div>
+        <div className="text-sm text-muted-foreground">
+          of {totalCount} achievements
+        </div>
+        <Progress
+          value={(unlockedCount / totalCount) * 100}
+          className="w-32 h-1.5 mt-3 mx-auto"
+        />
       </div>
     </div>
   );
@@ -190,6 +252,12 @@ function AchievementsContent() {
   const [data, setData] = useState<AchievementsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    // Load seen achievements from localStorage
+    setSeenIds(getSeenAchievements());
+  }, []);
 
   useEffect(() => {
     async function fetchAchievements() {
@@ -207,14 +275,64 @@ function AchievementsContent() {
     fetchAchievements();
   }, []);
 
+  // Mark all current unlocked achievements as seen when viewing page
+  useEffect(() => {
+    if (data) {
+      const unlockedIds = data.achievements
+        .filter(a => a.isUnlocked)
+        .map(a => a.id);
+
+      // Delay marking as seen so user can see "NEW" badges briefly
+      const timer = setTimeout(() => {
+        markAchievementsSeen(unlockedIds);
+        setSeenIds(getSeenAchievements());
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [data]);
+
+  // Sort achievements: unlocked first (by date desc), then locked
+  const sortedAchievements = useMemo(() => {
+    if (!data) return [];
+
+    return [...data.achievements].sort((a, b) => {
+      // Unlocked first
+      if (a.isUnlocked && !b.isUnlocked) return -1;
+      if (!a.isUnlocked && b.isUnlocked) return 1;
+
+      // Both unlocked: sort by date (most recent first)
+      if (a.isUnlocked && b.isUnlocked) {
+        const dateA = a.unlockedAt ? new Date(a.unlockedAt).getTime() : 0;
+        const dateB = b.unlockedAt ? new Date(b.unlockedAt).getTime() : 0;
+        return dateB - dateA;
+      }
+
+      // Both locked: sort by progress (closest to completion first)
+      if (a.progress && b.progress) {
+        const progressA = a.progress.current / a.progress.target;
+        const progressB = b.progress.current / b.progress.target;
+        return progressB - progressA;
+      }
+
+      return 0;
+    });
+  }, [data]);
+
+  // Count new (unseen) achievements
+  const newCount = useMemo(() => {
+    if (!data) return 0;
+    return data.achievements.filter(a => a.isUnlocked && !seenIds.has(a.id)).length;
+  }, [data, seenIds]);
+
   if (loading) {
     return (
       <>
         <PageHeader title="Achievements" description="Track your progress" />
-        <main className="p-4 space-y-6">
-          <div className="animate-pulse space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-24 bg-muted rounded-lg" />
+        <main className="p-4">
+          <div className="animate-pulse space-y-3">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="h-16 bg-muted rounded-lg" />
             ))}
           </div>
         </main>
@@ -235,105 +353,52 @@ function AchievementsContent() {
     );
   }
 
-  // Separate unlocked and locked achievements
-  const unlockedAchievements = data.achievements.filter(a => a.isUnlocked);
-  const lockedWithProgress = data.achievements.filter(a => !a.isUnlocked && a.progress);
-  const lockedNoProgress = data.achievements.filter(a => !a.isUnlocked && !a.progress);
-
-  // Sort unlocked by tier (gold first) then by unlock date
-  const tierOrder = { gold: 0, silver: 1, bronze: 2 };
-  unlockedAchievements.sort((a, b) => {
-    const tierDiff = tierOrder[getAchievementTier(a)] - tierOrder[getAchievementTier(b)];
-    if (tierDiff !== 0) return tierDiff;
-    // Then by unlock date (most recent first)
-    const dateA = a.unlockedAt ? new Date(a.unlockedAt).getTime() : 0;
-    const dateB = b.unlockedAt ? new Date(b.unlockedAt).getTime() : 0;
-    return dateB - dateA;
-  });
-
   return (
     <>
       <PageHeader
         title="Achievements"
         description={`${data.stats.unlocked} of ${data.stats.visible} unlocked`}
       />
-      <main className="p-4 space-y-8">
-        {/* Summary card - simple */}
-        <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50 border">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-            <Trophy className="h-6 w-6 text-muted-foreground" />
+      <main className="p-4">
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Left: Achievement list */}
+          <div className="flex-1 space-y-2 order-2 lg:order-1">
+            <AnimatePresence>
+              {sortedAchievements.map((ach, index) => (
+                <motion.div
+                  key={ach.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.03 }}
+                >
+                  <AchievementRow
+                    achievement={ach}
+                    isNew={ach.isUnlocked && !seenIds.has(ach.id)}
+                  />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+
+            {/* Hidden achievements hint */}
+            {data.stats.total > data.stats.visible && (
+              <div className="text-center py-4 text-sm text-muted-foreground">
+                <span className="inline-flex items-center gap-2">
+                  <Lock className="h-4 w-4" />
+                  {data.stats.total - data.stats.visible} hidden achievements
+                </span>
+              </div>
+            )}
           </div>
-          <div>
-            <div className="text-2xl font-bold">
-              {data.stats.unlocked} / {data.stats.visible}
-            </div>
-            <div className="text-sm text-muted-foreground">Achievements</div>
-          </div>
-          <div className="ml-auto">
-            <Progress value={(data.stats.unlocked / data.stats.visible) * 100} className="w-24 h-1.5" />
+
+          {/* Right: Sparkling Trophy */}
+          <div className="lg:w-64 flex items-start justify-center order-1 lg:order-2 py-8 lg:py-12 lg:sticky lg:top-4">
+            <SparklingTrophy
+              unlockedCount={data.stats.unlocked}
+              totalCount={data.stats.visible}
+              newCount={newCount}
+            />
           </div>
         </div>
-
-        {/* Unlocked achievements - shown first */}
-        {unlockedAchievements.length > 0 && (
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <h2 className="font-medium">Unlocked</h2>
-              <span className="text-sm text-muted-foreground">
-                {unlockedAchievements.length}
-              </span>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {unlockedAchievements.map((ach) => (
-                <AchievementCard key={ach.id} achievement={ach} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* In Progress achievements */}
-        {lockedWithProgress.length > 0 && (
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <h2 className="font-medium">In Progress</h2>
-              <span className="text-sm text-muted-foreground">
-                {lockedWithProgress.length}
-              </span>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {lockedWithProgress.map((ach) => (
-                <AchievementCard key={ach.id} achievement={ach} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Locked achievements */}
-        {lockedNoProgress.length > 0 && (
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <h2 className="font-medium">Locked</h2>
-              <span className="text-sm text-muted-foreground">
-                {lockedNoProgress.length}
-              </span>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {lockedNoProgress.map((ach) => (
-                <AchievementCard key={ach.id} achievement={ach} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Hidden achievements hint */}
-        {data.stats.total > data.stats.visible && (
-          <div className="text-center py-4 text-sm text-muted-foreground">
-            <span className="inline-flex items-center gap-2">
-              <Lock className="h-4 w-4" />
-              {data.stats.total - data.stats.visible} hidden achievements
-            </span>
-          </div>
-        )}
       </main>
     </>
   );

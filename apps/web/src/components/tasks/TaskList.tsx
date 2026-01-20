@@ -2,9 +2,10 @@
 
 import type { ReactNode } from 'react';
 import type { Task } from '@/db/schema';
-import { TaskCard, TaskCardProps } from './TaskCard';
+import { TaskCard } from './TaskCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export interface TaskListProps {
   tasks: Task[];
@@ -21,6 +22,30 @@ export interface TaskListProps {
   onTaskClick?: (task: Task) => void;
   className?: string;
 }
+
+// Animation variants for task cards
+const taskVariants = {
+  initial: { opacity: 0, y: -10, scale: 0.95 },
+  animate: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      type: 'spring' as const,
+      stiffness: 500,
+      damping: 30,
+    }
+  },
+  exit: {
+    opacity: 0,
+    scale: 0.9,
+    x: 20,
+    transition: {
+      duration: 0.2,
+      ease: 'easeOut' as const,
+    }
+  },
+};
 
 export function TaskList({
   tasks,
@@ -52,44 +77,61 @@ export function TaskList({
   if (tasks.length === 0) {
     return (
       <div className={cn('flex flex-col items-center justify-center py-12 text-center', className)}>
-        <div className="rounded-full bg-muted p-3 mb-3">
-          <svg
-            className="h-6 w-6 text-muted-foreground"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-            />
-          </svg>
-        </div>
-        <p className="text-sm font-medium text-muted-foreground">{emptyMessage}</p>
-        <p className="text-xs text-muted-foreground mt-1">{emptyDescription}</p>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="flex flex-col items-center"
+        >
+          <div className="rounded-full bg-muted p-3 mb-3">
+            <svg
+              className="h-6 w-6 text-muted-foreground"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+              />
+            </svg>
+          </div>
+          <p className="text-sm font-medium text-muted-foreground">{emptyMessage}</p>
+          <p className="text-xs text-muted-foreground mt-1">{emptyDescription}</p>
+        </motion.div>
         {emptyAction}
       </div>
     );
   }
 
-  // Task list
+  // Task list with animations
   return (
     <div className={cn('space-y-2', className)}>
-      {tasks.map((task) => (
-        <TaskCard
-          key={task.id}
-          task={task}
-          onComplete={onComplete}
-          onUncomplete={onUncomplete}
-          onDelete={onDelete}
-          onMoveToToday={onMoveToToday}
-          onMoveToInbox={onMoveToInbox}
-          onStartFocus={onStartFocus}
-          onClick={onTaskClick}
-        />
-      ))}
+      <AnimatePresence mode="popLayout" initial={false}>
+        {tasks.map((task) => (
+          <motion.div
+            key={task.id}
+            layout
+            variants={taskVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+          >
+            <TaskCard
+              task={task}
+              onComplete={onComplete}
+              onUncomplete={onUncomplete}
+              onDelete={onDelete}
+              onMoveToToday={onMoveToToday}
+              onMoveToInbox={onMoveToInbox}
+              onStartFocus={onStartFocus}
+              onClick={onTaskClick}
+            />
+          </motion.div>
+        ))}
+      </AnimatePresence>
     </div>
   );
 }
