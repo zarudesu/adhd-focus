@@ -75,7 +75,7 @@ const NAV_ITEMS: NavItem[] = [
     gradient: 'from-green-500/20 to-green-600/10',
   },
   {
-    code: 'focus_mode',
+    code: 'nav_focus',
     href: '/dashboard/focus',
     icon: Timer,
     label: 'Focus',
@@ -83,7 +83,7 @@ const NAV_ITEMS: NavItem[] = [
     gradient: 'from-rose-500/20 to-rose-600/10',
   },
   {
-    code: 'achievements',
+    code: 'nav_achievements',
     href: '/dashboard/achievements',
     icon: Trophy,
     label: 'Achievements',
@@ -91,7 +91,7 @@ const NAV_ITEMS: NavItem[] = [
     gradient: 'from-yellow-500/20 to-yellow-600/10',
   },
   {
-    code: 'creatures',
+    code: 'nav_creatures',
     href: '/dashboard/creatures',
     icon: Sparkles,
     label: 'Creatures',
@@ -99,7 +99,7 @@ const NAV_ITEMS: NavItem[] = [
     gradient: 'from-pink-500/20 to-pink-600/10',
   },
   {
-    code: 'stats',
+    code: 'nav_stats',
     href: '/dashboard/stats',
     icon: BarChart3,
     label: 'Statistics',
@@ -124,18 +124,16 @@ const item = {
 };
 
 export default function HubPage() {
-  const { navFeatures, isUnlocked, loading } = useFeatures();
+  const { navFeatures, loading } = useFeatures();
 
-  // Check if a nav item is unlocked
+  // Check if a nav item is unlocked (all items now use nav_ prefix)
   const isNavItemUnlocked = (code: string): boolean => {
-    // nav_ prefixed items use navFeatures
-    if (code.startsWith('nav_')) {
-      const feature = navFeatures.find(f => f.code === code);
-      return feature?.isUnlocked ?? (code === 'nav_inbox');
-    }
-    // Other features use isUnlocked
-    return isUnlocked(code);
+    const feature = navFeatures.find(f => f.code === code);
+    return feature?.isUnlocked ?? (code === 'nav_inbox');
   };
+
+  // Count locked items to show hint
+  const lockedCount = NAV_ITEMS.filter(item => !isNavItemUnlocked(item.code)).length;
 
   return (
     <div className="flex-1 flex items-center justify-center p-4 min-h-[calc(100vh-4rem)]">
@@ -228,6 +226,18 @@ export default function HubPage() {
             </Link>
           </motion.div>
         </motion.div>
+
+        {/* Progressive unlock hint */}
+        {lockedCount > 0 && (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="text-center text-sm text-muted-foreground mt-8"
+          >
+            Just start with the basics — more features unlock as you go.
+          </motion.p>
+        )}
       </div>
     </div>
   );
