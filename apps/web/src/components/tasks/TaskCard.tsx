@@ -220,19 +220,19 @@ export function TaskCard({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           {onStartFocus && task.status !== 'done' && (
-            <DropdownMenuItem onClick={() => onStartFocus(task.id)}>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStartFocus(task.id); }}>
               <Play className="h-4 w-4 mr-2" />
               Start Focus
             </DropdownMenuItem>
           )}
           {onMoveToToday && task.status === 'inbox' && (
-            <DropdownMenuItem onClick={() => onMoveToToday(task.id)}>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMoveToToday(task.id); }}>
               <Sun className="h-4 w-4 mr-2" />
               Move to Today
             </DropdownMenuItem>
           )}
           {onMoveToInbox && task.status !== 'inbox' && task.status !== 'done' && (
-            <DropdownMenuItem onClick={() => onMoveToInbox(task.id)}>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMoveToInbox(task.id); }}>
               <Inbox className="h-4 w-4 mr-2" />
               Move to Inbox
             </DropdownMenuItem>
@@ -241,14 +241,14 @@ export function TaskCard({
             <DropdownMenuSeparator />
           )}
           {onArchive && task.status === 'done' && (
-            <DropdownMenuItem onClick={() => onArchive(task.id)}>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onArchive(task.id); }}>
               <Archive className="h-4 w-4 mr-2" />
               Archive
             </DropdownMenuItem>
           )}
           {onDelete && (
             <DropdownMenuItem
-              onClick={() => onDelete(task.id)}
+              onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
               className="text-destructive focus:text-destructive"
             >
               <Trash2 className="h-4 w-4 mr-2" />

@@ -11,12 +11,13 @@ import { useGamificationEvents } from "@/components/gamification/GamificationPro
 import { EndOfDayReview, CloseDayButton } from "@/components/gamification/EndOfDayReview";
 import { TodayIntro, useTodayIntro } from "@/components/gamification/TodayIntro";
 import type { Task } from "@/db/schema";
-import { Inbox, Eye, EyeOff } from "lucide-react";
+import { Inbox, Eye, EyeOff, Plus } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 const MAX_DAILY_TASKS = 3;
 
 function TodayContent() {
+  const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [showEndOfDay, setShowEndOfDay] = useState(false);
   const [hideCompleted, setHideCompleted] = useState(false);
@@ -36,6 +37,7 @@ function TodayContent() {
     deleteTask,
     moveToInbox,
     update,
+    create,
   } = useTasks();
   const { handleTaskComplete, showCalmReview, state } = useGamificationEvents();
 
@@ -132,6 +134,10 @@ function TodayContent() {
                 )}
               </Button>
             )}
+            <Button size="sm" onClick={() => setShowAddDialog(true)}>
+              <Plus className="h-4 w-4 mr-1" />
+              Quick Add
+            </Button>
             <CloseDayButton onClick={() => setShowEndOfDay(true)} />
           </div>
         }
@@ -154,6 +160,16 @@ function TodayContent() {
           />
         )}
       </AnimatePresence>
+
+      {/* Add Task Dialog */}
+      <AddTaskDialog
+        open={showAddDialog}
+        onOpenChange={setShowAddDialog}
+        onSubmit={async (input) => {
+          await create(input);
+        }}
+        defaultStatus="today"
+      />
 
       {/* Edit Task Dialog */}
       <AddTaskDialog

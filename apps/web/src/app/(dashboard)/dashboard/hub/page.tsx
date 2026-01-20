@@ -302,6 +302,11 @@ export default function HubPage() {
       .map((code) => NAV_CONFIG[code]);
   }, [order]);
 
+  // Only unlocked items should be in sortable context
+  const sortableItems = useMemo(() => {
+    return order.filter((code) => isNavItemUnlocked(code));
+  }, [order, navFeatures]);
+
   // Handle drag end
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -344,7 +349,7 @@ export default function HubPage() {
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
         >
-          <SortableContext items={order} strategy={rectSortingStrategy}>
+          <SortableContext items={sortableItems} strategy={rectSortingStrategy}>
             <motion.div
               className="grid grid-cols-2 sm:grid-cols-3 gap-3"
               initial={{ opacity: 0 }}
