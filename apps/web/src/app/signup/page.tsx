@@ -64,7 +64,7 @@ function SignupForm() {
   const searchParams = useSearchParams();
   const syncPending = searchParams.get('sync') === 'pending';
   // If we have pending tasks, redirect to sync page after registration
-  const callbackUrl = syncPending ? '/sync' : (searchParams.get('callbackUrl') || '/dashboard');
+  const callbackUrl = syncPending ? '/sync' : (searchParams.get('callbackUrl') || '/dashboard/hub');
   const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {

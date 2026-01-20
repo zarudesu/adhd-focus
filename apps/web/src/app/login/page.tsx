@@ -61,7 +61,7 @@ const cardVariants = {
 
 function LoginForm() {
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard/hub';
   const urlError = searchParams.get('error');
 
   const [state, formAction, isPending] = useActionState<AuthState | undefined, FormData>(

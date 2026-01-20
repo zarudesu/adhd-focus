@@ -26,7 +26,7 @@ export default function SyncPage() {
     async function syncTasks() {
       // No pending tasks? Just redirect
       if (!hasPendingTasks()) {
-        router.replace('/dashboard/inbox');
+        router.replace('/dashboard/hub');
         return;
       }
 
@@ -58,13 +58,13 @@ export default function SyncPage() {
 
         // Short delay to show success, then redirect
         setTimeout(() => {
-          router.replace('/dashboard/inbox');
+          router.replace('/dashboard/hub');
         }, 1500);
       } catch {
         setStatus('error');
         // Still redirect on error
         setTimeout(() => {
-          router.replace('/dashboard/inbox');
+          router.replace('/dashboard/hub');
         }, 2000);
       }
     }

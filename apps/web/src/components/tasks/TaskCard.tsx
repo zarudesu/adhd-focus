@@ -22,6 +22,7 @@ import {
   Play,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useFeatures } from '@/hooks/useFeatures';
 
 type EnergyLevel = 'low' | 'medium' | 'high';
 type Priority = 'must' | 'should' | 'want' | 'someday';
@@ -65,8 +66,13 @@ export function TaskCard({
   showProject = false,
 }: TaskCardProps) {
   const [isCompleting, setIsCompleting] = useState(false);
+  const { isUnlocked } = useFeatures();
   const isCompleted = task.status === 'done';
   const isInProgress = task.status === 'in_progress';
+
+  // Feature gating for badges
+  const showEnergyBadge = isUnlocked('energy');
+  const showPriorityBadge = isUnlocked('priority');
 
   const handleComplete = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -147,16 +153,18 @@ export function TaskCard({
 
         {/* Meta info */}
         <div className="mt-1.5 flex flex-wrap items-center gap-2">
-          {/* Energy badge */}
-          <Badge
-            variant="secondary"
-            className={cn('text-xs px-1.5 py-0', ENERGY_CONFIG[energyRequired].className)}
-          >
-            {ENERGY_CONFIG[energyRequired].label}
-          </Badge>
+          {/* Energy badge - only show if feature unlocked */}
+          {showEnergyBadge && (
+            <Badge
+              variant="secondary"
+              className={cn('text-xs px-1.5 py-0', ENERGY_CONFIG[energyRequired].className)}
+            >
+              {ENERGY_CONFIG[energyRequired].label}
+            </Badge>
+          )}
 
-          {/* Priority badge (only show must/should) */}
-          {(priority === 'must' || priority === 'should') && (
+          {/* Priority badge (only show must/should) - only if feature unlocked */}
+          {showPriorityBadge && (priority === 'must' || priority === 'should') && (
             <Badge
               variant="secondary"
               className={cn('text-xs px-1.5 py-0', PRIORITY_CONFIG[priority].className)}
