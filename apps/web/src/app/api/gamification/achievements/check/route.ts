@@ -182,7 +182,7 @@ function checkTaskBasedCondition(
 }
 
 // Query actual task completion data for a user
-async function getTaskCompletionStats(userId: string): Promise<TaskCompletionStats> {
+async function getTaskCompletionStats(userId: string, userTimezone: string = 'UTC'): Promise<TaskCompletionStats> {
   // Get all completed tasks with their completion timestamps
   const completedTasks = await db
     .select({
