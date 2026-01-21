@@ -198,7 +198,7 @@ export function TaskCard({
           )}
 
           {/* Pomodoros completed */}
-          {task.pomodorosCompleted && task.pomodorosCompleted > 0 && (
+          {task.pomodorosCompleted != null && task.pomodorosCompleted > 0 && (
             <span className="text-xs text-muted-foreground">
               {task.pomodorosCompleted} pom
             </span>
