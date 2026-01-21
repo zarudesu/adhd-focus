@@ -11,7 +11,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { useFeatures } from "@/hooks/useFeatures";
 import { useGamificationEvents } from "@/components/gamification/GamificationProvider";
 import type { Task } from "@/db/schema";
-import { Plus, Sparkles, AlertTriangle, EyeOff, Eye } from "lucide-react";
+import { Plus, Sparkles, EyeOff, Eye } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 
@@ -23,8 +23,6 @@ const LANDING_PAGE_ROUTES: Record<string, { route: string; featureCode: string }
   projects: { route: '/dashboard/projects', featureCode: 'nav_projects' },
   completed: { route: '/dashboard/completed', featureCode: 'nav_completed' },
 };
-
-const MAX_INBOX_BEFORE_WARNING = 10;
 
 export default function InboxPage() {
   const router = useRouter();
@@ -89,7 +87,6 @@ export default function InboxPage() {
     });
   }, [complete, handleTaskComplete]);
 
-  const showWarning = inboxTasks.length >= MAX_INBOX_BEFORE_WARNING;
   const estimatedMinutes = Math.ceil(inboxTasks.length * 0.5); // ~30 sec per task
 
   const handleStartProcessing = () => {
@@ -110,7 +107,7 @@ export default function InboxPage() {
             {inboxTasks.length > 0 && navFeatures.find(f => f.code === 'nav_process')?.isUnlocked && (
               <Button size="sm" variant="secondary" onClick={handleStartProcessing}>
                 <Sparkles className="h-4 w-4 mr-1" />
-                Process ({inboxTasks.length})
+                Triage ({inboxTasks.length})
               </Button>
             )}
           </div>
@@ -161,30 +158,34 @@ export default function InboxPage() {
           </div>
         )}
 
-        {/* Process hint - explain what "process" means (only show if feature unlocked) */}
+        {/* Big centered buttons when Process is unlocked */}
         {inboxTasks.length >= 3 && navFeatures.find(f => f.code === 'nav_process')?.isUnlocked && (
-          <Card className="border border-muted bg-muted/30">
-            <CardContent className="p-3">
-              <p className="text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">Разгребание</span> — go through each item one by one, decide what to do: schedule it, do it now, or delete. Takes ~{estimatedMinutes} min.
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Warning */}
-        {showWarning && (
-          <div className="flex items-start gap-3 p-3 text-sm text-amber-700 bg-amber-50 rounded-lg border border-amber-200">
-            <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="font-medium">Inbox getting full!</p>
-              <p className="text-amber-600">
-                {inboxTasks.length} items can feel overwhelming.
-                Process them now to clear your mind.
-              </p>
+          <div className="flex flex-col items-center gap-4 py-6">
+            <div className="flex gap-3">
+              <Button
+                size="lg"
+                onClick={() => setShowAddDialog(true)}
+                className="h-14 px-6 text-base gap-2"
+              >
+                <Plus className="h-5 w-5" />
+                Add a thought
+              </Button>
+              <Button
+                size="lg"
+                variant="secondary"
+                onClick={handleStartProcessing}
+                className="h-14 px-6 text-base gap-2"
+              >
+                <Sparkles className="h-5 w-5" />
+                Triage ({inboxTasks.length})
+              </Button>
             </div>
+            <p className="text-sm text-muted-foreground text-center max-w-md">
+              <span className="font-medium text-foreground">Triage</span> — go through each item one by one, decide what to do: schedule it, do it now, or delete. Takes ~{estimatedMinutes} min.
+            </p>
           </div>
         )}
+
 
         {/* Task list */}
         <div>

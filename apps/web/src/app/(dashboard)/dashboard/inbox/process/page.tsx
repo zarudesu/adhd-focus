@@ -27,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { AddTaskDialog } from '@/components/tasks';
 import { useTasks } from '@/hooks/useTasks';
 import { useProjects } from '@/hooks/useProjects';
@@ -40,9 +41,9 @@ import {
   ChevronLeft,
   CheckCircle2,
   Loader2,
-  Pencil,
   Check,
   FolderKanban,
+  Plus,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -59,7 +60,7 @@ export default function InboxProcessPage() {
     complete,
     update,
   } = useTasks();
-  const { projects } = useProjects();
+  const { projects, create: createProject } = useProjects();
   const { handleTaskComplete } = useGamificationEvents();
 
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -69,6 +70,8 @@ export default function InboxProcessPage() {
   const [processedCount, setProcessedCount] = useState(0);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
+  const [creatingProject, setCreatingProject] = useState(false);
+  const [newProjectName, setNewProjectName] = useState('');
 
   const totalTasks = inboxTasks.length + processedCount;
 
@@ -190,6 +193,19 @@ export default function InboxProcessPage() {
     }
   };
 
+  // Create new project inline
+  const handleCreateProject = async () => {
+    if (!newProjectName.trim()) return;
+    try {
+      const newProject = await createProject({ name: newProjectName.trim() });
+      setSelectedProject(newProject.id);
+      setNewProjectName('');
+      setCreatingProject(false);
+    } catch {
+      // Handle error silently
+    }
+  };
+
   // Check if "Next" conditions are met (project assigned)
   const canProceed = selectedProject !== null;
 
@@ -285,56 +301,84 @@ export default function InboxProcessPage() {
       <main className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md space-y-4">
 
-          {/* Task card - green border, clean content */}
-          <Card className={cn(
-            "border-2 border-primary/50 bg-primary/5",
-            "transition-all"
-          )}>
+          {/* Task card - clickable for edit, only shows task text */}
+          <Card
+            className={cn(
+              "border-2 border-primary/50 bg-primary/5",
+              "transition-all cursor-pointer hover:border-primary"
+            )}
+            onClick={handleEdit}
+          >
             <CardContent className="p-6">
               {/* Task title */}
-              <h2 className="text-xl font-semibold mb-2">{currentTask?.title}</h2>
+              <h2 className="text-xl font-semibold">{currentTask?.title}</h2>
 
               {/* Description if exists */}
               {currentTask?.description && (
-                <p className="text-muted-foreground text-sm mb-4">
+                <p className="text-muted-foreground text-sm mt-2">
                   {currentTask.description}
                 </p>
               )}
-
-              {/* Project selector inside card */}
-              <div className="flex items-center gap-2">
-                <FolderKanban className="h-4 w-4 text-muted-foreground" />
-                <Select
-                  value={selectedProject || "none"}
-                  onValueChange={(v) => setSelectedProject(v === "none" ? null : v)}
-                >
-                  <SelectTrigger className="flex-1 h-9">
-                    <SelectValue placeholder="Select project..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No project</SelectItem>
-                    {projects.map((project) => (
-                      <SelectItem key={project.id} value={project.id}>
-                        {project.emoji} {project.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
             </CardContent>
           </Card>
 
-          {/* Quick actions row - edit, complete, delete */}
+          {/* Project selector - outside card */}
+          <div className="flex items-center gap-2">
+            <FolderKanban className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            {creatingProject ? (
+              <div className="flex-1 flex gap-2">
+                <Input
+                  autoFocus
+                  placeholder="Project name..."
+                  value={newProjectName}
+                  onChange={(e) => setNewProjectName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleCreateProject();
+                    if (e.key === 'Escape') {
+                      setCreatingProject(false);
+                      setNewProjectName('');
+                    }
+                  }}
+                  className="h-10"
+                />
+                <Button size="sm" onClick={handleCreateProject} disabled={!newProjectName.trim()}>
+                  <Check className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <Select
+                value={selectedProject || "none"}
+                onValueChange={(v) => {
+                  if (v === "create") {
+                    setCreatingProject(true);
+                  } else {
+                    setSelectedProject(v === "none" ? null : v);
+                  }
+                }}
+              >
+                <SelectTrigger className="flex-1 h-10">
+                  <SelectValue placeholder="Select project..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No project</SelectItem>
+                  {projects.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.emoji} {project.name}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="create" className="text-primary">
+                    <span className="flex items-center gap-2">
+                      <Plus className="h-4 w-4" />
+                      Create project
+                    </span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+
+          {/* Quick actions row - complete, delete */}
           <div className="flex justify-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleEdit}
-              disabled={processing}
-            >
-              <Pencil className="h-4 w-4 mr-1" />
-              Edit
-            </Button>
             <Button
               variant="outline"
               size="sm"
