@@ -17,6 +17,7 @@ import {
   Trophy,
   Zap,
   Ghost,
+  Sparkles,
 } from "lucide-react";
 import { BeatLogo } from "@/components/brand/BeatLogo";
 
@@ -48,6 +49,7 @@ import {
 // Map nav codes to URLs and icons
 const NAV_CONFIG: Record<string, { url: string; icon: typeof Sun; group: 'tasks' | 'tools' }> = {
   nav_inbox: { url: "/dashboard/inbox", icon: Inbox, group: 'tasks' },
+  nav_process: { url: "/dashboard/inbox/process", icon: Sparkles, group: 'tasks' },
   nav_today: { url: "/dashboard", icon: Sun, group: 'tasks' },
   nav_scheduled: { url: "/dashboard/scheduled", icon: Calendar, group: 'tasks' },
   nav_projects: { url: "/dashboard/projects", icon: Folder, group: 'tasks' },
@@ -84,7 +86,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
     .filter(f => NAV_CONFIG[f.code]?.group === 'tasks')
     .sort((a, b) => {
       // Sort by predefined order
-      const order = ['nav_inbox', 'nav_today', 'nav_scheduled', 'nav_projects', 'nav_completed', 'nav_checklist'];
+      const order = ['nav_inbox', 'nav_process', 'nav_today', 'nav_scheduled', 'nav_projects', 'nav_completed', 'nav_checklist'];
       return order.indexOf(a.code) - order.indexOf(b.code);
     });
 

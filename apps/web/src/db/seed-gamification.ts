@@ -27,6 +27,19 @@ async function seedFeatures() {
       // No unlock conditions = always available
     },
 
+    // Process mode - unlocks after first task added (need something to process)
+    {
+      code: 'nav_process',
+      name: 'Process',
+      description: 'Clear your inbox systematically',
+      celebrationText: '🧹 Process mode unlocked! Clear your mind, one task at a time.',
+      icon: 'Sparkles',
+      category: 'navigation',
+      isNavItem: true,
+      unlockTasksAdded: 1,
+      sortOrder: 2, // After Inbox, will be sorted by code order in sidebar
+    },
+
     // After 3 tasks added - first achievement triggers this
     {
       code: 'nav_achievements',

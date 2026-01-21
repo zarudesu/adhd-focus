@@ -30,7 +30,10 @@ export function LevelProgress({ compact = false }: LevelProgressProps) {
     return null;
   }
 
-  const { xpInLevel, xpNeeded, progress } = levelProgress;
+  // Ensure we never show 0/0 - minimum xpNeeded is 100 (XP per level)
+  const xpInLevel = levelProgress.xpInLevel;
+  const xpNeeded = levelProgress.xpNeeded || 100;
+  const progress = levelProgress.progress;
 
   if (compact) {
     return (

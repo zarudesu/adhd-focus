@@ -102,10 +102,18 @@ export default function InboxPage() {
         title="Inbox"
         description={`Quick capture, process later (${inboxTasks.length} items)`}
         actions={
-          <Button size="sm" onClick={() => setShowAddDialog(true)}>
-            <Plus className="h-4 w-4 mr-1" />
-            Quick Add
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button size="sm" onClick={() => setShowAddDialog(true)}>
+              <Plus className="h-4 w-4 mr-1" />
+              Add
+            </Button>
+            {inboxTasks.length > 0 && (
+              <Button size="sm" variant="secondary" onClick={handleStartProcessing}>
+                <Sparkles className="h-4 w-4 mr-1" />
+                Process ({inboxTasks.length})
+              </Button>
+            )}
+          </div>
         }
       />
 
@@ -153,29 +161,13 @@ export default function InboxPage() {
           </div>
         )}
 
-        {/* Process CTA */}
-        {inboxTasks.length > 0 && (
-          <Card className="border-2 border-primary/20 bg-primary/5">
-            <CardContent className="p-4">
-              <div className="flex flex-col sm:flex-row items-center gap-4">
-                <div className="flex-1 text-center sm:text-left">
-                  <h3 className="font-semibold flex items-center justify-center sm:justify-start gap-2">
-                    <Sparkles className="h-4 w-4 text-primary" />
-                    Ready to process?
-                  </h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {inboxTasks.length} items • Takes ~{estimatedMinutes} min
-                  </p>
-                </div>
-                <Button
-                  size="lg"
-                  onClick={handleStartProcessing}
-                  className="w-full sm:w-auto"
-                >
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Process All ({inboxTasks.length})
-                </Button>
-              </div>
+        {/* Process hint - explain what "process" means */}
+        {inboxTasks.length >= 3 && (
+          <Card className="border border-muted bg-muted/30">
+            <CardContent className="p-3">
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">Разгребание</span> — go through each item one by one, decide what to do: schedule it, do it now, or delete. Takes ~{estimatedMinutes} min.
+              </p>
             </CardContent>
           </Card>
         )}
