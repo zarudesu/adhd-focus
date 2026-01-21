@@ -121,12 +121,19 @@ export async function GET() {
       .from(features)
       .orderBy(features.sortOrder);
 
-    // Get manually unlocked features from user_feature table
+    // Get manually unlocked features from user_feature table (including firstOpenedAt)
     const manuallyUnlocked = await db
-      .select({ featureCode: userFeatures.featureCode })
+      .select({
+        featureCode: userFeatures.featureCode,
+        firstOpenedAt: userFeatures.firstOpenedAt,
+      })
       .from(userFeatures)
       .where(eq(userFeatures.userId, userId));
     const manuallyUnlockedSet = new Set(manuallyUnlocked.map(f => f.featureCode));
+    // Map of featureCode -> firstOpenedAt for determining if feature is "new"
+    const featureOpenedMap = new Map(
+      manuallyUnlocked.map(f => [f.featureCode, f.firstOpenedAt])
+    );
 
     // Build user progress object
     const userProgress = {
@@ -149,6 +156,7 @@ export async function GET() {
       icon: string | null;
       isUnlocked: boolean;
       celebrationText: string | null;
+      firstOpenedAt: Date | null; // null = never opened, shows shimmer
     }> = [];
 
     for (const feature of allFeatures) {
@@ -167,6 +175,8 @@ export async function GET() {
           icon: feature.icon,
           isUnlocked,
           celebrationText: feature.celebrationText,
+          // firstOpenedAt: null means never opened (shows shimmer)
+          firstOpenedAt: featureOpenedMap.get(feature.code) || null,
         });
       }
     }

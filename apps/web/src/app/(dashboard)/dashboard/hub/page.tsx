@@ -43,7 +43,7 @@ import {
   Zap,
   GripVertical,
 } from 'lucide-react';
-import { useFeatures } from '@/hooks/useFeatures';
+import { useGamificationEvents } from '@/components/gamification/GamificationProvider';
 import { cn } from '@/lib/utils';
 
 interface NavItemConfig {
@@ -186,9 +186,13 @@ const STORAGE_KEY = 'hub-nav-order';
 function SortableNavCard({
   navItem,
   isUnlocked,
+  isNew,
+  onOpen,
 }: {
   navItem: NavItemConfig;
   isUnlocked: boolean;
+  isNew?: boolean;
+  onOpen?: () => void;
 }) {
   const {
     attributes,
@@ -242,6 +246,13 @@ function SortableNavCard({
     );
   }
 
+  // Handle click to mark feature as opened (stops shimmer)
+  const handleClick = () => {
+    if (isNew && onOpen) {
+      onOpen();
+    }
+  };
+
   return (
     <div ref={setNodeRef} style={style} className="relative group">
       {/* Drag handle - visible on hover */}
@@ -258,7 +269,7 @@ function SortableNavCard({
         <GripVertical className="h-3 w-3 text-muted-foreground" />
       </div>
 
-      <Link href={navItem.href}>
+      <Link href={navItem.href} onClick={handleClick}>
         <div
           className={cn(
             'relative p-4 rounded-xl border bg-gradient-to-br',
@@ -266,7 +277,8 @@ function SortableNavCard({
             'flex flex-col items-center justify-center text-center',
             'transition-all hover:scale-[1.02] hover:shadow-lg hover:border-primary/30',
             'cursor-pointer min-h-[120px]',
-            isCurrentlyDragging && 'shadow-xl scale-105 opacity-90'
+            isCurrentlyDragging && 'shadow-xl scale-105 opacity-90',
+            isNew && 'animate-feature-shimmer'
           )}
         >
           <Icon className="h-8 w-8 mb-2 text-primary" />
@@ -300,7 +312,7 @@ function loadSavedOrder(): string[] {
 }
 
 export default function HubPage() {
-  const { navFeatures } = useFeatures();
+  const { navFeatures, isNewlyUnlocked, markFeatureOpened } = useGamificationEvents();
   // Use lazy initializer to load from localStorage without effect
   const [order, setOrder] = useState<string[]>(loadSavedOrder);
   const [mounted, setMounted] = useState(false);
@@ -399,6 +411,8 @@ export default function HubPage() {
                   key={navItem.code}
                   navItem={navItem}
                   isUnlocked={isNavItemUnlocked(navItem.code)}
+                  isNew={isNewlyUnlocked(navItem.code)}
+                  onOpen={() => markFeatureOpened(navItem.code)}
                 />
               ))}
             </motion.div>

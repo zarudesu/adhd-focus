@@ -325,6 +325,9 @@ export const userFeatures = pgTable("user_feature", {
     .references(() => users.id, { onDelete: "cascade" }),
   featureCode: text("feature_code").notNull(),
   unlockedAt: timestamp("unlocked_at").defaultNow(),
+  // Track when user first opened this feature (for tutorial + shimmer effect)
+  // null = never opened, shows shimmer animation
+  firstOpenedAt: timestamp("first_opened_at"),
 }, (table) => [
   index("user_feature_user_id_idx").on(table.userId),
   uniqueIndex("user_feature_user_code_idx").on(table.userId, table.featureCode),

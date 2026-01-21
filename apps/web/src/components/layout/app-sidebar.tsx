@@ -45,6 +45,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 // Map nav codes to URLs and icons
 const NAV_CONFIG: Record<string, { url: string; icon: typeof Sun; group: 'tasks' | 'tools' }> = {
@@ -72,7 +73,7 @@ interface AppSidebarProps {
 
 export function AppSidebar({ user }: AppSidebarProps) {
   const pathname = usePathname();
-  const { navFeatures, featuresLoading: loading } = useGamificationEvents();
+  const { navFeatures, featuresLoading: loading, isNewlyUnlocked, markFeatureOpened } = useGamificationEvents();
 
   const isActive = (url: string) => {
     if (url === "/dashboard") {
@@ -107,11 +108,23 @@ export function AppSidebar({ user }: AppSidebarProps) {
     }
 
     const IconComponent = config.icon;
+    const isNew = isNewlyUnlocked(feature.code);
+
+    // Handle click to mark feature as opened (stops shimmer)
+    const handleClick = () => {
+      if (isNew) {
+        markFeatureOpened(feature.code);
+      }
+    };
 
     return (
       <SidebarMenuItem key={feature.code}>
-        <SidebarMenuButton asChild isActive={isActive(config.url)}>
-          <Link href={config.url}>
+        <SidebarMenuButton
+          asChild
+          isActive={isActive(config.url)}
+          className={cn(isNew && "animate-feature-shimmer")}
+        >
+          <Link href={config.url} onClick={handleClick}>
             <IconComponent className="h-4 w-4" />
             <span>{feature.name}</span>
           </Link>

@@ -14,11 +14,12 @@
  * - Creatures: Collection (shown subtly)
  */
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useRef, useEffect, type ReactNode } from 'react';
 import { LevelUpModal } from './LevelUpModal';
 import { CalmReview, type CalmReviewProps } from './CalmReview';
 import { AchievementToastStack } from './AchievementToast';
 import { CreatureToastStack, type CaughtCreatureData } from './CreatureCaughtToast';
+import { FeatureUnlockModal, type FeatureUnlockData } from './FeatureUnlockModal';
 import { useGamification } from '@/hooks/useGamification';
 import { useFeatures } from '@/hooks/useFeatures';
 import type { Achievement, Creature } from '@/db/schema';
@@ -62,6 +63,7 @@ interface NavFeature {
   icon: string | null;
   isUnlocked: boolean;
   celebrationText: string | null;
+  firstOpenedAt: Date | null;
 }
 
 interface GamificationContextType {
@@ -79,6 +81,9 @@ interface GamificationContextType {
   // Navigation features (shared state for sidebar)
   navFeatures: NavFeature[];
   featuresLoading: boolean;
+  // Shimmer effect tracking
+  isNewlyUnlocked: (code: string) => boolean;
+  markFeatureOpened: (code: string) => Promise<{ isFirstOpen: boolean; tutorial: unknown } | null>;
 }
 
 const GamificationContext = createContext<GamificationContextType | null>(null);
@@ -99,7 +104,13 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
   // Centralized gamification state
   const { state, loading, levelProgress, refresh } = useGamification();
   // Features state (for menu/nav updates) - shared with sidebar
-  const { refreshFeatures, navFeatures, loading: featuresLoading } = useFeatures();
+  const {
+    refreshFeatures,
+    navFeatures,
+    loading: featuresLoading,
+    isNewlyUnlocked,
+    markFeatureOpened,
+  } = useFeatures();
 
   // Refresh both gamification and features state
   const refreshAll = useCallback(async () => {
@@ -137,6 +148,55 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
 
   // Phase 4: Creature toast state
   const [pendingCreatures, setPendingCreatures] = useState<CaughtCreatureData[]>([]);
+
+  // Feature unlock modal state
+  const [featureUnlockModal, setFeatureUnlockModal] = useState<{
+    open: boolean;
+    feature: FeatureUnlockData | null;
+  }>({
+    open: false,
+    feature: null,
+  });
+
+  // Track previously seen unlocked features to detect new unlocks
+  const previousUnlockedRef = useRef<Set<string>>(new Set());
+
+  // Detect new feature unlocks when navFeatures changes
+  useEffect(() => {
+    if (featuresLoading) return;
+
+    const currentUnlocked = new Set(
+      navFeatures.filter(f => f.isUnlocked).map(f => f.code)
+    );
+
+    // Find newly unlocked features (in current but not in previous)
+    const newlyUnlocked: FeatureUnlockData[] = [];
+    currentUnlocked.forEach(code => {
+      if (!previousUnlockedRef.current.has(code)) {
+        const feature = navFeatures.find(f => f.code === code);
+        if (feature && feature.firstOpenedAt === null) {
+          // This is a truly new unlock (never opened before)
+          newlyUnlocked.push({
+            code: feature.code,
+            name: feature.name,
+            celebrationText: feature.celebrationText,
+          });
+        }
+      }
+    });
+
+    // Update previous set
+    previousUnlockedRef.current = currentUnlocked;
+
+    // Show feature unlock modal for the first new feature
+    // (we'll show one at a time to avoid overwhelm)
+    if (newlyUnlocked.length > 0 && !featureUnlockModal.open && !calmReview.visible && !levelUpModal.open) {
+      setFeatureUnlockModal({
+        open: true,
+        feature: newlyUnlocked[0],
+      });
+    }
+  }, [navFeatures, featuresLoading, featureUnlockModal.open, calmReview.visible, levelUpModal.open]);
 
   const showLevelUp = useCallback((newLevel: number, unlockedFeatures: string[] = []) => {
     setLevelUpModal({
@@ -244,7 +304,7 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
   }, []);
 
   return (
-    <GamificationContext.Provider value={{ showLevelUp, handleTaskComplete, showCalmReview, state, loading, levelProgress, refresh, refreshAll, navFeatures, featuresLoading }}>
+    <GamificationContext.Provider value={{ showLevelUp, handleTaskComplete, showCalmReview, state, loading, levelProgress, refresh, refreshAll, navFeatures, featuresLoading, isNewlyUnlocked, markFeatureOpened }}>
       {children}
 
       {/* Calm Review - Reflection, not reward */}
@@ -261,6 +321,17 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
         onOpenChange={(open) => setLevelUpModal((prev) => ({ ...prev, open }))}
         newLevel={levelUpModal.newLevel}
         unlockedFeatures={levelUpModal.unlockedFeatures}
+      />
+
+      {/* Feature Unlock Modal */}
+      <FeatureUnlockModal
+        open={featureUnlockModal.open}
+        onOpenChange={(open) => setFeatureUnlockModal((prev) => ({ ...prev, open }))}
+        feature={featureUnlockModal.feature}
+        onDismiss={(code) => {
+          // Mark feature as opened in database so modal doesn't show again
+          markFeatureOpened(code);
+        }}
       />
 
       {/* Phase 3: Achievement Toasts */}

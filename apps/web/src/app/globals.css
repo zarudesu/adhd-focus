@@ -420,3 +420,34 @@
 .animate-shimmer {
   animation: shimmer 3s ease-in-out infinite;
 }
+
+/* Feature unlock shimmer - subtle sweep effect for newly unlocked features */
+@keyframes feature-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-feature-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.animate-feature-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(var(--primary) / 0.15) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: feature-shimmer 2s ease-in-out infinite;
+  border-radius: inherit;
+  pointer-events: none;
+}

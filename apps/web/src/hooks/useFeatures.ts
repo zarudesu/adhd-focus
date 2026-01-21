@@ -3,10 +3,16 @@
 /**
  * Features Hook - Progressive feature unlocking system
  * Manages which features are available to the user based on actions and progress
+ *
+ * Includes shimmer effect tracking:
+ * - isNewlyUnlocked(code) - returns true if unlocked but not yet opened
+ * - markFeatureOpened(code) - calls API and updates local state
+ * - getNewlyUnlockedFeatures() - returns list of features to shimmer
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { FEATURE_CODES, type FeatureCode } from '@/db/schema';
+import { type TutorialContent } from '@/lib/feature-tutorials';
 
 interface Feature {
   code: string;
@@ -26,6 +32,7 @@ interface NavFeature {
   icon: string | null;
   isUnlocked: boolean;
   celebrationText: string | null;
+  firstOpenedAt: Date | null; // null = never opened, shows shimmer
 }
 
 interface UserProgress {
@@ -50,6 +57,11 @@ interface UserGamificationStats {
   progress: UserProgress;
 }
 
+interface MarkOpenedResponse {
+  isFirstOpen: boolean;
+  tutorial: TutorialContent | null;
+}
+
 interface UseFeaturesReturn {
   features: Feature[];
   unlockedFeatures: Set<string>;
@@ -61,11 +73,15 @@ interface UseFeaturesReturn {
   isNavUnlocked: (code: string) => boolean;
   getNextUnlock: () => Feature | null;
   refreshFeatures: () => Promise<void>;
+  // New: Shimmer effect tracking
+  isNewlyUnlocked: (code: string) => boolean;
+  markFeatureOpened: (code: string) => Promise<MarkOpenedResponse | null>;
+  getNewlyUnlockedFeatures: () => NavFeature[];
 }
 
 // Default navigation features (shown while loading)
 const DEFAULT_NAV_FEATURES: NavFeature[] = [
-  { code: 'nav_inbox', name: 'Inbox', icon: 'Inbox', isUnlocked: true, celebrationText: null },
+  { code: 'nav_inbox', name: 'Inbox', icon: 'Inbox', isUnlocked: true, celebrationText: null, firstOpenedAt: new Date() },
 ];
 
 export function useFeatures(): UseFeaturesReturn {
@@ -154,6 +170,50 @@ export function useFeatures(): UseFeaturesReturn {
     return locked[0];
   }, [features, unlockedFeatures, userStats]);
 
+  // Check if a feature is newly unlocked (unlocked but never opened)
+  const isNewlyUnlocked = useCallback((code: string): boolean => {
+    const feature = navFeatures.find(f => f.code === code);
+    // Feature must be unlocked AND never opened (firstOpenedAt is null)
+    return feature?.isUnlocked === true && feature?.firstOpenedAt === null;
+  }, [navFeatures]);
+
+  // Get all newly unlocked features (for shimmer effect)
+  const getNewlyUnlockedFeatures = useCallback((): NavFeature[] => {
+    return navFeatures.filter(f => f.isUnlocked && f.firstOpenedAt === null);
+  }, [navFeatures]);
+
+  // Mark a feature as opened (stops shimmer, triggers tutorial)
+  const markFeatureOpened = useCallback(async (code: string): Promise<MarkOpenedResponse | null> => {
+    try {
+      const res = await fetch(`/api/features/${code}/opened`, {
+        method: 'POST',
+      });
+
+      if (!res.ok) {
+        console.error('Failed to mark feature as opened');
+        return null;
+      }
+
+      const data: MarkOpenedResponse = await res.json();
+
+      // Update local state to stop shimmer immediately
+      if (data.isFirstOpen) {
+        setNavFeatures(prev =>
+          prev.map(f =>
+            f.code === code
+              ? { ...f, firstOpenedAt: new Date() }
+              : f
+          )
+        );
+      }
+
+      return data;
+    } catch (err) {
+      console.error('Error marking feature as opened:', err);
+      return null;
+    }
+  }, []);
+
   return {
     features,
     unlockedFeatures,
@@ -165,6 +225,10 @@ export function useFeatures(): UseFeaturesReturn {
     isNavUnlocked,
     getNextUnlock,
     refreshFeatures,
+    // New: Shimmer effect tracking
+    isNewlyUnlocked,
+    markFeatureOpened,
+    getNewlyUnlockedFeatures,
   };
 }
 

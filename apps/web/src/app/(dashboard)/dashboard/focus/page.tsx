@@ -9,6 +9,8 @@ import { Progress } from "@/components/ui/progress";
 import { useFocusTimer, TimerMode } from "@/hooks/useFocusTimer";
 import { useTasks } from "@/hooks/useTasks";
 import { CalmReview } from "@/components/focus/CalmReview";
+import { useFeaturePageTutorial } from "@/hooks/useFeaturePageTutorial";
+import { FeatureTutorial } from "@/components/gamification/FeatureTutorial";
 import {
   Play,
   Pause,
@@ -31,6 +33,9 @@ function FocusContent() {
     todayMinutes: number;
     totalPomodoros: number;
   }>({ todayPomodoros: 0, todayMinutes: 0, totalPomodoros: 0 });
+
+  // Feature tutorial for first-time users
+  const { showTutorial, tutorial, dismiss: dismissTutorial } = useFeaturePageTutorial('nav_focus');
 
   const { todayTasks } = useTasks();
 
@@ -95,6 +100,17 @@ function FocusContent() {
   // Calculate circle progress for SVG
   const circumference = 2 * Math.PI * 120;
   const strokeDashoffset = circumference - (progress / 100) * circumference;
+
+  // Show tutorial overlay for first-time users
+  if (showTutorial) {
+    return (
+      <FeatureTutorial
+        featureCode="nav_focus"
+        tutorial={tutorial}
+        onComplete={dismissTutorial}
+      />
+    );
+  }
 
   return (
     <>
