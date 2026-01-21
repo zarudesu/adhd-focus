@@ -23,8 +23,17 @@ build/
 *.ipa
 *.apk
 *.aab
-ios/
-android/
+# Expo native builds (not apps/ios or apps/android)
+/ios/
+/android/
+
+# Xcode generated files
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+DerivedData/
+*.hmap
+*.ipa
+*.xcuserstate
 
 # Environment
 .env
