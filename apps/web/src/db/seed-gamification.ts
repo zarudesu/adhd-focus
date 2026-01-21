@@ -27,7 +27,7 @@ async function seedFeatures() {
       // No unlock conditions = always available
     },
 
-    // Process mode - unlocks after first task added (need something to process)
+    // Process mode - unlocks with Projects (after 10 tasks added)
     {
       code: 'nav_process',
       name: 'Process',
@@ -36,7 +36,7 @@ async function seedFeatures() {
       icon: 'Sparkles',
       category: 'navigation',
       isNavItem: true,
-      unlockTasksAdded: 1,
+      unlockTasksAdded: 10, // Same as Projects - need enough tasks to process
       sortOrder: 2, // After Inbox, will be sorted by code order in sidebar
     },
 

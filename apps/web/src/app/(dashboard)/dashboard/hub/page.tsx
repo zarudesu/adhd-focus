@@ -65,6 +65,14 @@ const NAV_CONFIG: Record<string, NavItemConfig> = {
     description: 'Capture thoughts',
     gradient: 'from-blue-500/20 to-blue-600/10',
   },
+  nav_process: {
+    code: 'nav_process',
+    href: '/dashboard/inbox/process',
+    icon: Sparkles,
+    label: 'Process',
+    description: 'Clear your inbox',
+    gradient: 'from-indigo-500/20 to-indigo-600/10',
+  },
   nav_today: {
     code: 'nav_today',
     href: '/dashboard',
@@ -158,6 +166,7 @@ const NAV_CONFIG: Record<string, NavItemConfig> = {
 // Default order for nav items
 const DEFAULT_ORDER = [
   'nav_inbox',
+  'nav_process',
   'nav_today',
   'nav_scheduled',
   'nav_projects',
