@@ -14,20 +14,32 @@ import {
 import { eq, notInArray, sql, and, isNotNull } from 'drizzle-orm';
 import { logError } from '@/lib/logger';
 
-// Helper to get day of week and hour in user's timezone
-function getDatePartsInTimezone(date: Date, timezone: string): { dayOfWeek: number; hour: number } {
+// Helper to get date parts in user's timezone
+function getDatePartsInTimezone(date: Date, timezone: string): {
+  dayOfWeek: number;
+  hour: number;
+  minute: number;
+  dayOfMonth: number;
+  month: number;
+} {
   try {
-    // Format the date in the user's timezone to get correct hour and day
+    // Format the date in the user's timezone to get correct parts
     const formatter = new Intl.DateTimeFormat('en-US', {
       timeZone: timezone,
       weekday: 'short',
       hour: 'numeric',
+      minute: 'numeric',
+      day: 'numeric',
+      month: 'numeric',
       hour12: false,
     });
 
     const parts = formatter.formatToParts(date);
     const weekdayPart = parts.find(p => p.type === 'weekday')?.value || '';
     const hourPart = parts.find(p => p.type === 'hour')?.value || '0';
+    const minutePart = parts.find(p => p.type === 'minute')?.value || '0';
+    const dayPart = parts.find(p => p.type === 'day')?.value || '1';
+    const monthPart = parts.find(p => p.type === 'month')?.value || '1';
 
     // Map weekday string to number (0=Sunday, 1=Monday, etc.)
     const weekdayMap: Record<string, number> = {
@@ -37,12 +49,18 @@ function getDatePartsInTimezone(date: Date, timezone: string): { dayOfWeek: numb
     return {
       dayOfWeek: weekdayMap[weekdayPart] ?? date.getDay(),
       hour: parseInt(hourPart, 10),
+      minute: parseInt(minutePart, 10),
+      dayOfMonth: parseInt(dayPart, 10),
+      month: parseInt(monthPart, 10) - 1, // 0-indexed for JS compatibility
     };
   } catch {
     // Fallback to UTC if timezone is invalid
     return {
       dayOfWeek: date.getUTCDay(),
       hour: date.getUTCHours(),
+      minute: date.getUTCMinutes(),
+      dayOfMonth: date.getUTCDate(),
+      month: date.getUTCMonth(),
     };
   }
 }
@@ -156,12 +174,30 @@ function checkSimpleCondition(
 function checkTaskBasedCondition(
   condition: AchievementCondition,
   conditionType: string,
-  taskStats: TaskCompletionStats
+  taskStats: TaskCompletionStats,
+  taskCompletions?: { hour: number; minute: number; dayOfMonth: number; month: number }[]
 ): boolean {
   const requiredCount = condition.count ?? 1;
 
   // For 'time' type, check if user completed task at specified time
   if (conditionType === 'time') {
+    // If minute is specified, we need exact time matching from taskCompletions
+    if (condition.minute !== undefined && taskCompletions) {
+      const matches = taskCompletions.filter(t => {
+        // Check hour if specified
+        if (condition.hour !== undefined && t.hour !== condition.hour) return false;
+        // Check minute
+        if (t.minute !== condition.minute) return false;
+        // Check dayOfMonth if specified
+        if (condition.dayOfMonth !== undefined && t.dayOfMonth !== condition.dayOfMonth) return false;
+        // Check month if specified (0-indexed)
+        if (condition.month !== undefined && t.month !== condition.month) return false;
+        return true;
+      });
+      return matches.length >= requiredCount;
+    }
+
+    // Simple hour/dayOfWeek/period checks (no minute specified)
     if (condition.dayOfWeek !== undefined) {
       return (taskStats.byDayOfWeek[condition.dayOfWeek] ?? 0) >= requiredCount;
     }
@@ -215,8 +251,19 @@ function checkTaskBasedCondition(
   return false;
 }
 
+// Task completion with exact time for minute-based achievements
+interface TaskCompletion {
+  hour: number;
+  minute: number;
+  dayOfMonth: number;
+  month: number;
+}
+
 // Query actual task completion data for a user
-async function getTaskCompletionStats(userId: string, userTimezone: string = 'UTC'): Promise<TaskCompletionStats> {
+async function getTaskCompletionStats(userId: string, userTimezone: string = 'UTC'): Promise<{
+  stats: TaskCompletionStats;
+  completions: TaskCompletion[];
+}> {
   // Get all completed tasks with their completion timestamps
   const completedTasks = await db
     .select({
@@ -246,42 +293,36 @@ async function getTaskCompletionStats(userId: string, userTimezone: string = 'UT
     wasOverdue: 0,
   };
 
-  // Count subtasks (tasks that have this task as parent)
-  const subtaskCounts = await db
-    .select({
-      parentId: tasks.parentTaskId,
-      count: sql<number>`count(*)`.as('count'),
-    })
-    .from(tasks)
-    .where(and(
-      eq(tasks.userId, userId),
-      isNotNull(tasks.parentTaskId)
-    ))
-    .groupBy(tasks.parentTaskId);
-
-  const subtaskMap = new Map(
-    subtaskCounts.map(s => [s.parentId, Number(s.count)])
-  );
+  // Collect exact completion times for minute-based achievements
+  const completions: TaskCompletion[] = [];
 
   for (const task of completedTasks) {
     if (!task.completedAt) continue;
 
     const completedDate = new Date(task.completedAt);
 
-    // Get day of week and hour in user's timezone
-    const { dayOfWeek, hour } = getDatePartsInTimezone(completedDate, userTimezone);
+    // Get all date parts in user's timezone
+    const dateParts = getDatePartsInTimezone(completedDate, userTimezone);
+
+    // Store exact completion time for minute-based achievements
+    completions.push({
+      hour: dateParts.hour,
+      minute: dateParts.minute,
+      dayOfMonth: dateParts.dayOfMonth,
+      month: dateParts.month,
+    });
 
     // Count by day of week
-    stats.byDayOfWeek[dayOfWeek] = (stats.byDayOfWeek[dayOfWeek] ?? 0) + 1;
+    stats.byDayOfWeek[dateParts.dayOfWeek] = (stats.byDayOfWeek[dateParts.dayOfWeek] ?? 0) + 1;
 
     // Count by hour
-    stats.byHour[hour] = (stats.byHour[hour] ?? 0) + 1;
+    stats.byHour[dateParts.hour] = (stats.byHour[dateParts.hour] ?? 0) + 1;
 
     // Count by period (based on user's local time)
     let period: string;
-    if (hour >= 5 && hour < 12) period = 'morning';
-    else if (hour >= 12 && hour < 17) period = 'afternoon';
-    else if (hour >= 17 && hour < 21) period = 'evening';
+    if (dateParts.hour >= 5 && dateParts.hour < 12) period = 'morning';
+    else if (dateParts.hour >= 12 && dateParts.hour < 17) period = 'afternoon';
+    else if (dateParts.hour >= 17 && dateParts.hour < 21) period = 'evening';
     else period = 'night';
     stats.byPeriod[period] = (stats.byPeriod[period] ?? 0) + 1;
 
@@ -308,13 +349,6 @@ async function getTaskCompletionStats(userId: string, userTimezone: string = 'UT
     }
   }
 
-  // Count tasks with subtasks
-  for (const task of completedTasks) {
-    // We can't easily check subtasks from the query above
-    // For now, count tasks that ARE subtasks (have parentTaskId)
-    // This is a simplification - "has subtasks" would need another query
-  }
-
   // Get count of completed tasks that have subtasks
   const tasksWithSubtasks = await db
     .select({
@@ -328,7 +362,7 @@ async function getTaskCompletionStats(userId: string, userTimezone: string = 'UT
 
   stats.withSubtasks = Number(tasksWithSubtasks[0]?.count ?? 0);
 
-  return stats;
+  return { stats, completions };
 }
 
 export async function POST(request: Request) {
@@ -415,13 +449,13 @@ export async function POST(request: Request) {
     if (needsTaskQuery.length > 0) {
       // Get user's timezone from preferences (default to UTC)
       const userTimezone = (user.preferences as UserPreferences)?.timezone || 'UTC';
-      const taskStats = await getTaskCompletionStats(userId, userTimezone);
+      const { stats: taskStats, completions } = await getTaskCompletionStats(userId, userTimezone);
 
       for (const achievement of needsTaskQuery) {
         const condition = achievement.conditionValue as AchievementCondition;
         if (!condition) continue;
 
-        const meets = checkTaskBasedCondition(condition, achievement.conditionType, taskStats);
+        const meets = checkTaskBasedCondition(condition, achievement.conditionType, taskStats, completions);
         if (meets) {
           achievementsToUnlock.push(achievement);
         }
