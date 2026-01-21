@@ -144,32 +144,19 @@ export default function InboxPage() {
           </div>
         )}
 
-        {/* Big centered Add button when empty or few tasks */}
-        {inboxTasks.length < 3 && (
-          <div className="flex justify-center py-8">
+        {/* Big centered Add button - always show */}
+        <div className="flex flex-col items-center gap-4 py-6">
+          <div className="flex gap-3">
             <Button
               size="lg"
               onClick={() => setShowAddDialog(true)}
-              className="h-16 px-8 text-lg gap-3"
+              className="h-14 px-6 text-base gap-2"
             >
-              <Plus className="h-6 w-6" />
+              <Plus className="h-5 w-5" />
               Add a thought
             </Button>
-          </div>
-        )}
-
-        {/* Big centered buttons when Process is unlocked */}
-        {inboxTasks.length >= 3 && navFeatures.find(f => f.code === 'nav_process')?.isUnlocked && (
-          <div className="flex flex-col items-center gap-4 py-6">
-            <div className="flex gap-3">
-              <Button
-                size="lg"
-                onClick={() => setShowAddDialog(true)}
-                className="h-14 px-6 text-base gap-2"
-              >
-                <Plus className="h-5 w-5" />
-                Add a thought
-              </Button>
+            {/* Show Triage button when Process is unlocked and there are tasks */}
+            {inboxTasks.length >= 3 && navFeatures.find(f => f.code === 'nav_process')?.isUnlocked && (
               <Button
                 size="lg"
                 variant="secondary"
@@ -179,12 +166,15 @@ export default function InboxPage() {
                 <Sparkles className="h-5 w-5" />
                 Triage ({inboxTasks.length})
               </Button>
-            </div>
+            )}
+          </div>
+          {/* Show hint about Triage when it's available */}
+          {inboxTasks.length >= 3 && navFeatures.find(f => f.code === 'nav_process')?.isUnlocked && (
             <p className="text-sm text-muted-foreground text-center max-w-md">
               <span className="font-medium text-foreground">Triage</span> — go through each item one by one, decide what to do: schedule it, do it now, or delete. Takes ~{estimatedMinutes} min.
             </p>
-          </div>
-        )}
+          )}
+        </div>
 
 
         {/* Task list */}
