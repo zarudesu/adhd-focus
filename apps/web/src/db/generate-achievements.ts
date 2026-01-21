@@ -233,7 +233,7 @@ interface Achievement {
   visibility: 'visible' | 'hidden' | 'invisible' | 'ultra_secret';
   xpReward: number;
   conditionType: string;
-  conditionValue: Record<string, any>;
+  conditionValue: Record<string, unknown>;
   sortOrder: number;
 }
 
@@ -247,7 +247,7 @@ function createAchievement(
   category: string,
   xpReward: number,
   conditionType: string,
-  conditionValue: Record<string, any>,
+  conditionValue: Record<string, unknown>,
   visibility: 'visible' | 'hidden' | 'invisible' | 'ultra_secret' = 'visible',
   subcategory?: string
 ): Achievement {
@@ -2051,15 +2051,17 @@ function generateAllAchievements() {
 export { generateAllAchievements, achievements };
 export type { Achievement };
 
-// Run if executed directly
-if (require.main === module) {
+// Run if executed directly (use dynamic import for ES module compatibility)
+const isMainModule = typeof require !== 'undefined' && require.main === module;
+if (isMainModule) {
   const generated = generateAllAchievements();
 
   // Output to JSON for verification
-  const fs = require('fs');
-  fs.writeFileSync(
-    'generated-achievements.json',
-    JSON.stringify(generated, null, 2)
-  );
-  console.log('\n📄 Saved to generated-achievements.json');
+  import('fs').then((fs) => {
+    fs.writeFileSync(
+      'generated-achievements.json',
+      JSON.stringify(generated, null, 2)
+    );
+    console.log('\n📄 Saved to generated-achievements.json');
+  });
 }

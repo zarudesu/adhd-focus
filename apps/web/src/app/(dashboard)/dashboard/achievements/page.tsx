@@ -156,6 +156,16 @@ function AchievementRow({ achievement, isNew }: { achievement: Achievement; isNe
   );
 }
 
+// Pre-generated sparkle positions (stable, no Math.random during render)
+const SPARKLE_POSITIONS = [
+  { left: '25%', top: '15%' },
+  { left: '70%', top: '25%' },
+  { left: '35%', top: '55%' },
+  { left: '65%', top: '45%' },
+  { left: '45%', top: '20%' },
+  { left: '55%', top: '65%' },
+];
+
 // Sparkling Trophy Component
 function SparklingTrophy({ unlockedCount, totalCount, newCount }: {
   unlockedCount: number;
@@ -166,14 +176,11 @@ function SparklingTrophy({ unlockedCount, totalCount, newCount }: {
     <div className="relative flex flex-col items-center justify-center">
       {/* Sparkle particles */}
       <div className="absolute inset-0 overflow-hidden">
-        {[...Array(6)].map((_, i) => (
+        {SPARKLE_POSITIONS.map((pos, i) => (
           <motion.div
             key={i}
             className="absolute"
-            style={{
-              left: `${20 + Math.random() * 60}%`,
-              top: `${10 + Math.random() * 60}%`,
-            }}
+            style={pos}
             animate={{
               scale: [0, 1, 0],
               opacity: [0, 1, 0],

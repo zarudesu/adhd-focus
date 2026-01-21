@@ -22,7 +22,11 @@ export function CreatureCaughtToast({ creature, isNew, count, onClose }: Creatur
   const [isExiting, setIsExiting] = useState(false);
   const isMountedRef = useRef(true);
   const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+
+  // Keep onClose ref updated (in effect, not during render)
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   const handleClose = useCallback(() => {
     if (!isMountedRef.current) return;

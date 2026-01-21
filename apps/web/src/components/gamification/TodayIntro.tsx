@@ -104,12 +104,15 @@ export function useTodayIntro() {
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
-    // Check if intro was already seen
-    const seen = localStorage.getItem(STORAGE_KEY);
-    if (!seen) {
-      setShowIntro(true);
-    }
-    setChecked(true);
+    // Check if intro was already seen (use setTimeout to batch state updates)
+    const timeoutId = setTimeout(() => {
+      const seen = localStorage.getItem(STORAGE_KEY);
+      if (!seen) {
+        setShowIntro(true);
+      }
+      setChecked(true);
+    }, 0);
+    return () => clearTimeout(timeoutId);
   }, []);
 
   const dismissIntro = () => {

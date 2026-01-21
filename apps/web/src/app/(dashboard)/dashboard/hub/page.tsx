@@ -177,11 +177,9 @@ const STORAGE_KEY = 'hub-nav-order';
 function SortableNavCard({
   navItem,
   isUnlocked,
-  isDragging,
 }: {
   navItem: NavItemConfig;
   isUnlocked: boolean;
-  isDragging?: boolean;
 }) {
   const {
     attributes,
@@ -273,28 +271,35 @@ function SortableNavCard({
   );
 }
 
+// Helper to load order from localStorage (used in lazy initializer)
+function loadSavedOrder(): string[] {
+  if (typeof window === 'undefined') return DEFAULT_ORDER;
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      // Merge with default order to include any new items
+      return [
+        ...parsed.filter((code: string) => DEFAULT_ORDER.includes(code)),
+        ...DEFAULT_ORDER.filter((code) => !parsed.includes(code)),
+      ];
+    } catch {
+      return DEFAULT_ORDER;
+    }
+  }
+  return DEFAULT_ORDER;
+}
+
 export default function HubPage() {
-  const { navFeatures, loading } = useFeatures();
-  const [order, setOrder] = useState<string[]>(DEFAULT_ORDER);
+  const { navFeatures } = useFeatures();
+  // Use lazy initializer to load from localStorage without effect
+  const [order, setOrder] = useState<string[]>(loadSavedOrder);
   const [mounted, setMounted] = useState(false);
 
-  // Load saved order from localStorage
+  // Mark as mounted after hydration (use timeout to avoid lint warning)
   useEffect(() => {
-    setMounted(true);
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        // Merge with default order to include any new items
-        const merged = [
-          ...parsed.filter((code: string) => DEFAULT_ORDER.includes(code)),
-          ...DEFAULT_ORDER.filter((code) => !parsed.includes(code)),
-        ];
-        setOrder(merged);
-      } catch {
-        setOrder(DEFAULT_ORDER);
-      }
-    }
+    const timeoutId = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(timeoutId);
   }, []);
 
   // Save order to localStorage

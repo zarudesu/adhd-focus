@@ -196,7 +196,7 @@ function ChecklistContent() {
                   ) : (
                     <>
                       <Sparkles className="h-5 w-5 text-primary" />
-                      <span className="font-medium">Today's Progress</span>
+                      <span className="font-medium">Today&apos;s Progress</span>
                     </>
                   )}
                 </div>

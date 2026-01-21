@@ -355,7 +355,7 @@ export function InboxProcessor({
                 {/* First step */}
                 <div className="space-y-2">
                   <label htmlFor="first-step-input" className="text-sm text-muted-foreground">
-                    What's the first tiny step?
+                    What&apos;s the first tiny step?
                   </label>
                   <Input
                     id="first-step-input"

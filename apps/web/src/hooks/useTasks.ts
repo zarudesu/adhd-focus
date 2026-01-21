@@ -205,7 +205,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
 
     // Default result (for unauthenticated users or errors)
     // beatyour8: No visual reward - just track progress silently
-    let result: CompleteResult = {
+    const result: CompleteResult = {
       task: updatedTask,
       xpAwarded: 0,
       levelUp: false,

@@ -23,15 +23,14 @@ import {
 
 export default function Home() {
   const [task, setTask] = useState('');
-  const [tasks, setTasks] = useState<PendingTask[]>([]);
+  // Use lazy initializer to load from localStorage
+  const [tasks, setTasks] = useState<PendingTask[]>(() => {
+    if (typeof window === 'undefined') return [];
+    return getPendingTasks();
+  });
   const [showModal, setShowModal] = useState(false);
   const [showContinueMessage, setShowContinueMessage] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // Load existing tasks on mount
-  useEffect(() => {
-    setTasks(getPendingTasks());
-  }, []);
 
   // Focus input after logo animation
   useEffect(() => {
@@ -109,7 +108,7 @@ export default function Home() {
               >
                 A place to unload your thoughts.
                 <br />
-                <span className="text-[#6B7280]">Just dump them here — I'll help from there.</span>
+                <span className="text-[#6B7280]">Just dump them here — I&apos;ll help from there.</span>
               </motion.p>
             )}
           </AnimatePresence>

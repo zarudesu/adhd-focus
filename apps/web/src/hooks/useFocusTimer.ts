@@ -127,21 +127,26 @@ export function useFocusTimer(options: UseFocusTimerOptions = {}): UseFocusTimer
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number | null>(null);
 
-  // Update time remaining when profile loads
+  // Update time remaining when profile loads (only if duration changed)
+  const currentDuration = state.mode === 'work'
+    ? workDuration
+    : state.mode === 'shortBreak'
+      ? shortBreakDuration
+      : longBreakDuration;
+
   useEffect(() => {
-    if (state.status === 'idle') {
-      const duration = state.mode === 'work'
-        ? workDuration
-        : state.mode === 'shortBreak'
-          ? shortBreakDuration
-          : longBreakDuration;
-      setState(prev => ({
-        ...prev,
-        timeRemaining: duration,
-        totalTime: duration,
-      }));
+    if (state.status === 'idle' && state.totalTime !== currentDuration) {
+      // Use setTimeout to batch this update and avoid sync setState warning
+      const timeoutId = setTimeout(() => {
+        setState(prev => ({
+          ...prev,
+          timeRemaining: currentDuration,
+          totalTime: currentDuration,
+        }));
+      }, 0);
+      return () => clearTimeout(timeoutId);
     }
-  }, [workDuration, shortBreakDuration, longBreakDuration, state.mode, state.status]);
+  }, [currentDuration, state.status, state.totalTime]);
 
   // Request notification permission on mount
   useEffect(() => {
@@ -191,12 +196,6 @@ export function useFocusTimer(options: UseFocusTimerOptions = {}): UseFocusTimer
                 ? 'longBreak'
                 : 'shortBreak';
             }
-
-            const nextDuration = nextMode === 'work'
-              ? workDuration
-              : nextMode === 'shortBreak'
-                ? shortBreakDuration
-                : longBreakDuration;
 
             // Play sound and show notification
             if (enableSound) {

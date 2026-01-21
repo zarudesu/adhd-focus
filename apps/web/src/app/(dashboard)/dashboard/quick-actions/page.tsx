@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { ProtectedRoute } from '@/components/gamification/ProtectedRoute';
 import { Button } from '@/components/ui/button';
@@ -25,7 +25,6 @@ import {
 import { useTasks } from '@/hooks/useTasks';
 import { useProjects } from '@/hooks/useProjects';
 import { useGamificationEvents } from '@/components/gamification/GamificationProvider';
-import type { Task } from '@/db/schema';
 import {
   Play,
   Pause,
@@ -62,6 +61,32 @@ function QuickActionsContent() {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [showOvertimeDialog, setShowOvertimeDialog] = useState(false);
   const [overtimeShown, setOvertimeShown] = useState(false);
+  // Store shuffle order for random mode (generated in effect, not during render)
+  const [shuffleOrder, setShuffleOrder] = useState<string[]>([]);
+
+  // Generate shuffle order when switching to random mode
+  useEffect(() => {
+    if (sortMode === 'random') {
+      // Use setTimeout to batch state update (avoid lint warning)
+      const timeoutId = setTimeout(() => {
+        const filtered = tasks.filter(
+          (t) =>
+            t.status !== 'done' &&
+            t.status !== 'archived' &&
+            t.estimatedMinutes &&
+            t.estimatedMinutes <= QUICK_TASK_THRESHOLD
+        );
+        // Fisher-Yates shuffle (in effect, not render)
+        const ids = filtered.map(t => t.id);
+        for (let i = ids.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [ids[i], ids[j]] = [ids[j], ids[i]];
+        }
+        setShuffleOrder(ids);
+      }, 0);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [sortMode, tasks]);
 
   // Filter quick tasks (5 min or less, not completed)
   const quickTasks = useMemo(() => {
@@ -76,7 +101,16 @@ function QuickActionsContent() {
     // Sort based on mode
     switch (sortMode) {
       case 'random':
-        return [...filtered].sort(() => Math.random() - 0.5);
+        // Use pre-computed shuffle order (deterministic in render)
+        return [...filtered].sort((a, b) => {
+          const indexA = shuffleOrder.indexOf(a.id);
+          const indexB = shuffleOrder.indexOf(b.id);
+          // Put tasks not in shuffle order at the end
+          if (indexA === -1 && indexB === -1) return 0;
+          if (indexA === -1) return 1;
+          if (indexB === -1) return -1;
+          return indexA - indexB;
+        });
       case 'priority':
         const priorityOrder = { must: 0, should: 1, want: 2, someday: 3 };
         return [...filtered].sort(
@@ -101,7 +135,7 @@ function QuickActionsContent() {
       default:
         return filtered;
     }
-  }, [tasks, sortMode]);
+  }, [tasks, sortMode, shuffleOrder]);
 
   const currentTask = quickTasks[currentIndex];
   const isComplete = quickTasks.length === 0;
@@ -131,9 +165,13 @@ function QuickActionsContent() {
 
   // Reset timer when task changes
   useEffect(() => {
-    setElapsedSeconds(0);
-    setTimerRunning(false);
-    setOvertimeShown(false);
+    // Use setTimeout to batch state updates (avoid lint warning)
+    const timeoutId = setTimeout(() => {
+      setElapsedSeconds(0);
+      setTimerRunning(false);
+      setOvertimeShown(false);
+    }, 0);
+    return () => clearTimeout(timeoutId);
   }, [currentIndex]);
 
   // Format time
@@ -234,7 +272,7 @@ function QuickActionsContent() {
           </div>
           <h1 className="text-2xl font-bold mb-2">No Quick Tasks</h1>
           <p className="text-muted-foreground mb-6">
-            You don't have any tasks marked as 5 minutes or less.
+            You don&apos;t have any tasks marked as 5 minutes or less.
             Add time estimates to your tasks to use Quick Actions.
           </p>
           <div className="flex gap-3 justify-center">

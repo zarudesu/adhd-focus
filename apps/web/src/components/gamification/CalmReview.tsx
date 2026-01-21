@@ -135,9 +135,20 @@ export function CalmReview({ trigger, context, onComplete }: CalmReviewProps) {
   const [visible, setVisible] = useState(false);
   const [message, setMessage] = useState<ReturnType<typeof getRandomMessage> | null>(null);
 
+  // Define handleDismiss before the effect that uses it
+  const handleDismiss = useCallback(() => {
+    setVisible(false);
+    setTimeout(() => {
+      onComplete?.();
+    }, 300);
+  }, [onComplete]);
+
   useEffect(() => {
-    setMounted(true);
-    setMessage(getRandomMessage(trigger, context?.isPartial));
+    // Initialize state (use setTimeout to batch state updates)
+    const initTimer = setTimeout(() => {
+      setMounted(true);
+      setMessage(getRandomMessage(trigger, context?.isPartial));
+    }, 0);
 
     // Fade in
     const fadeInTimer = setTimeout(() => setVisible(true), 50);
@@ -148,17 +159,11 @@ export function CalmReview({ trigger, context, onComplete }: CalmReviewProps) {
     }, 6000);
 
     return () => {
+      clearTimeout(initTimer);
       clearTimeout(fadeInTimer);
       clearTimeout(dismissTimer);
     };
-  }, [trigger, context?.isPartial]);
-
-  const handleDismiss = useCallback(() => {
-    setVisible(false);
-    setTimeout(() => {
-      onComplete?.();
-    }, 300);
-  }, [onComplete]);
+  }, [trigger, context?.isPartial, handleDismiss]);
 
   if (!mounted || !message) return null;
 

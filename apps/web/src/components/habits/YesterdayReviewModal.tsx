@@ -98,7 +98,7 @@ export function YesterdayReviewModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5 text-primary" />
-            Yesterday's Review
+            Yesterday&apos;s Review
           </DialogTitle>
           <DialogDescription>
             How did {formatDate(yesterdayDate)} go? Mark your habits.

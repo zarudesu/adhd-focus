@@ -66,13 +66,11 @@ function SignupForm() {
   const syncPending = searchParams.get('sync') === 'pending';
   // If we have pending tasks, redirect to sync page after registration
   const callbackUrl = syncPending ? '/sync' : (searchParams.get('callbackUrl') || '/dashboard/hub');
-  const [pendingCount, setPendingCount] = useState(0);
-
-  useEffect(() => {
-    if (hasPendingTasks()) {
-      setPendingCount(getPendingTaskCount());
-    }
-  }, []);
+  // Use lazy initializer to load pending count from localStorage
+  const [pendingCount] = useState(() => {
+    if (typeof window === 'undefined') return 0;
+    return hasPendingTasks() ? getPendingTaskCount() : 0;
+  });
 
   const [state, formAction, isPending] = useActionState<AuthState | undefined, FormData>(
     register,

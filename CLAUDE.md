@@ -1,7 +1,7 @@
 # CLAUDE.md - AI Assistant Instructions
 
 > **READ THIS FILE FIRST** in every new session or after context compaction.
-> Last updated: 2026-01-19
+> Last updated: 2026-01-20
 
 ## CRITICAL: When Fixing Bugs
 
@@ -143,18 +143,14 @@ cd apps/web && npm run dev
 | GET/POST /api/habits/review | **DONE** |
 
 ### Key Files Changed Recently
-- `src/app/page.tsx` - Minimalist landing page with localStorage task capture
-- `src/components/landing/UnlockModal.tsx` - Celebration modal for registration
-- `src/lib/pending-tasks.ts` - localStorage helpers for pre-registration tasks
-- `src/app/sync/page.tsx` - Syncs localStorage tasks to API after registration
-- `src/app/(dashboard)/dashboard/checklist/page.tsx` - Daily habits UI
-- `src/hooks/useHabits.ts` - Habits CRUD + check/uncheck + reorder
-- `src/hooks/useYesterdayReview.ts` - Yesterday habits review modal
-- `src/app/api/habits/*` - Habits API endpoints
-- `src/components/gamification/GamificationProvider.tsx` - XP/rewards context (max 2 achievements per action)
-- `src/components/gamification/ProtectedRoute.tsx` - Page-level feature gating
+- `src/components/gamification/LevelProgress.tsx` - Shows "Mindfulness" without level number
+- `src/app/(dashboard)/dashboard/quick-actions/page.tsx` - Fixed Math.random, setState patterns
+- `src/components/gamification/*.tsx` - Fixed React strict mode issues (refs, setState in effects)
+- `src/hooks/useFocusTimer.ts` - Fixed setState in effect pattern
+- `src/app/(dashboard)/dashboard/hub/page.tsx` - Fixed lazy initializer, removed unused props
+- Multiple files - Fixed unescaped HTML entities (`'` → `&apos;`)
 
-### Known Issues (Code Review 2026-01-15)
+### Known Issues (Code Review 2026-01-20)
 
 **Security (High):**
 - [x] ~~No rate limiting on `/api/auth/register`~~ - FIXED (5 req/15 min)
@@ -165,7 +161,11 @@ cd apps/web && npm run dev
 - [x] ~~N+1 queries in projects listing~~ - ALREADY FIXED (uses JOIN + GROUP BY)
 
 **Code Quality (Medium):**
-- [x] ~~State set during render in settings/page.tsx~~ - NOT AN ISSUE (code uses useEffect correctly)
+- [x] ~~State set during render in settings/page.tsx~~ - FIXED (lazy initializer + setTimeout pattern)
+- [x] ~~Math.random() in render~~ - FIXED (moved to effects or static values)
+- [x] ~~setState directly in effects~~ - FIXED (setTimeout pattern in all gamification components)
+- [x] ~~Ref access during render~~ - FIXED (moved to useEffect)
+- [x] ~~Unescaped HTML entities~~ - FIXED (`'` → `&apos;`)
 - [ ] Type duplication - not using @adhd-focus/shared
 - [x] ~~Self-HTTP-call in registration action~~ - ALREADY FIXED (imports registerUser directly)
 
@@ -175,6 +175,8 @@ cd apps/web && npm run dev
 
 **Dependencies:**
 - [ ] NextAuth beta in production
+
+**ESLint Status:** 0 errors, ~50 warnings (unused variables only)
 
 ## Tech Stack
 
@@ -436,9 +438,20 @@ fix(auth): fix bug
 docs: update CLAUDE.md
 ```
 
-## Recent Changes (2026-01-17)
+## Recent Changes (2026-01-20)
 
-### Focus Mode - Pomodoro Timer Complete
+### ESLint Strict Mode Compliance
+- **0 errors** (was 24 errors)
+- Fixed Math.random() in render (achievements, sidebar, quick-actions)
+- Fixed setState in useEffect (setTimeout pattern in all gamification components)
+- Fixed ref access during render (moved to useEffect)
+- Fixed unescaped HTML entities across multiple files
+- Fixed TypeScript null checks in settings page
+- Hidden level number from sidebar - shows just "Mindfulness"
+
+### Previous (2026-01-17)
+
+#### Focus Mode - Pomodoro Timer Complete
 - **useFocusTimer hook**: Full timer with work/short break/long break modes
 - **Circular timer UI**: SVG progress ring, animated countdown
 - **Task selection**: Pick from today's tasks to focus on

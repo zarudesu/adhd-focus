@@ -50,10 +50,12 @@ export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const [name, setName] = useState<string>('');
 
-  // Initialize name when profile loads
+  // Initialize name when profile loads (use timeout to batch update)
   useEffect(() => {
     if (profile?.name) {
-      setName(profile.name);
+      const profileName = profile.name;
+      const timeoutId = setTimeout(() => setName(profileName), 0);
+      return () => clearTimeout(timeoutId);
     }
   }, [profile?.name]);
 

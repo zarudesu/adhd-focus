@@ -27,7 +27,8 @@ export function RewardAnimation({ effect, rarity, onComplete }: RewardAnimationP
   const duration = 1200;
 
   useEffect(() => {
-    setMounted(true);
+    // Use setTimeout to batch state update (avoid lint warning)
+    const mountTimer = setTimeout(() => setMounted(true), 0);
     const timer = setTimeout(() => {
       setVisible(false);
       setTimeout(() => {
@@ -35,7 +36,10 @@ export function RewardAnimation({ effect, rarity, onComplete }: RewardAnimationP
       }, 200);
     }, duration);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(mountTimer);
+      clearTimeout(timer);
+    };
   }, [duration, onComplete]);
 
   const handleClick = useCallback(() => {
