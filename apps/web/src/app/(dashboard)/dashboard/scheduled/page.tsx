@@ -25,7 +25,7 @@ function ScheduledContent() {
     create,
     update,
   } = useTasks();
-  const { handleTaskComplete } = useGamificationEvents();
+  const { handleTaskComplete, refreshAll } = useGamificationEvents();
 
   // Wrapper to handle task completion with gamification
   const handleComplete = useCallback(async (id: string) => {
@@ -95,6 +95,7 @@ function ScheduledContent() {
         onOpenChange={setShowAddDialog}
         onSubmit={async (input) => {
           await create(input);
+          refreshAll();
         }}
         forScheduled
       />
@@ -106,6 +107,7 @@ function ScheduledContent() {
         onSubmit={async (input) => {
           if (editingTask) {
             await update(editingTask.id, input);
+            refreshAll();
           }
         }}
         task={editingTask}

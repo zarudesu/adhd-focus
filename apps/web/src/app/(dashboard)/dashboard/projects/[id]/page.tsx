@@ -37,7 +37,7 @@ function ProjectDetailContent() {
     create,
     update,
   } = useTasks({ filters: { projectId } });
-  const { handleTaskComplete } = useGamificationEvents();
+  const { handleTaskComplete, refreshAll } = useGamificationEvents();
 
   // Wrapper to handle task completion with gamification
   const handleComplete = useCallback(async (id: string) => {
@@ -118,6 +118,7 @@ function ProjectDetailContent() {
         onOpenChange={setShowAddDialog}
         onSubmit={async (input) => {
           await create(input);
+          refreshAll();
         }}
         defaultStatus="inbox"
         defaultProjectId={projectId}
@@ -130,6 +131,7 @@ function ProjectDetailContent() {
         onSubmit={async (input) => {
           if (editingTask) {
             await update(editingTask.id, input);
+            refreshAll();
           }
         }}
         task={editingTask}

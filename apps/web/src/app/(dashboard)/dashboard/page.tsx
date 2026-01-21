@@ -39,7 +39,12 @@ function TodayContent() {
     update,
     create,
   } = useTasks();
-  const { handleTaskComplete, showCalmReview, state } = useGamificationEvents();
+  const { handleTaskComplete, showCalmReview, state, refreshAll, showDeferredAchievements } = useGamificationEvents();
+
+  // Show deferred achievements when user arrives at Today page
+  useEffect(() => {
+    showDeferredAchievements();
+  }, [showDeferredAchievements]);
 
   // Today intro for first-time users
   const { showIntro, checked, dismissIntro } = useTodayIntro();
@@ -167,6 +172,7 @@ function TodayContent() {
         onOpenChange={setShowAddDialog}
         onSubmit={async (input) => {
           await create(input);
+          refreshAll();
         }}
         defaultStatus="today"
       />
@@ -178,6 +184,7 @@ function TodayContent() {
         onSubmit={async (input) => {
           if (editingTask) {
             await update(editingTask.id, input);
+            refreshAll();
           }
         }}
         task={editingTask}

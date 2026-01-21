@@ -443,7 +443,7 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    hsl(var(--primary) / 0.15) 50%,
+    color-mix(in srgb, var(--primary) 20%, transparent) 50%,
     transparent 100%
   );
   background-size: 200% 100%;

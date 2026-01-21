@@ -61,7 +61,7 @@ export default function InboxProcessPage() {
     update,
   } = useTasks();
   const { projects, create: createProject } = useProjects();
-  const { handleTaskComplete } = useGamificationEvents();
+  const { handleTaskComplete, refreshAll } = useGamificationEvents();
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showExitDialog, setShowExitDialog] = useState(false);
@@ -201,6 +201,7 @@ export default function InboxProcessPage() {
       setSelectedProject(newProject.id);
       setNewProjectName('');
       setCreatingProject(false);
+      refreshAll(); // May unlock project-related features
     } catch {
       // Handle error silently
     }
@@ -274,6 +275,7 @@ export default function InboxProcessPage() {
         onSubmit={async (input) => {
           if (editingTask) {
             await update(editingTask.id, input);
+            refreshAll();
           }
         }}
         task={editingTask}

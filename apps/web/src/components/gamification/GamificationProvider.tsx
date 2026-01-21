@@ -84,6 +84,8 @@ interface GamificationContextType {
   // Shimmer effect tracking
   isNewlyUnlocked: (code: string) => boolean;
   markFeatureOpened: (code: string) => Promise<{ isFirstOpen: boolean; tutorial: unknown } | null>;
+  // Deferred achievements - show queued achievements (called from Today page)
+  showDeferredAchievements: () => void;
 }
 
 const GamificationContext = createContext<GamificationContextType | null>(null);
@@ -160,6 +162,9 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
 
   // Track previously seen unlocked features to detect new unlocks
   const previousUnlockedRef = useRef<Set<string>>(new Set());
+
+  // Deferred achievements - stored until user navigates to main page
+  const deferredAchievementsRef = useRef<Achievement[]>([]);
 
   // Detect new feature unlocks when navFeatures changes
   useEffect(() => {
@@ -254,25 +259,13 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
       needsRefresh = true; // Level up can unlock features
     }
 
-    // Phase 3: Queue new achievements for toast display
-    // Limit to max 2 toasts to prevent spam when multiple achievements unlock at once
+    // Phase 3: Defer achievements - store for later display on main page
+    // This prevents interrupting flow during inbox processing, focus mode, etc.
     if (event.newAchievements && event.newAchievements.length > 0) {
-      setPendingAchievements((prev) => {
-        const newAchievements = event.newAchievements!;
-        const combined = [...prev, ...newAchievements];
-        // Keep only the first 2 most important (mastery > secret > streak > progress)
-        const priorityOrder: Record<string, number> = {
-          ultra_secret: 6,
-          secret: 5,
-          mastery: 4,
-          hidden: 3,
-          streak: 2,
-          progress: 1,
-        };
-        return combined
-          .sort((a, b) => (priorityOrder[b.category] || 0) - (priorityOrder[a.category] || 0))
-          .slice(0, 2);
-      });
+      deferredAchievementsRef.current = [
+        ...deferredAchievementsRef.current,
+        ...event.newAchievements,
+      ];
       needsRefresh = true; // Achievements can unlock features
     }
 
@@ -293,6 +286,31 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
     }
   }, [showLevelUp, refreshAll]);
 
+  // Show deferred achievements - called when user navigates to main page
+  const showDeferredAchievements = useCallback(() => {
+    if (deferredAchievementsRef.current.length === 0) return;
+
+    // Move deferred to pending with priority sorting
+    setPendingAchievements((prev) => {
+      const combined = [...prev, ...deferredAchievementsRef.current];
+      // Keep only the first 2 most important (mastery > secret > streak > progress)
+      const priorityOrder: Record<string, number> = {
+        ultra_secret: 6,
+        secret: 5,
+        mastery: 4,
+        hidden: 3,
+        streak: 2,
+        progress: 1,
+      };
+      return combined
+        .sort((a, b) => (priorityOrder[b.category] || 0) - (priorityOrder[a.category] || 0))
+        .slice(0, 2);
+    });
+
+    // Clear deferred
+    deferredAchievementsRef.current = [];
+  }, []);
+
   // Dismiss achievement from queue
   const dismissAchievement = useCallback((code: string) => {
     setPendingAchievements((prev) => prev.filter((a) => a.code !== code));
@@ -304,7 +322,7 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
   }, []);
 
   return (
-    <GamificationContext.Provider value={{ showLevelUp, handleTaskComplete, showCalmReview, state, loading, levelProgress, refresh, refreshAll, navFeatures, featuresLoading, isNewlyUnlocked, markFeatureOpened }}>
+    <GamificationContext.Provider value={{ showLevelUp, handleTaskComplete, showCalmReview, state, loading, levelProgress, refresh, refreshAll, navFeatures, featuresLoading, isNewlyUnlocked, markFeatureOpened, showDeferredAchievements }}>
       {children}
 
       {/* Calm Review - Reflection, not reward */}

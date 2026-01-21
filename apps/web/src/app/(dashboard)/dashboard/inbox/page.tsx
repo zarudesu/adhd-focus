@@ -46,7 +46,7 @@ export default function InboxPage() {
     update,
     create,
   } = useTasks({ showSnoozed });
-  const { handleTaskComplete } = useGamificationEvents();
+  const { handleTaskComplete, refreshAll } = useGamificationEvents();
 
   // Check if user should be redirected to their preferred landing page
   useEffect(() => {
@@ -120,6 +120,8 @@ export default function InboxPage() {
         onOpenChange={setShowAddDialog}
         onSubmit={async (input) => {
           await create(input);
+          // Refresh features after task creation (may unlock new features)
+          refreshAll();
         }}
         defaultStatus="inbox"
       />
@@ -131,6 +133,8 @@ export default function InboxPage() {
         onSubmit={async (input) => {
           if (editingTask) {
             await update(editingTask.id, input);
+            // Refresh features after task update (may unlock new features)
+            refreshAll();
           }
         }}
         task={editingTask}

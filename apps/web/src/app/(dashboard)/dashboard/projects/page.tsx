@@ -16,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useProjects } from "@/hooks/useProjects";
+import { useGamificationEvents } from '@/components/gamification/GamificationProvider';
 import { Plus, FolderOpen, MoreHorizontal, Trash2, Loader2 } from "lucide-react";
 import {
   DropdownMenu,
@@ -48,6 +49,7 @@ function ProjectsContent() {
   const [creating, setCreating] = useState(false);
 
   const { projects, loading, error, create, archive } = useProjects();
+  const { refreshAll } = useGamificationEvents();
 
   const handleCreate = async () => {
     if (!newName.trim()) return;
@@ -58,6 +60,7 @@ function ProjectsContent() {
       setNewColor(COLOR_OPTIONS[0]);
       setNewEmoji(EMOJI_OPTIONS[0]);
       setShowAddDialog(false);
+      refreshAll(); // May unlock project-related features
     } finally {
       setCreating(false);
     }
