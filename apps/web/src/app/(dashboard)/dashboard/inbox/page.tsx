@@ -107,7 +107,7 @@ export default function InboxPage() {
               <Plus className="h-4 w-4 mr-1" />
               Add
             </Button>
-            {inboxTasks.length > 0 && (
+            {inboxTasks.length > 0 && navFeatures.find(f => f.code === 'nav_process')?.isUnlocked && (
               <Button size="sm" variant="secondary" onClick={handleStartProcessing}>
                 <Sparkles className="h-4 w-4 mr-1" />
                 Process ({inboxTasks.length})
@@ -161,8 +161,8 @@ export default function InboxPage() {
           </div>
         )}
 
-        {/* Process hint - explain what "process" means */}
-        {inboxTasks.length >= 3 && (
+        {/* Process hint - explain what "process" means (only show if feature unlocked) */}
+        {inboxTasks.length >= 3 && navFeatures.find(f => f.code === 'nav_process')?.isUnlocked && (
           <Card className="border border-muted bg-muted/30">
             <CardContent className="p-3">
               <p className="text-sm text-muted-foreground">
