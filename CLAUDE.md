@@ -28,8 +28,10 @@
 | Repo | https://github.com/zarudesu/adhd-focus |
 | **Prod Server** | `23.134.216.230` |
 | **Prod Domain** | `https://beatyour8.com` |
+| **Staging Domain** | `https://adhdrenaline.com` |
 | **SSH** | `ssh -i ~/.ssh/adhd-focus-deploy root@23.134.216.230` |
-| **Deploy** | `git push` triggers GitHub Actions |
+| **Deploy Prod** | `git push origin main` triggers GitHub Actions |
+| **Deploy Staging** | `git push origin staging` triggers GitHub Actions |
 
 ## MANDATORY Workflow (Every Session!)
 
@@ -146,8 +148,9 @@ open ADHDFocus.xcodeproj
 |-------|--------|
 | GET/POST /api/tasks | **DONE** (+ mobile JWT auth) |
 | PATCH/DELETE /api/tasks/[id] | **DONE** (+ mobile JWT auth) |
-| Auth (register/login) | **DONE** |
+| Auth (register/login) | **DONE** (+ bot protection) |
 | POST /api/mobile/auth/login | **DONE** (JWT for iOS) |
+| POST /api/auth/verify-credentials | **DONE** (re-auth for Projects) |
 | GET/POST /api/projects | **DONE** |
 | PATCH/DELETE /api/projects/[id] | **DONE** |
 | GET/PATCH /api/profile | **DONE** |
@@ -488,6 +491,29 @@ docs: update CLAUDE.md
 ```
 
 ## Recent Changes (2026-01-22)
+
+### Security & Infrastructure
+- **Bot protection for registration**: Honeypot field + timing check (forms < 3 seconds = bot)
+- **Re-auth modal for Projects**: When Projects feature unlocks, user must re-enter password
+- **Staging environment**: adhdrenaline.com with separate database and docker-compose
+
+**Staging setup:**
+```bash
+# On server (/opt/adhd-focus)
+# 1. Create .env.staging from .env.staging.example
+# 2. Point DNS for adhdrenaline.com to 23.134.216.230
+# 3. Deploy: git push origin staging
+# Or manually:
+docker compose -f docker-compose.staging.yml --env-file .env.staging up -d
+```
+
+**Key files:**
+- `docker/docker-compose.staging.yml` - Staging services (web-staging, db-staging)
+- `docker/Caddyfile` - Multi-domain routing (beatyour8.com + adhdrenaline.com)
+- `.github/workflows/deploy-staging.yml` - Staging branch → adhdrenaline.com
+- `src/app/actions/auth.ts` - Bot detection in registration
+- `src/components/gamification/ReAuthModal.tsx` - Password verification modal
+- `src/app/api/auth/verify-credentials/route.ts` - Re-auth endpoint
 
 ### iOS App - Native SwiftUI
 - **Full iOS app skeleton**: Login, Signup, Today, Inbox, Settings tabs

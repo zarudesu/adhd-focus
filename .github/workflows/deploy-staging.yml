@@ -1,0 +1,99 @@
+# ADHD Focus - Staging Deployment
+# Builds Docker image and deploys staging to server (adhdrenaline.com)
+# Triggered by pushes to staging branch
+
+name: Deploy Staging
+
+on:
+  push:
+    branches: [staging]
+    paths:
+      - 'apps/web/**'
+      - 'packages/shared/**'
+      - 'docker/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/deploy-staging.yml'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/adhd-focus-web
+
+jobs:
+  build:
+    name: Build & Push Docker Image (Staging)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tags }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=staging-
+            type=raw,value=staging
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+            NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
+  deploy:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build
+    environment: staging
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /opt/adhd-focus
+
+            # Pull latest staging image
+            docker pull ghcr.io/${{ github.repository_owner }}/adhd-focus-web:staging
+
+            # Restart staging services (web + db if needed)
+            docker compose -f docker-compose.staging.yml --env-file .env.staging up -d
+
+            # Restart main Caddy to pick up any config changes
+            docker compose restart caddy
+
+            # Cleanup old images
+            docker image prune -f
+
+            echo "Staging deployment complete! https://adhdrenaline.com"

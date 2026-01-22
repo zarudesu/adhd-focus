@@ -1,0 +1,63 @@
+# ADHD Focus - Staging Stack
+# Runs alongside production on the same server
+# Uses the main Caddy (from docker-compose.yml) for HTTPS
+#
+# Setup:
+# 1. First deploy production: docker compose up -d
+# 2. cp .env.staging.example .env.staging && edit .env.staging
+# 3. docker compose -f docker-compose.staging.yml --env-file .env.staging up -d
+# 4. Access staging at https://adhdrenaline.com
+
+services:
+  # ===================
+  # Next.js Web App - Staging
+  # ===================
+  web-staging:
+    image: ghcr.io/zarudesu/adhd-focus-web:${WEB_VERSION:-staging}
+    container_name: adhd-focus-web-staging
+    restart: unless-stopped
+    environment:
+      # Database (staging-specific)
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@db-staging:5432/${POSTGRES_DB:-adhd_focus_staging}
+
+      # Auth
+      AUTH_SECRET: ${AUTH_SECRET}
+      AUTH_URL: ${SITE_URL:-https://adhdrenaline.com}
+
+      # Public
+      NEXT_PUBLIC_SITE_URL: ${SITE_URL:-https://adhdrenaline.com}
+    depends_on:
+      db-staging:
+        condition: service_healthy
+    networks:
+      - adhd-focus-network
+
+  # ===================
+  # PostgreSQL Database - Staging (Separate from Prod!)
+  # ===================
+  db-staging:
+    image: postgres:17-alpine
+    container_name: adhd-focus-db-staging
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-adhd_focus_staging}
+    volumes:
+      - db-data-staging:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ${POSTGRES_DB:-adhd_focus_staging}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - adhd-focus-network
+
+volumes:
+  db-data-staging:
+
+networks:
+  adhd-focus-network:
+    external: true

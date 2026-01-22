@@ -30,6 +30,10 @@ const registerSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   redirectTo: z.string().optional().default('/dashboard/inbox'),
+  // Honeypot field - should be empty (bots fill it)
+  website: z.string().optional(),
+  // Timestamp when form was rendered (to check speed)
+  _ts: z.string().optional(),
 });
 
 /**
@@ -139,7 +143,22 @@ export async function register(
       return { error: parsed.error };
     }
 
-    const { email, password, redirectTo } = parsed;
+    const { email, password, redirectTo, website, _ts } = parsed;
+
+    // Bot detection 1: Honeypot field should be empty
+    if (website) {
+      // Silently fail - don't give bots feedback
+      return { success: true };
+    }
+
+    // Bot detection 2: Form filled too fast (< 3 seconds = likely bot)
+    if (_ts) {
+      const formAge = Date.now() - parseInt(_ts, 10);
+      if (formAge < 3000) {
+        // Form filled in less than 3 seconds - likely a bot
+        return { success: true };
+      }
+    }
 
     // Call registration logic directly (no HTTP call)
     const result = await registerUser({ email, password });

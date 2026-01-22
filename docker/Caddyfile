@@ -1,8 +1,12 @@
 # ADHD Focus - Caddy Configuration
 # Automatic HTTPS with Let's Encrypt
+# Supports both production (beatyour8.com) and staging (adhdrenaline.com)
 
-{$DOMAIN} {
-    # Next.js Web App (handles both frontend and API)
+# ===================
+# Production Domain
+# ===================
+beatyour8.com {
+    # Next.js Web App (Production)
     reverse_proxy adhd-focus-web:3000
 
     # Security headers
@@ -11,14 +15,35 @@
         X-Content-Type-Options "nosniff"
         X-XSS-Protection "1; mode=block"
         Referrer-Policy "strict-origin-when-cross-origin"
-        # Enable HSTS
         Strict-Transport-Security "max-age=31536000; includeSubDomains"
     }
 
-    # Compression
     encode gzip zstd
 
-    # Logging
+    log {
+        output stdout
+        format console
+    }
+}
+
+# ===================
+# Staging Domain
+# ===================
+adhdrenaline.com {
+    # Next.js Web App (Staging)
+    reverse_proxy adhd-focus-web-staging:3000
+
+    # Security headers
+    header {
+        X-Frame-Options "DENY"
+        X-Content-Type-Options "nosniff"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    }
+
+    encode gzip zstd
+
     log {
         output stdout
         format console

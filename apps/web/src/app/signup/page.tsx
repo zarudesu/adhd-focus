@@ -71,6 +71,8 @@ function SignupForm() {
     if (typeof window === 'undefined') return 0;
     return hasPendingTasks() ? getPendingTaskCount() : 0;
   });
+  // Timestamp when form was rendered (for bot detection)
+  const [formTimestamp] = useState(() => Date.now().toString());
 
   const [state, formAction, isPending] = useActionState<AuthState | undefined, FormData>(
     register,
@@ -144,6 +146,19 @@ function SignupForm() {
               animate="show"
             >
               <input type="hidden" name="redirectTo" value={callbackUrl} />
+              {/* Bot detection: timestamp for speed check */}
+              <input type="hidden" name="_ts" value={formTimestamp} />
+              {/* Honeypot field - hidden from users, bots fill it */}
+              <div className="absolute -left-[9999px] opacity-0" aria-hidden="true">
+                <label htmlFor="website">Website</label>
+                <input
+                  type="text"
+                  id="website"
+                  name="website"
+                  tabIndex={-1}
+                  autoComplete="off"
+                />
+              </div>
 
               <motion.div className="space-y-2" variants={itemVariants}>
                 <Label htmlFor="email">Email</Label>

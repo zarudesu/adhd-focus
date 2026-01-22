@@ -20,8 +20,10 @@ import { CalmReview, type CalmReviewProps } from './CalmReview';
 import { AchievementToastStack } from './AchievementToast';
 import { CreatureToastStack, type CaughtCreatureData } from './CreatureCaughtToast';
 import { FeatureUnlockModal, type FeatureUnlockData } from './FeatureUnlockModal';
+import { ReAuthModal } from './ReAuthModal';
 import { useGamification } from '@/hooks/useGamification';
 import { useFeatures } from '@/hooks/useFeatures';
+import { useSession } from 'next-auth/react';
 import type { Achievement, Creature } from '@/db/schema';
 
 // Types for Calm Review triggers
@@ -103,6 +105,9 @@ interface GamificationProviderProps {
 }
 
 export function GamificationProvider({ children }: GamificationProviderProps) {
+  // Get session for user email (for re-auth modal)
+  const { data: session } = useSession();
+
   // Centralized gamification state
   const { state, loading, levelProgress, refresh } = useGamification();
   // Features state (for menu/nav updates) - shared with sidebar
@@ -158,6 +163,15 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
   }>({
     open: false,
     feature: null,
+  });
+
+  // Re-auth modal state (shown after Projects unlock)
+  const [reAuthModal, setReAuthModal] = useState<{
+    open: boolean;
+    featureCode: string | null;
+  }>({
+    open: false,
+    featureCode: null,
   });
 
   // Track previously seen unlocked features to detect new unlocks
@@ -347,8 +361,26 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
         onOpenChange={(open) => setFeatureUnlockModal((prev) => ({ ...prev, open }))}
         feature={featureUnlockModal.feature}
         onDismiss={(code) => {
-          // Mark feature as opened in database so modal doesn't show again
-          markFeatureOpened(code);
+          // For Projects, show re-auth modal first
+          if (code === 'nav_projects') {
+            setReAuthModal({ open: true, featureCode: code });
+          } else {
+            // Mark feature as opened in database so modal doesn't show again
+            markFeatureOpened(code);
+          }
+        }}
+      />
+
+      {/* Re-Auth Modal (shown after Projects unlock) */}
+      <ReAuthModal
+        open={reAuthModal.open}
+        onOpenChange={(open) => setReAuthModal((prev) => ({ ...prev, open }))}
+        userEmail={session?.user?.email || ''}
+        onVerified={() => {
+          // Mark Projects feature as opened after verification
+          if (reAuthModal.featureCode) {
+            markFeatureOpened(reAuthModal.featureCode);
+          }
         }}
       />
 
