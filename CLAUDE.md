@@ -1,7 +1,7 @@
 # CLAUDE.md - AI Assistant Instructions
 
 > **READ THIS FILE FIRST** in every new session or after context compaction.
-> Last updated: 2026-01-20
+> Last updated: 2026-01-22
 
 ## CRITICAL: When Fixing Bugs
 
@@ -21,8 +21,9 @@
 
 | Key | Value |
 |-----|-------|
-| Status | Active development - Web UI connected to API |
-| Stack | Next.js 16 + Drizzle + NextAuth + PostgreSQL |
+| Status | Active development - Web + iOS apps |
+| Web Stack | Next.js 16 + Drizzle + NextAuth + PostgreSQL |
+| iOS Stack | SwiftUI + URLSession + Keychain |
 | Language | User: Russian, Code/Docs: English |
 | Repo | https://github.com/zarudesu/adhd-focus |
 | **Prod Server** | `23.134.216.230` |
@@ -116,13 +117,37 @@ cd apps/web && npm run dev
 | Checklist | **DONE** | Daily habits with drag-drop reorder, time of day sections, streaks, yesterday review |
 | Landing | **DONE** | Minimalist single input, localStorage tasks, celebration modal, registration flow |
 
+### iOS App - Native SwiftUI
+
+| Screen | Status | Features |
+|--------|--------|----------|
+| Login | **DONE** | Email/password, JWT token storage in Keychain |
+| Signup | **DONE** | Registration with auto-login |
+| Today | **DONE** | Today tasks, complete/uncomplete, add task |
+| Inbox | **DONE** | Inbox tasks, quick add bar |
+| Settings | **DONE** | User info, stats, logout |
+
+**Key Files:**
+- `apps/ios/ADHDFocus/` - Main app code
+- `apps/ios/project.yml` - XcodeGen config
+- `apps/ios/ADHDFocus.xcodeproj/` - Generated Xcode project
+
+**Build & Run:**
+```bash
+cd apps/ios
+xcodegen generate   # Generate Xcode project from project.yml
+open ADHDFocus.xcodeproj
+# In Xcode: Select team, build (Cmd+B), run on simulator/device
+```
+
 ### Backend - API Routes
 
 | Route | Status |
 |-------|--------|
-| GET/POST /api/tasks | **DONE** |
-| PATCH/DELETE /api/tasks/[id] | **DONE** |
+| GET/POST /api/tasks | **DONE** (+ mobile JWT auth) |
+| PATCH/DELETE /api/tasks/[id] | **DONE** (+ mobile JWT auth) |
 | Auth (register/login) | **DONE** |
+| POST /api/mobile/auth/login | **DONE** (JWT for iOS) |
 | GET/POST /api/projects | **DONE** |
 | PATCH/DELETE /api/projects/[id] | **DONE** |
 | GET/PATCH /api/profile | **DONE** |
@@ -246,8 +271,32 @@ apps/web/src/
 │   └── schema.ts                 # Database schema (incl. gamification, habits)
 └── lib/
     ├── auth.ts                   # NextAuth config
+    ├── mobile-auth.ts            # JWT verification for mobile
     ├── pending-tasks.ts          # localStorage helpers
     └── utils.ts                  # Utilities
+
+apps/ios/ADHDFocus/
+├── ADHDFocusApp.swift            # App entry point
+├── ContentView.swift             # Main tab view + auth routing
+├── Models/
+│   ├── Task.swift                # TaskItem, TaskStatus, enums
+│   ├── User.swift                # User, AuthResponse, LoginInput
+│   └── Project.swift             # Project model
+├── Services/
+│   ├── APIClient.swift           # HTTP client + Keychain storage
+│   ├── AuthManager.swift         # Auth state management
+│   └── TaskStore.swift           # Tasks state + CRUD
+└── Views/
+    ├── Auth/
+    │   ├── LoginView.swift       # Login screen
+    │   └── SignupView.swift      # Registration screen
+    ├── Today/
+    │   └── TodayView.swift       # Today tasks list
+    ├── Inbox/
+    │   └── InboxView.swift       # Inbox + quick add
+    └── Components/
+        ├── TaskRow.swift         # Single task row
+        └── AddTaskSheet.swift    # Add task modal
 ```
 
 ## Community Resources (CHECK THESE FIRST!)
@@ -438,7 +487,22 @@ fix(auth): fix bug
 docs: update CLAUDE.md
 ```
 
-## Recent Changes (2026-01-20)
+## Recent Changes (2026-01-22)
+
+### iOS App - Native SwiftUI
+- **Full iOS app skeleton**: Login, Signup, Today, Inbox, Settings tabs
+- **JWT authentication**: Mobile auth endpoint `/api/mobile/auth/login` returns JWT tokens
+- **Keychain storage**: Secure token storage using iOS Security framework
+- **Shared TaskStore**: Single source of truth for tasks across views
+- **Mobile-aware API**: Tasks endpoints now accept both NextAuth sessions (web) and Bearer tokens (mobile)
+
+**Key technical decisions:**
+- Renamed `Task` model to `TaskItem` to avoid Swift async/await conflict
+- Used `@ObservedObject` for shared state instead of `@StateObject` per view
+- API returns camelCase (no snake_case conversion needed)
+- `lib/mobile-auth.ts` helper verifies JWT for mobile requests
+
+### Previous (2026-01-20)
 
 ### ESLint Strict Mode Compliance
 - **0 errors** (was 24 errors)
