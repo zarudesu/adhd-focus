@@ -55,7 +55,7 @@ class APIClient: ObservableObject {
 
     // MARK: - Generic Request
 
-    private func request<T: Decodable>(
+    func request<T: Decodable>(
         _ endpoint: String,
         method: String = "GET",
         body: (any Encodable)? = nil
