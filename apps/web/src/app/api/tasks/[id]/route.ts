@@ -4,7 +4,7 @@
 // DELETE /api/tasks/[id] - Delete task
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getAuthUser } from "@/lib/mobile-auth";
 import { db, tasks, users } from "@/db";
 import { eq, and, sql } from "drizzle-orm";
 import { z } from "zod";
@@ -33,8 +33,8 @@ const updateTaskSchema = z.object({
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const [task] = await db
       .select()
       .from(tasks)
-      .where(and(eq(tasks.id, id), eq(tasks.userId, session.user.id)))
+      .where(and(eq(tasks.id, id), eq(tasks.userId, user.id)))
       .limit(1);
 
     if (!task) {
@@ -59,8 +59,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -100,7 +100,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const [currentTask] = await db
       .select({ status: tasks.status, scheduledDate: tasks.scheduledDate })
       .from(tasks)
-      .where(and(eq(tasks.id, id), eq(tasks.userId, session.user.id)))
+      .where(and(eq(tasks.id, id), eq(tasks.userId, user.id)))
       .limit(1);
 
     if (!currentTask) {
@@ -114,7 +114,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const [updatedTask] = await db
       .update(tasks)
       .set(updateData)
-      .where(and(eq(tasks.id, id), eq(tasks.userId, session.user.id)))
+      .where(and(eq(tasks.id, id), eq(tasks.userId, user.id)))
       .returning();
 
     if (!updatedTask) {
@@ -149,7 +149,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       await db
         .update(users)
         .set(progressUpdates)
-        .where(eq(users.id, session.user.id));
+        .where(eq(users.id, user.id));
     }
 
     return NextResponse.json(updatedTask);
@@ -164,8 +164,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -175,7 +175,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const [archivedTask] = await db
       .update(tasks)
       .set({ status: "archived", updatedAt: new Date() })
-      .where(and(eq(tasks.id, id), eq(tasks.userId, session.user.id)))
+      .where(and(eq(tasks.id, id), eq(tasks.userId, user.id)))
       .returning();
 
     if (!archivedTask) {
@@ -189,7 +189,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         tasksDeleted: sql`COALESCE(${users.tasksDeleted}, 0) + 1`,
         updatedAt: new Date(),
       })
-      .where(eq(users.id, session.user.id));
+      .where(eq(users.id, user.id));
 
     return NextResponse.json({ success: true });
   } catch (error) {

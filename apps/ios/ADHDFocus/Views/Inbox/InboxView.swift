@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct InboxView: View {
-    @StateObject private var taskStore = TaskStore()
+    @ObservedObject var taskStore: TaskStore
     @State private var showAddTask = false
     @State private var newTaskTitle = ""
     @FocusState private var isQuickAddFocused: Bool
@@ -37,9 +37,6 @@ struct InboxView: View {
                 }
             }
             .refreshable {
-                await taskStore.fetchTasks()
-            }
-            .task {
                 await taskStore.fetchTasks()
             }
             .sheet(isPresented: $showAddTask) {
@@ -110,5 +107,5 @@ struct InboxView: View {
 }
 
 #Preview {
-    InboxView()
+    InboxView(taskStore: TaskStore())
 }

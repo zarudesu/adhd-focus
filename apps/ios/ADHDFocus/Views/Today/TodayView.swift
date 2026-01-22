@@ -2,7 +2,7 @@ import SwiftUI
 
 struct TodayView: View {
     @EnvironmentObject var authManager: AuthManager
-    @StateObject private var taskStore = TaskStore()
+    @ObservedObject var taskStore: TaskStore
     @State private var showAddTask = false
 
     var body: some View {
@@ -40,9 +40,6 @@ struct TodayView: View {
                 }
             }
             .refreshable {
-                await taskStore.fetchTasks()
-            }
-            .task {
                 await taskStore.fetchTasks()
             }
             .sheet(isPresented: $showAddTask) {
@@ -102,6 +99,6 @@ struct TodayView: View {
 }
 
 #Preview {
-    TodayView()
+    TodayView(taskStore: TaskStore())
         .environmentObject(AuthManager())
 }

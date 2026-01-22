@@ -3,7 +3,7 @@
 // POST /api/tasks - Create task
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getAuthUser } from "@/lib/mobile-auth";
 import { db, tasks, users, type NewTask } from "@/db";
 import { eq, and, inArray, lte, desc, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
@@ -36,8 +36,8 @@ const createTaskSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
     const params = querySchema.parse(Object.fromEntries(searchParams));
 
     // Build query conditions
-    const conditions = [eq(tasks.userId, session.user.id)];
+    const conditions = [eq(tasks.userId, user.id)];
 
     if (params.status) {
       const statuses = params.status.split(",") as Array<"inbox" | "today" | "scheduled" | "in_progress" | "done" | "archived">;
@@ -97,8 +97,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
     const [newTask] = await db
       .insert(tasks)
       .values({
-        userId: session.user.id,
+        userId: user.id,
         title: data.title,
         description: data.description,
         status,
@@ -153,7 +153,7 @@ export async function POST(request: NextRequest) {
     await db
       .update(users)
       .set(progressUpdates)
-      .where(eq(users.id, session.user.id));
+      .where(eq(users.id, user.id));
 
     return NextResponse.json(newTask, { status: 201 });
   } catch (error) {

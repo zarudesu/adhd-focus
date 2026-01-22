@@ -27,27 +27,30 @@ struct ContentView: View {
 
 struct MainTabView: View {
     @State private var selectedTab = 0
+    @StateObject private var taskStore = TaskStore()
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            TodayView()
+            TodayView(taskStore: taskStore)
                 .tabItem {
                     Label("Today", systemImage: "sun.max.fill")
                 }
                 .tag(0)
 
-            InboxView()
+            InboxView(taskStore: taskStore)
                 .tabItem {
                     Label("Inbox", systemImage: "tray.fill")
                 }
                 .tag(1)
 
-            // Placeholder for more tabs
             SettingsPlaceholderView()
                 .tabItem {
                     Label("More", systemImage: "ellipsis")
                 }
                 .tag(2)
+        }
+        .task {
+            await taskStore.fetchTasks()
         }
     }
 }
