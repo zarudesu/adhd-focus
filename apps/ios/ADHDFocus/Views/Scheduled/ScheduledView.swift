@@ -6,7 +6,7 @@ struct ScheduledView: View {
 
     // MARK: - Date Grouping
 
-    private enum DateGroup: Comparable {
+    private enum DateGroup: Comparable, Hashable {
         case today
         case tomorrow
         case thisWeek(Date)
@@ -33,6 +33,21 @@ struct ScheduledView: View {
                 return d1 < d2
             default:
                 return false
+            }
+        }
+
+        func hash(into hasher: inout Hasher) {
+            switch self {
+            case .today:
+                hasher.combine(0)
+            case .tomorrow:
+                hasher.combine(1)
+            case .thisWeek(let date):
+                hasher.combine(2)
+                hasher.combine(date)
+            case .later(let date):
+                hasher.combine(3)
+                hasher.combine(date)
             }
         }
     }
