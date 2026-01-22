@@ -337,10 +337,155 @@ npx shadcn@latest add [component]
 ## Environment Variables
 
 ```bash
-# apps/web/.env.local
+# apps/web/.env.local (local development)
 DATABASE_URL=postgres://postgres:testpassword123@localhost:5434/postgres
 AUTH_SECRET=your-secret-here
 AUTH_URL=http://localhost:3000
+```
+
+## Production & Staging Environments
+
+### Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Server: 23.134.216.230                    │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌─────────────┐     ┌──────────────────────────────────┐  │
+│  │   Caddy     │────▶│  beatyour8.com (Production)      │  │
+│  │  (ports     │     │  ├─ adhd-focus-web:3000          │  │
+│  │  80/443)    │     │  └─ adhd-focus-db:5432           │  │
+│  │             │     └──────────────────────────────────┘  │
+│  │             │                                            │
+│  │             │     ┌──────────────────────────────────┐  │
+│  │             │────▶│  adhdrenaline.com (Staging)      │  │
+│  │             │     │  ├─ adhd-focus-web-staging:3000  │  │
+│  └─────────────┘     │  └─ adhd-focus-db-staging:5433   │  │
+│                      └──────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Domains & Branches
+
+| Environment | Domain | Git Branch | Image Tag |
+|-------------|--------|------------|-----------|
+| **Production** | beatyour8.com | `main` | `:latest` |
+| **Staging** | adhdrenaline.com | `staging` | `:staging` |
+
+### Deployment Workflow
+
+```bash
+# Deploy to PRODUCTION (beatyour8.com)
+git checkout main
+git push origin main
+# → GitHub Actions builds :latest image
+# → Deploys to adhd-focus-web container
+
+# Deploy to STAGING (adhdrenaline.com)
+git checkout staging
+git merge main  # or cherry-pick specific commits
+git push origin staging
+# → GitHub Actions builds :staging image
+# → Deploys to adhd-focus-web-staging container
+```
+
+### Server File Structure
+
+```
+/opt/adhd-focus/
+├── .env                      # Production secrets
+├── .env.staging              # Staging secrets (separate DB password!)
+├── docker-compose.yml        # Production services
+├── docker-compose.staging.yml # Staging services
+├── Caddyfile                 # Multi-domain routing
+└── migrations/               # DB migrations
+```
+
+### Key Server Commands
+
+```bash
+# SSH to server
+ssh -i ~/.ssh/adhd-focus-deploy root@23.134.216.230
+
+# Check all containers
+docker ps
+
+# View logs
+docker logs adhd-focus-web          # Production web
+docker logs adhd-focus-web-staging  # Staging web
+docker logs adhd-focus-caddy        # Reverse proxy
+
+# Restart services
+cd /opt/adhd-focus
+docker compose restart web                                    # Prod web
+docker compose -f docker-compose.staging.yml restart web-staging  # Staging web
+docker compose restart caddy                                  # Caddy (both domains)
+
+# Manual deploy (without GitHub Actions)
+docker pull ghcr.io/zarudesu/adhd-focus-web:latest
+docker compose up -d --no-deps web
+
+# Database access
+docker exec -it adhd-focus-db psql -U postgres -d adhd_focus           # Prod
+docker exec -it adhd-focus-db-staging psql -U postgres -d adhd_focus_staging  # Staging
+```
+
+### Databases
+
+| Environment | Container | Port | Database Name |
+|-------------|-----------|------|---------------|
+| Production | adhd-focus-db | 5432 | adhd_focus |
+| Staging | adhd-focus-db-staging | 5433 | adhd_focus_staging |
+
+**IMPORTANT**: Databases are completely separate. Staging data won't affect production.
+
+### Adding New Server Files
+
+When you need to update server configs (Caddyfile, docker-compose, etc.):
+
+```bash
+# Copy file to server
+scp -i ~/.ssh/adhd-focus-deploy docker/Caddyfile root@23.134.216.230:/opt/adhd-focus/
+
+# Then restart affected service
+ssh -i ~/.ssh/adhd-focus-deploy root@23.134.216.230 "cd /opt/adhd-focus && docker compose restart caddy"
+```
+
+### GitHub Actions Secrets Required
+
+For both `production` and `staging` environments in GitHub:
+- `SERVER_HOST` = `23.134.216.230`
+- `SERVER_USER` = `root`
+- `SSH_PRIVATE_KEY` = contents of `~/.ssh/adhd-focus-deploy`
+
+### Initial Staging Setup (One-Time)
+
+This was already done, but for reference:
+
+```bash
+# 1. Point DNS: adhdrenaline.com → 23.134.216.230
+
+# 2. Copy files to server
+scp -i ~/.ssh/adhd-focus-deploy docker/docker-compose.staging.yml root@23.134.216.230:/opt/adhd-focus/
+scp -i ~/.ssh/adhd-focus-deploy docker/Caddyfile root@23.134.216.230:/opt/adhd-focus/
+
+# 3. Create staging secrets on server
+ssh root@23.134.216.230
+cd /opt/adhd-focus
+cat > .env.staging << 'EOF'
+DOMAIN=adhdrenaline.com
+SITE_URL=https://adhdrenaline.com
+POSTGRES_PASSWORD=$(openssl rand -base64 24)
+AUTH_SECRET=$(openssl rand -base64 32)
+POSTGRES_DB=adhd_focus_staging
+POSTGRES_PORT=5433
+WEB_VERSION=latest
+EOF
+
+# 4. Start staging
+docker compose -f docker-compose.staging.yml --env-file .env.staging up -d
+docker compose restart caddy
 ```
 
 ## API Pattern (Reference)
@@ -492,22 +637,17 @@ docs: update CLAUDE.md
 
 ## Recent Changes (2026-01-22)
 
-### Security & Infrastructure
+### Staging Environment - LIVE ✅
+- **Production**: https://beatyour8.com (main branch)
+- **Staging**: https://adhdrenaline.com (staging branch)
+- Separate databases, same server
+- See "Production & Staging Environments" section above for full details
+
+### Security Improvements
 - **Bot protection for registration**: Honeypot field + timing check (forms < 3 seconds = bot)
-- **Re-auth modal for Projects**: When Projects feature unlocks, user must re-enter password
-- **Staging environment**: adhdrenaline.com with separate database and docker-compose
+- **Re-auth modal for Projects**: When Projects feature unlocks, user must re-enter password (prep for email verification)
 
-**Staging setup:**
-```bash
-# On server (/opt/adhd-focus)
-# 1. Create .env.staging from .env.staging.example
-# 2. Point DNS for adhdrenaline.com to 23.134.216.230
-# 3. Deploy: git push origin staging
-# Or manually:
-docker compose -f docker-compose.staging.yml --env-file .env.staging up -d
-```
-
-**Key files:**
+**Key files changed:**
 - `docker/docker-compose.staging.yml` - Staging services (web-staging, db-staging)
 - `docker/Caddyfile` - Multi-domain routing (beatyour8.com + adhdrenaline.com)
 - `.github/workflows/deploy-staging.yml` - Staging branch → adhdrenaline.com
