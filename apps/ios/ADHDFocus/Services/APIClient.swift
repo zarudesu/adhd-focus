@@ -139,6 +139,28 @@ class APIClient: ObservableObject {
         try await request("/projects", method: "POST", body: input)
     }
 
+    func updateProject(id: String, _ input: UpdateProjectInput) async throws -> Project {
+        try await request("/projects/\(id)", method: "PATCH", body: input)
+    }
+
+    func deleteProject(id: String) async throws -> EmptyResponse {
+        try await request("/projects/\(id)", method: "DELETE")
+    }
+
+    // MARK: - Focus Sessions
+
+    func getFocusSessions() async throws -> FocusSessionsResponse {
+        try await request("/focus/sessions")
+    }
+
+    func createFocusSession(_ input: CreateSessionInput) async throws -> FocusSession {
+        try await request("/focus/sessions", method: "POST", body: input)
+    }
+
+    func updateFocusSession(id: String, _ input: UpdateSessionInput) async throws -> FocusSession {
+        try await request("/focus/sessions/\(id)", method: "PATCH", body: input)
+    }
+
     // MARK: - Auth
 
     func login(email: String, password: String) async throws -> AuthResponse {
@@ -164,6 +186,32 @@ class APIClient: ObservableObject {
 
     func getProfile() async throws -> User {
         try await request("/profile")
+    }
+
+    // MARK: - Achievements
+
+    func getAchievements() async throws -> AchievementsResponse {
+        try await request("/gamification/achievements")
+    }
+
+    // MARK: - Stats
+
+    func getStats(days: Int = 7) async throws -> StatsAPIResponse {
+        try await request("/stats?days=\(days)")
+    }
+
+    func getGamificationStats() async throws -> GamificationStatsResponse {
+        try await request("/gamification/stats")
+    }
+
+    // MARK: - Creatures
+
+    func getCreatures() async throws -> CreaturesResponse {
+        try await request("/gamification/creatures")
+    }
+
+    func spawnCreature() async throws -> SpawnCreatureResponse {
+        try await request("/gamification/creatures/spawn", method: "POST", body: ["onTaskComplete": true])
     }
 }
 

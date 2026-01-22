@@ -121,4 +121,65 @@ class TaskStore: ObservableObject {
             return false
         }
     }
+
+    func moveToScheduled(id: String, date: Date) async -> Bool {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let dateString = formatter.string(from: date)
+
+        let input = UpdateTaskInput(status: .scheduled, scheduledDate: dateString)
+        do {
+            let task = try await api.updateTask(id: id, input)
+            if let index = tasks.firstIndex(where: { $0.id == id }) {
+                tasks[index] = task
+            }
+            return true
+        } catch {
+            self.error = error.localizedDescription
+            return false
+        }
+    }
+
+    func createScheduledTask(title: String, scheduledDate: Date) async -> Bool {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let dateString = formatter.string(from: scheduledDate)
+
+        let input = CreateTaskInput(
+            title: title,
+            status: .scheduled,
+            scheduledDate: dateString
+        )
+
+        do {
+            let task = try await api.createTask(input)
+            self.tasks.insert(task, at: 0)
+            return true
+        } catch {
+            self.error = error.localizedDescription
+            return false
+        }
+    }
+
+    func createTaskWithProject(title: String, projectId: String, status: TaskStatus = .inbox) async -> Bool {
+        let input = CreateTaskInput(
+            title: title,
+            status: status,
+            projectId: projectId
+        )
+
+        do {
+            let task = try await api.createTask(input)
+            self.tasks.insert(task, at: 0)
+            return true
+        } catch {
+            self.error = error.localizedDescription
+            return false
+        }
+    }
+
+    // Get tasks for a specific project
+    func tasksForProject(_ projectId: String) -> [TaskItem] {
+        tasks.filter { $0.projectId == projectId }
+    }
 }

@@ -3,6 +3,7 @@ import SwiftUI
 struct InboxView: View {
     @ObservedObject var taskStore: TaskStore
     @State private var showAddTask = false
+    @State private var showProcessMode = false
     @State private var newTaskTitle = ""
     @FocusState private var isQuickAddFocused: Bool
 
@@ -27,6 +28,19 @@ struct InboxView: View {
             }
             .navigationTitle("Inbox")
             .toolbar {
+                // Process All button (only shows when inbox has tasks)
+                if !taskStore.inboxTasks.isEmpty {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button {
+                            showProcessMode = true
+                        } label: {
+                            Label("Process All", systemImage: "rectangle.stack.badge.play")
+                                .labelStyle(.titleAndIcon)
+                                .font(.subheadline)
+                        }
+                    }
+                }
+
                 ToolbarItem(placement: .primaryAction) {
                     Button {
                         showAddTask = true
@@ -41,6 +55,9 @@ struct InboxView: View {
             }
             .sheet(isPresented: $showAddTask) {
                 AddTaskSheet(taskStore: taskStore, defaultStatus: .inbox)
+            }
+            .fullScreenCover(isPresented: $showProcessMode) {
+                ProcessModeView(taskStore: taskStore)
             }
         }
     }

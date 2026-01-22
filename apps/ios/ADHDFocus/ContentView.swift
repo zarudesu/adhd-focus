@@ -28,6 +28,7 @@ struct ContentView: View {
 struct MainTabView: View {
     @State private var selectedTab = 0
     @StateObject private var taskStore = TaskStore()
+    @StateObject private var projectStore = ProjectStore()
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -43,24 +44,41 @@ struct MainTabView: View {
                 }
                 .tag(1)
 
-            SettingsPlaceholderView()
+            ChecklistView()
+                .tabItem {
+                    Label("Checklist", systemImage: "checklist")
+                }
+                .tag(2)
+
+            FocusView(taskStore: taskStore)
+                .tabItem {
+                    Label("Focus", systemImage: "timer")
+                }
+                .tag(3)
+
+            MoreView(taskStore: taskStore, projectStore: projectStore)
                 .tabItem {
                     Label("More", systemImage: "ellipsis")
                 }
-                .tag(2)
+                .tag(4)
         }
         .task {
             await taskStore.fetchTasks()
+            await projectStore.fetchProjects()
         }
     }
 }
 
-struct SettingsPlaceholderView: View {
+struct MoreView: View {
     @EnvironmentObject var authManager: AuthManager
+    @ObservedObject var taskStore: TaskStore
+    @ObservedObject var projectStore: ProjectStore
+    @State private var showQuickActions = false
 
     var body: some View {
         NavigationStack {
             List {
+                // User profile section
                 Section {
                     if let user = authManager.currentUser {
                         HStack {
@@ -80,15 +98,55 @@ struct SettingsPlaceholderView: View {
                     }
                 }
 
-                Section("Stats") {
-                    if let user = authManager.currentUser {
-                        LabeledContent("Level", value: "\(user.level)")
-                        LabeledContent("XP", value: "\(user.xp)")
-                        LabeledContent("Tasks Completed", value: "\(user.totalTasksCompleted)")
-                        LabeledContent("Current Streak", value: "\(user.currentStreak) days")
+                // Task views
+                Section("Tasks") {
+                    NavigationLink {
+                        ProjectsView(projectStore: projectStore, taskStore: taskStore)
+                    } label: {
+                        Label("Projects", systemImage: "folder.fill")
+                    }
+
+                    NavigationLink {
+                        ScheduledView(taskStore: taskStore)
+                    } label: {
+                        Label("Scheduled", systemImage: "calendar")
+                    }
+
+                    NavigationLink {
+                        CompletedView(taskStore: taskStore)
+                    } label: {
+                        Label("Completed", systemImage: "checkmark.circle.fill")
+                    }
+
+                    Button {
+                        showQuickActions = true
+                    } label: {
+                        Label("Quick Capture", systemImage: "bolt.fill")
                     }
                 }
 
+                // Stats & Gamification
+                Section("Progress") {
+                    NavigationLink {
+                        StatsView()
+                    } label: {
+                        Label("Statistics", systemImage: "chart.bar.fill")
+                    }
+
+                    NavigationLink {
+                        AchievementsView()
+                    } label: {
+                        Label("Achievements", systemImage: "trophy.fill")
+                    }
+
+                    NavigationLink {
+                        CreaturesView()
+                    } label: {
+                        Label("Creatures", systemImage: "pawprint.fill")
+                    }
+                }
+
+                // Sign out
                 Section {
                     Button(role: .destructive) {
                         authManager.logout()
@@ -101,7 +159,10 @@ struct SettingsPlaceholderView: View {
                     }
                 }
             }
-            .navigationTitle("Settings")
+            .navigationTitle("More")
+            .fullScreenCover(isPresented: $showQuickActions) {
+                QuickActionsView(taskStore: taskStore)
+            }
         }
     }
 }
