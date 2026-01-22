@@ -3,7 +3,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { users } from "@/db/schema";
+import { users, type UserPreferences } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
       .sign(JWT_SECRET);
 
     // Extract preferences (with defaults)
-    const prefs = user.preferences ?? {};
+    const prefs = (user.preferences ?? {}) as Partial<UserPreferences>;
 
     return NextResponse.json({
       token,
