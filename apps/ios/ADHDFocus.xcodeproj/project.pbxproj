@@ -22,6 +22,36 @@
 		BAD5F187AFE4A40943130F9A /* TaskStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8056FEE87250E37D114F03B /* TaskStore.swift */; };
 		CDF974EF4C0EC70B197E3959 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 092953F6D8CEDBFF99F7DD93 /* ContentView.swift */; };
 		F9007E3B118C1D14A021C8B5 /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3C6FE50505E6EF07837DB67 /* User.swift */; };
+		/* New Models */
+		AA1111111111111111111111 /* Achievement.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB1111111111111111111111 /* Achievement.swift */; };
+		AA2222222222222222222222 /* Creature.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB2222222222222222222222 /* Creature.swift */; };
+		AA3333333333333333333333 /* FocusSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB3333333333333333333333 /* FocusSession.swift */; };
+		AA4444444444444444444444 /* Habit.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB4444444444444444444444 /* Habit.swift */; };
+		AA5555555555555555555555 /* UserStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB5555555555555555555555 /* UserStats.swift */; };
+		/* New Services */
+		AA6666666666666666666666 /* AchievementStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB6666666666666666666666 /* AchievementStore.swift */; };
+		AA7777777777777777777777 /* CreatureStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB7777777777777777777777 /* CreatureStore.swift */; };
+		AA8888888888888888888888 /* FocusStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB8888888888888888888888 /* FocusStore.swift */; };
+		AA9999999999999999999999 /* HabitStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB9999999999999999999999 /* HabitStore.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA10 /* ProjectStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBAAAAAAAAAAAAAAAAAAAA10 /* ProjectStore.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA11 /* StatsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBAAAAAAAAAAAAAAAAAAAA11 /* StatsStore.swift */; };
+		/* New Views */
+		AAAAAAAAAAAAAAAAAAAAAA12 /* AchievementsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBAAAAAAAAAAAAAAAAAAAA12 /* AchievementsView.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA13 /* AddHabitSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBAAAAAAAAAAAAAAAAAAAA13 /* AddHabitSheet.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA14 /* ChecklistView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBAAAAAAAAAAAAAAAAAAAA14 /* ChecklistView.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA15 /* CompletedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBAAAAAAAAAAAAAAAAAAAA15 /* CompletedView.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA16 /* CreatureDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBAAAAAAAAAAAAAAAAAAAA16 /* CreatureDetailSheet.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA17 /* CreaturesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBAAAAAAAAAAAAAAAAAAAA17 /* CreaturesView.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA18 /* FocusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBAAAAAAAAAAAAAAAAAAAA18 /* FocusView.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA19 /* TaskSelectorSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBAAAAAAAAAAAAAAAAAAAA19 /* TaskSelectorSheet.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA20 /* TimerCircle.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBAAAAAAAAAAAAAAAAAAAA20 /* TimerCircle.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA21 /* ProcessModeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBAAAAAAAAAAAAAAAAAAAA21 /* ProcessModeView.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA22 /* AddProjectSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBAAAAAAAAAAAAAAAAAAAA22 /* AddProjectSheet.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA23 /* ProjectDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBAAAAAAAAAAAAAAAAAAAA23 /* ProjectDetailView.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA24 /* ProjectsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBAAAAAAAAAAAAAAAAAAAA24 /* ProjectsView.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA25 /* QuickActionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBAAAAAAAAAAAAAAAAAAAA25 /* QuickActionsView.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA26 /* ScheduledView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBAAAAAAAAAAAAAAAAAAAA26 /* ScheduledView.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA27 /* StatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBAAAAAAAAAAAAAAAAAAAA27 /* StatsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -41,6 +71,36 @@
 		E3C6FE50505E6EF07837DB67 /* User.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
 		ECC6C783DBF15E849B9D4DB2 /* Task.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Task.swift; sourceTree = "<group>"; };
 		F736C8CB2AC1B3B3EF2A889B /* AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthManager.swift; sourceTree = "<group>"; };
+		/* New Models */
+		BB1111111111111111111111 /* Achievement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Achievement.swift; sourceTree = "<group>"; };
+		BB2222222222222222222222 /* Creature.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Creature.swift; sourceTree = "<group>"; };
+		BB3333333333333333333333 /* FocusSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusSession.swift; sourceTree = "<group>"; };
+		BB4444444444444444444444 /* Habit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Habit.swift; sourceTree = "<group>"; };
+		BB5555555555555555555555 /* UserStats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserStats.swift; sourceTree = "<group>"; };
+		/* New Services */
+		BB6666666666666666666666 /* AchievementStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementStore.swift; sourceTree = "<group>"; };
+		BB7777777777777777777777 /* CreatureStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatureStore.swift; sourceTree = "<group>"; };
+		BB8888888888888888888888 /* FocusStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusStore.swift; sourceTree = "<group>"; };
+		BB9999999999999999999999 /* HabitStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabitStore.swift; sourceTree = "<group>"; };
+		BBAAAAAAAAAAAAAAAAAAAA10 /* ProjectStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectStore.swift; sourceTree = "<group>"; };
+		BBAAAAAAAAAAAAAAAAAAAA11 /* StatsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsStore.swift; sourceTree = "<group>"; };
+		/* New Views */
+		BBAAAAAAAAAAAAAAAAAAAA12 /* AchievementsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementsView.swift; sourceTree = "<group>"; };
+		BBAAAAAAAAAAAAAAAAAAAA13 /* AddHabitSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddHabitSheet.swift; sourceTree = "<group>"; };
+		BBAAAAAAAAAAAAAAAAAAAA14 /* ChecklistView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChecklistView.swift; sourceTree = "<group>"; };
+		BBAAAAAAAAAAAAAAAAAAAA15 /* CompletedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompletedView.swift; sourceTree = "<group>"; };
+		BBAAAAAAAAAAAAAAAAAAAA16 /* CreatureDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatureDetailSheet.swift; sourceTree = "<group>"; };
+		BBAAAAAAAAAAAAAAAAAAAA17 /* CreaturesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreaturesView.swift; sourceTree = "<group>"; };
+		BBAAAAAAAAAAAAAAAAAAAA18 /* FocusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusView.swift; sourceTree = "<group>"; };
+		BBAAAAAAAAAAAAAAAAAAAA19 /* TaskSelectorSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskSelectorSheet.swift; sourceTree = "<group>"; };
+		BBAAAAAAAAAAAAAAAAAAAA20 /* TimerCircle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimerCircle.swift; sourceTree = "<group>"; };
+		BBAAAAAAAAAAAAAAAAAAAA21 /* ProcessModeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessModeView.swift; sourceTree = "<group>"; };
+		BBAAAAAAAAAAAAAAAAAAAA22 /* AddProjectSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddProjectSheet.swift; sourceTree = "<group>"; };
+		BBAAAAAAAAAAAAAAAAAAAA23 /* ProjectDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectDetailView.swift; sourceTree = "<group>"; };
+		BBAAAAAAAAAAAAAAAAAAAA24 /* ProjectsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectsView.swift; sourceTree = "<group>"; };
+		BBAAAAAAAAAAAAAAAAAAAA25 /* QuickActionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickActionsView.swift; sourceTree = "<group>"; };
+		BBAAAAAAAAAAAAAAAAAAAA26 /* ScheduledView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduledView.swift; sourceTree = "<group>"; };
+		BBAAAAAAAAAAAAAAAAAAAA27 /* StatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -57,6 +117,7 @@
 			isa = PBXGroup;
 			children = (
 				1FA4DE7C011EFBA74471DC15 /* InboxView.swift */,
+				BBAAAAAAAAAAAAAAAAAAAA21 /* ProcessModeView.swift */,
 			);
 			path = Inbox;
 			sourceTree = "<group>";
@@ -64,9 +125,18 @@
 		3D3CF432390A3163A3CE2D9E /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				CC1111111111111111111111 /* Achievements */,
 				B28E34986B7E1EDB71498858 /* Auth */,
+				CC2222222222222222222222 /* Checklist */,
 				00C619CB2C2F4090639D9FD0 /* Components */,
+				CC3333333333333333333333 /* Completed */,
+				CC4444444444444444444444 /* Creatures */,
+				CC5555555555555555555555 /* Focus */,
 				1BF2D0F2083500968089A4A5 /* Inbox */,
+				CC6666666666666666666666 /* Projects */,
+				CC7777777777777777777777 /* QuickActions */,
+				CC8888888888888888888888 /* Scheduled */,
+				CC9999999999999999999999 /* Stats */,
 				85300723517AFDC14CCA197D /* Today */,
 			);
 			path = Views;
@@ -83,9 +153,14 @@
 		9233BE26AD8EB08AC9509D5B /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				BB1111111111111111111111 /* Achievement.swift */,
+				BB2222222222222222222222 /* Creature.swift */,
+				BB3333333333333333333333 /* FocusSession.swift */,
+				BB4444444444444444444444 /* Habit.swift */,
 				6BA8D0760A291E6436044B46 /* Project.swift */,
 				ECC6C783DBF15E849B9D4DB2 /* Task.swift */,
 				E3C6FE50505E6EF07837DB67 /* User.swift */,
+				BB5555555555555555555555 /* UserStats.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -131,11 +206,96 @@
 		F185C11D1994394903F12BB2 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				BB6666666666666666666666 /* AchievementStore.swift */,
 				9935426FA12BCC0585088964 /* APIClient.swift */,
 				F736C8CB2AC1B3B3EF2A889B /* AuthManager.swift */,
+				BB7777777777777777777777 /* CreatureStore.swift */,
+				BB8888888888888888888888 /* FocusStore.swift */,
+				BB9999999999999999999999 /* HabitStore.swift */,
+				BBAAAAAAAAAAAAAAAAAAAA10 /* ProjectStore.swift */,
+				BBAAAAAAAAAAAAAAAAAAAA11 /* StatsStore.swift */,
 				D8056FEE87250E37D114F03B /* TaskStore.swift */,
 			);
 			path = Services;
+			sourceTree = "<group>";
+		};
+		/* New View Groups */
+		CC1111111111111111111111 /* Achievements */ = {
+			isa = PBXGroup;
+			children = (
+				BBAAAAAAAAAAAAAAAAAAAA12 /* AchievementsView.swift */,
+			);
+			path = Achievements;
+			sourceTree = "<group>";
+		};
+		CC2222222222222222222222 /* Checklist */ = {
+			isa = PBXGroup;
+			children = (
+				BBAAAAAAAAAAAAAAAAAAAA13 /* AddHabitSheet.swift */,
+				BBAAAAAAAAAAAAAAAAAAAA14 /* ChecklistView.swift */,
+			);
+			path = Checklist;
+			sourceTree = "<group>";
+		};
+		CC3333333333333333333333 /* Completed */ = {
+			isa = PBXGroup;
+			children = (
+				BBAAAAAAAAAAAAAAAAAAAA15 /* CompletedView.swift */,
+			);
+			path = Completed;
+			sourceTree = "<group>";
+		};
+		CC4444444444444444444444 /* Creatures */ = {
+			isa = PBXGroup;
+			children = (
+				BBAAAAAAAAAAAAAAAAAAAA16 /* CreatureDetailSheet.swift */,
+				BBAAAAAAAAAAAAAAAAAAAA17 /* CreaturesView.swift */,
+			);
+			path = Creatures;
+			sourceTree = "<group>";
+		};
+		CC5555555555555555555555 /* Focus */ = {
+			isa = PBXGroup;
+			children = (
+				BBAAAAAAAAAAAAAAAAAAAA18 /* FocusView.swift */,
+				BBAAAAAAAAAAAAAAAAAAAA19 /* TaskSelectorSheet.swift */,
+				BBAAAAAAAAAAAAAAAAAAAA20 /* TimerCircle.swift */,
+			);
+			path = Focus;
+			sourceTree = "<group>";
+		};
+		CC6666666666666666666666 /* Projects */ = {
+			isa = PBXGroup;
+			children = (
+				BBAAAAAAAAAAAAAAAAAAAA22 /* AddProjectSheet.swift */,
+				BBAAAAAAAAAAAAAAAAAAAA23 /* ProjectDetailView.swift */,
+				BBAAAAAAAAAAAAAAAAAAAA24 /* ProjectsView.swift */,
+			);
+			path = Projects;
+			sourceTree = "<group>";
+		};
+		CC7777777777777777777777 /* QuickActions */ = {
+			isa = PBXGroup;
+			children = (
+				BBAAAAAAAAAAAAAAAAAAAA25 /* QuickActionsView.swift */,
+			);
+			path = QuickActions;
+			sourceTree = "<group>";
+		};
+		CC8888888888888888888888 /* Scheduled */ = {
+			isa = PBXGroup;
+			children = (
+				BBAAAAAAAAAAAAAAAAAAAA26 /* ScheduledView.swift */,
+			);
+			path = Scheduled;
+			sourceTree = "<group>";
+		};
+		CC9999999999999999999999 /* Stats */ = {
+			isa = PBXGroup;
+			children = (
+				BBAAAAAAAAAAAAAAAAAAAA27 /* StatsView.swift */,
+			);
+			path = Stats;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -208,19 +368,46 @@
 			buildActionMask = 2147483647;
 			files = (
 				A0EA6DDA25536179A4F11409 /* ADHDFocusApp.swift in Sources */,
-				4C8A52CD2FCFC2E95E4504A0 /* APIClient.swift in Sources */,
+				AA1111111111111111111111 /* Achievement.swift in Sources */,
+				AA6666666666666666666666 /* AchievementStore.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA12 /* AchievementsView.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA13 /* AddHabitSheet.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA22 /* AddProjectSheet.swift in Sources */,
 				031B36F2CA1219902C28CF67 /* AddTaskSheet.swift in Sources */,
+				4C8A52CD2FCFC2E95E4504A0 /* APIClient.swift in Sources */,
 				9CE371AC7C33AEFD4B5D5361 /* AuthManager.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA14 /* ChecklistView.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA15 /* CompletedView.swift in Sources */,
 				CDF974EF4C0EC70B197E3959 /* ContentView.swift in Sources */,
+				AA2222222222222222222222 /* Creature.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA16 /* CreatureDetailSheet.swift in Sources */,
+				AA7777777777777777777777 /* CreatureStore.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA17 /* CreaturesView.swift in Sources */,
+				AA3333333333333333333333 /* FocusSession.swift in Sources */,
+				AA8888888888888888888888 /* FocusStore.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA18 /* FocusView.swift in Sources */,
+				AA4444444444444444444444 /* Habit.swift in Sources */,
+				AA9999999999999999999999 /* HabitStore.swift in Sources */,
 				892FDB8EE395C67C570A4CC4 /* InboxView.swift in Sources */,
 				0E35A9BFEED1EC5814BB09DC /* LoginView.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA21 /* ProcessModeView.swift in Sources */,
 				43D9A43B54BFF87C872AB42B /* Project.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA23 /* ProjectDetailView.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA10 /* ProjectStore.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA24 /* ProjectsView.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA25 /* QuickActionsView.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA26 /* ScheduledView.swift in Sources */,
 				4A603527952067BAE8B01745 /* SignupView.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA11 /* StatsStore.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA27 /* StatsView.swift in Sources */,
 				5B2AF238B3B17A91BD5BDAC6 /* Task.swift in Sources */,
 				0BB472E24A9B30D01306D315 /* TaskRow.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA19 /* TaskSelectorSheet.swift in Sources */,
 				BAD5F187AFE4A40943130F9A /* TaskStore.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA20 /* TimerCircle.swift in Sources */,
 				A3621BB9275C44A2C0A72804 /* TodayView.swift in Sources */,
 				F9007E3B118C1D14A021C8B5 /* User.swift in Sources */,
+				AA5555555555555555555555 /* UserStats.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
