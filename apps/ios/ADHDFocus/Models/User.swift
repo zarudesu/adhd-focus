@@ -13,22 +13,21 @@ struct User: Identifiable, Codable {
     var pomodoroShortBreak: Int?
     var pomodoroLongBreak: Int?
     var wipLimit: Int?
-
-    enum CodingKeys: String, CodingKey {
-        case id, email, name, level, xp
-        case currentStreak = "current_streak"
-        case longestStreak = "longest_streak"
-        case totalTasksCompleted = "total_tasks_completed"
-        case pomodoroWorkMinutes = "pomodoro_work_minutes"
-        case pomodoroShortBreak = "pomodoro_short_break"
-        case pomodoroLongBreak = "pomodoro_long_break"
-        case wipLimit = "wip_limit"
-    }
 }
 
 struct AuthResponse: Codable {
     let user: User
     let token: String?
+}
+
+struct RegisterResponse: Codable {
+    let message: String
+    let user: RegisteredUser
+}
+
+struct RegisteredUser: Codable {
+    let id: String
+    let email: String
 }
 
 struct LoginInput: Codable {

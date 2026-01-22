@@ -3,7 +3,7 @@ import SwiftUI
 
 @MainActor
 class TaskStore: ObservableObject {
-    @Published var tasks: [Task] = []
+    @Published var tasks: [TaskItem] = []
     @Published var isLoading = false
     @Published var error: String?
 
@@ -11,19 +11,19 @@ class TaskStore: ObservableObject {
 
     // MARK: - Computed Properties
 
-    var todayTasks: [Task] {
+    var todayTasks: [TaskItem] {
         tasks.filter { $0.status == .today || $0.status == .inProgress }
     }
 
-    var inboxTasks: [Task] {
+    var inboxTasks: [TaskItem] {
         tasks.filter { $0.status == .inbox }
     }
 
-    var scheduledTasks: [Task] {
+    var scheduledTasks: [TaskItem] {
         tasks.filter { $0.status == .scheduled }
     }
 
-    var completedTasks: [Task] {
+    var completedTasks: [TaskItem] {
         tasks.filter { $0.status == .done }
     }
 

@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct TaskRow: View {
-    let task: Task
+    let task: TaskItem
     @ObservedObject var taskStore: TaskStore
     @State private var isCompleting = false
 
@@ -133,18 +133,15 @@ struct TaskRow: View {
         }
     }
 
-    @ViewBuilder
     private func priorityBadge(_ priority: TaskPriority) -> some View {
-        let (color, text): (Color, String) = {
-            switch priority {
-            case .must: return (.red, "Must")
-            case .should: return (.orange, "Should")
-            case .want: return (.blue, "Want")
-            case .someday: return (.gray, "Someday")
-            }
-        }()
+        let (color, text): (Color, String) = switch priority {
+        case .must: (.red, "Must")
+        case .should: (.orange, "Should")
+        case .want: (.blue, "Want")
+        case .someday: (.gray, "Someday")
+        }
 
-        Text(text)
+        return Text(text)
             .font(.caption2)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
@@ -153,17 +150,14 @@ struct TaskRow: View {
             .cornerRadius(4)
     }
 
-    @ViewBuilder
     private func energyBadge(_ energy: EnergyLevel) -> some View {
-        let icon: String = {
-            switch energy {
-            case .low: return "battery.25"
-            case .medium: return "battery.50"
-            case .high: return "battery.100"
-            }
-        }()
+        let icon = switch energy {
+        case .low: "battery.25"
+        case .medium: "battery.50"
+        case .high: "battery.100"
+        }
 
-        Image(systemName: icon)
+        return Image(systemName: icon)
             .font(.caption2)
             .foregroundStyle(.secondary)
     }

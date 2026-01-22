@@ -1,4 +1,5 @@
 import Foundation
+import Security
 
 enum APIError: Error, LocalizedError {
     case invalidURL
@@ -73,7 +74,7 @@ class APIClient: ObservableObject {
 
         if let body = body {
             let encoder = JSONEncoder()
-            encoder.keyEncodingStrategy = .convertToSnakeCase
+            // API accepts camelCase
             request.httpBody = try encoder.encode(body)
         }
 
@@ -93,7 +94,7 @@ class APIClient: ObservableObject {
         }
 
         let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        // API returns camelCase
 
         do {
             return try decoder.decode(T.self, from: data)
@@ -104,15 +105,15 @@ class APIClient: ObservableObject {
 
     // MARK: - Tasks
 
-    func getTasks() async throws -> [Task] {
+    func getTasks() async throws -> [TaskItem] {
         try await request("/tasks")
     }
 
-    func createTask(_ input: CreateTaskInput) async throws -> Task {
+    func createTask(_ input: CreateTaskInput) async throws -> TaskItem {
         try await request("/tasks", method: "POST", body: input)
     }
 
-    func updateTask(id: String, _ input: UpdateTaskInput) async throws -> Task {
+    func updateTask(id: String, _ input: UpdateTaskInput) async throws -> TaskItem {
         try await request("/tasks/\(id)", method: "PATCH", body: input)
     }
 
@@ -124,7 +125,7 @@ class APIClient: ObservableObject {
         try await request("/tasks/\(id)", method: "PATCH", body: ["status": "done"])
     }
 
-    func uncompleteTask(id: String) async throws -> Task {
+    func uncompleteTask(id: String) async throws -> TaskItem {
         try await request("/tasks/\(id)", method: "PATCH", body: ["status": "inbox"])
     }
 
@@ -142,7 +143,7 @@ class APIClient: ObservableObject {
 
     func login(email: String, password: String) async throws -> AuthResponse {
         let input = LoginInput(email: email, password: password)
-        let response: AuthResponse = try await request("/auth/login", method: "POST", body: input)
+        let response: AuthResponse = try await request("/mobile/auth/login", method: "POST", body: input)
         if let token = response.token {
             self.authToken = token
         }
@@ -151,11 +152,10 @@ class APIClient: ObservableObject {
 
     func register(email: String, password: String, name: String?) async throws -> AuthResponse {
         let input = RegisterInput(email: email, password: password, name: name)
-        let response: AuthResponse = try await request("/auth/register", method: "POST", body: input)
-        if let token = response.token {
-            self.authToken = token
-        }
-        return response
+        // Register first, then auto-login
+        let _: RegisterResponse = try await request("/auth/register", method: "POST", body: input)
+        // Now login to get token
+        return try await login(email: email, password: password)
     }
 
     func logout() {
@@ -172,17 +172,10 @@ class APIClient: ObservableObject {
 struct EmptyResponse: Codable {}
 
 struct CompleteTaskResponse: Codable {
-    let task: Task
+    let task: TaskItem
     let xpAwarded: Int?
     let levelUp: Bool?
     let newLevel: Int?
-
-    enum CodingKeys: String, CodingKey {
-        case task
-        case xpAwarded = "xp_awarded"
-        case levelUp = "level_up"
-        case newLevel = "new_level"
-    }
 }
 
 // MARK: - Keychain Helper

@@ -22,7 +22,7 @@ enum EnergyLevel: String, Codable, CaseIterable {
     case high
 }
 
-struct Task: Identifiable, Codable {
+struct TaskItem: Identifiable, Codable {
     let id: String
     var title: String
     var description: String?
@@ -30,22 +30,16 @@ struct Task: Identifiable, Codable {
     var priority: TaskPriority?
     var energyRequired: EnergyLevel?
     var estimatedMinutes: Int?
+    var actualMinutes: Int?
+    var pomodorosCompleted: Int?
+    var dueDate: String?
     var scheduledDate: String?
     var projectId: String?
     var completedAt: String?
+    var tags: [String]?
+    var sortOrder: Int?
     var createdAt: String
     var updatedAt: String
-
-    enum CodingKeys: String, CodingKey {
-        case id, title, description, status, priority
-        case energyRequired = "energy_required"
-        case estimatedMinutes = "estimated_minutes"
-        case scheduledDate = "scheduled_date"
-        case projectId = "project_id"
-        case completedAt = "completed_at"
-        case createdAt = "created_at"
-        case updatedAt = "updated_at"
-    }
 }
 
 struct CreateTaskInput: Codable {
@@ -55,16 +49,10 @@ struct CreateTaskInput: Codable {
     var priority: TaskPriority?
     var energyRequired: EnergyLevel?
     var estimatedMinutes: Int?
+    var dueDate: String?
     var scheduledDate: String?
     var projectId: String?
-
-    enum CodingKeys: String, CodingKey {
-        case title, description, status, priority
-        case energyRequired = "energy_required"
-        case estimatedMinutes = "estimated_minutes"
-        case scheduledDate = "scheduled_date"
-        case projectId = "project_id"
-    }
+    var tags: [String]?
 }
 
 struct UpdateTaskInput: Codable {
@@ -74,14 +62,10 @@ struct UpdateTaskInput: Codable {
     var priority: TaskPriority?
     var energyRequired: EnergyLevel?
     var estimatedMinutes: Int?
+    var actualMinutes: Int?
+    var dueDate: String?
     var scheduledDate: String?
     var projectId: String?
-
-    enum CodingKeys: String, CodingKey {
-        case title, description, status, priority
-        case energyRequired = "energy_required"
-        case estimatedMinutes = "estimated_minutes"
-        case scheduledDate = "scheduled_date"
-        case projectId = "project_id"
-    }
+    var tags: [String]?
+    var sortOrder: Int?
 }

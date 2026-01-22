@@ -63,7 +63,7 @@ struct InboxView: View {
             } label: {
                 Image(systemName: "arrow.up.circle.fill")
                     .font(.title2)
-                    .foregroundStyle(newTaskTitle.isEmpty ? .secondary : .accentColor)
+                    .foregroundStyle(newTaskTitle.isEmpty ? Color.secondary : Color.accentColor)
             }
             .disabled(newTaskTitle.trimmingCharacters(in: .whitespaces).isEmpty)
         }

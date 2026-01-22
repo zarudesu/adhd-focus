@@ -41,7 +41,8 @@ struct SignupView: View {
                     TextField("Email", text: $email)
                         .textContentType(.emailAddress)
                         .keyboardType(.emailAddress)
-                        .autocapitalization(.none)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
                         .textFieldStyle(.roundedBorder)
 
                     SecureField("Password (min 6 characters)", text: $password)
