@@ -65,21 +65,25 @@ export async function POST(request: NextRequest) {
       .setExpirationTime("30d")
       .sign(JWT_SECRET);
 
+    // Extract preferences (with defaults)
+    const prefs = user.preferences ?? {};
+
     return NextResponse.json({
       token,
       user: {
         id: user.id,
         email: user.email,
         name: user.name,
-        level: user.level,
-        xp: user.xp,
-        currentStreak: user.currentStreak,
-        longestStreak: user.longestStreak,
-        totalTasksCompleted: user.totalTasksCompleted,
-        pomodoroWorkMinutes: user.pomodoroWorkMinutes,
-        pomodoroShortBreak: user.pomodoroShortBreak,
-        pomodoroLongBreak: user.pomodoroLongBreak,
-        wipLimit: user.wipLimit,
+        level: user.level ?? 1,
+        xp: user.xp ?? 0,
+        currentStreak: user.currentStreak ?? 0,
+        longestStreak: user.longestStreak ?? 0,
+        totalTasksCompleted: user.totalTasksCompleted ?? 0,
+        // Preferences
+        pomodoroWorkMinutes: prefs.defaultPomodoroMinutes ?? 25,
+        pomodoroShortBreak: prefs.defaultBreakMinutes ?? 5,
+        pomodoroLongBreak: prefs.longBreakMinutes ?? 15,
+        wipLimit: prefs.maxDailyTasks ?? 3,
       },
     });
   } catch (error) {
