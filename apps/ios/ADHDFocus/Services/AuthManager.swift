@@ -13,6 +13,8 @@ class AuthManager: ObservableObject {
     init() {
         // Check if we have a saved token
         if api.authToken != nil {
+            // Set loading immediately to prevent flash
+            isLoading = true
             Task {
                 await checkAuth()
             }

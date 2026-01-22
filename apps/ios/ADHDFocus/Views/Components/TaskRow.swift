@@ -101,6 +101,48 @@ struct TaskRow: View {
                 .tint(.yellow)
             }
         }
+        .contextMenu {
+            // Long-press context menu
+            if !isCompleted {
+                Button {
+                    toggleComplete()
+                } label: {
+                    Label("Complete", systemImage: "checkmark.circle")
+                }
+            } else {
+                Button {
+                    toggleComplete()
+                } label: {
+                    Label("Uncomplete", systemImage: "arrow.uturn.backward")
+                }
+            }
+
+            Divider()
+
+            if task.status != .today {
+                Button {
+                    moveToToday()
+                } label: {
+                    Label("Move to Today", systemImage: "sun.max")
+                }
+            }
+
+            if task.status != .inbox {
+                Button {
+                    moveToInbox()
+                } label: {
+                    Label("Move to Inbox", systemImage: "tray")
+                }
+            }
+
+            Divider()
+
+            Button(role: .destructive) {
+                deleteTask()
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+        }
     }
 
     private func toggleComplete() {

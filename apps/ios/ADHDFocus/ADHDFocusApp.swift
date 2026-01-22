@@ -8,6 +8,7 @@ struct ADHDFocusApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(authManager)
+                .preferredColorScheme(.dark)
         }
     }
 }
