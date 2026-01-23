@@ -3,6 +3,29 @@
 > **READ THIS FILE FIRST** in every new session or after context compaction.
 > Last updated: 2026-01-22
 
+---
+
+## ⚠️ ОБЯЗАТЕЛЬНО ПРОЧИТАЙ ПЕРЕД РАБОТОЙ ⚠️
+
+**Claude, ЭТО ДЛЯ ТЕБЯ. Каждую новую сессию:**
+
+1. **ПРОЧИТАЙ ЭТУ ТАБЛИЦУ** - здесь все домены и доступы:
+
+| Что | URL/Команда |
+|-----|-------------|
+| 🌐 **PROD** | `https://beatyour8.com` |
+| 🧪 **STAGING** | `https://adhdrenaline.com` |
+| 🖥️ **SSH** | `ssh -i ~/.ssh/adhd-focus-deploy root@23.134.216.230` |
+| 📦 **Deploy Prod** | `git push origin main` |
+| 📦 **Deploy Staging** | `git push origin staging` |
+
+2. **НЕ ГАДАЙ** - если не знаешь домен/путь/команду - ИЩИ В ЭТОМ ФАЙЛЕ
+3. **НЕ SSH** для поиска инфы, которая уже здесь записана
+
+**Если ты потратил время на SSH чтобы узнать то, что уже есть в этом файле - ТЫ ОБЛАЖАЛСЯ.**
+
+---
+
 ## CRITICAL: When Fixing Bugs
 
 **STOP. Google BEFORE writing code.**
@@ -36,6 +59,9 @@
 ## MANDATORY Workflow (Every Session!)
 
 ### 1. Start of Session
+
+**⚠️ ПЕРВЫМ ДЕЛОМ: Прочитай таблицу доменов в начале этого файла!**
+
 ```bash
 # Check current state
 git status && git log --oneline -5
@@ -48,6 +74,8 @@ lsof -i :3000
 cd docker && docker compose up -d db
 cd apps/web && npm run dev
 ```
+
+**После context compaction:** Обязательно перечитай CLAUDE.md - ты потеряешь контекст!
 
 ### 2. Before Implementing ANYTHING
 1. **Search for existing solutions** - Use WebSearch for templates, packages, patterns
@@ -76,10 +104,15 @@ cd apps/web && npm run dev
 - Keep trying after 3 failures
 
 ### 5. End of Session
-- **Update this file** if anything changed
+- **Update this file** if anything changed:
+  - Новые домены/URLs → добавь в таблицу в начале файла
+  - Новые команды/пути → добавь в соответствующую секцию
+  - Новые фичи/страницы → обнови "Current State"
 - **Update "Current State" section** below
 - Commit with conventional commits
 - Note any blockers
+
+**⚠️ Если ты узнал что-то новое (домен, путь, команду) - ЗАПИШИ СЮДА. Следующий Claude скажет тебе спасибо.**
 
 ## Critical Rules
 
