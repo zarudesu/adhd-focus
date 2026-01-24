@@ -52,6 +52,9 @@
 		AAAAAAAAAAAAAAAAAAAAAA25 /* QuickActionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBAAAAAAAAAAAAAAAAAAAA25 /* QuickActionsView.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA26 /* ScheduledView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBAAAAAAAAAAAAAAAAAAAA26 /* ScheduledView.swift */; };
 		AAAAAAAAAAAAAAAAAAAAAA27 /* StatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBAAAAAAAAAAAAAAAAAAAA27 /* StatsView.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA28 /* Feature.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBAAAAAAAAAAAAAAAAAAAA28 /* Feature.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA29 /* FeatureStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBAAAAAAAAAAAAAAAAAAAA29 /* FeatureStore.swift */; };
+		AAAAAAAAAAAAAAAAAAAAAA30 /* FeatureUnlockModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBAAAAAAAAAAAAAAAAAAAA30 /* FeatureUnlockModal.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -101,6 +104,9 @@
 		BBAAAAAAAAAAAAAAAAAAAA25 /* QuickActionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickActionsView.swift; sourceTree = "<group>"; };
 		BBAAAAAAAAAAAAAAAAAAAA26 /* ScheduledView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduledView.swift; sourceTree = "<group>"; };
 		BBAAAAAAAAAAAAAAAAAAAA27 /* StatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsView.swift; sourceTree = "<group>"; };
+		BBAAAAAAAAAAAAAAAAAAAA28 /* Feature.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Feature.swift; sourceTree = "<group>"; };
+		BBAAAAAAAAAAAAAAAAAAAA29 /* FeatureStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureStore.swift; sourceTree = "<group>"; };
+		BBAAAAAAAAAAAAAAAAAAAA30 /* FeatureUnlockModal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureUnlockModal.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -132,6 +138,7 @@
 				CC3333333333333333333333 /* Completed */,
 				CC4444444444444444444444 /* Creatures */,
 				CC5555555555555555555555 /* Focus */,
+				CCAAAAAAAAAAAAAAAAAA10 /* Gamification */,
 				1BF2D0F2083500968089A4A5 /* Inbox */,
 				CC6666666666666666666666 /* Projects */,
 				CC7777777777777777777777 /* QuickActions */,
@@ -161,6 +168,7 @@
 				ECC6C783DBF15E849B9D4DB2 /* Task.swift */,
 				E3C6FE50505E6EF07837DB67 /* User.swift */,
 				BB5555555555555555555555 /* UserStats.swift */,
+				BBAAAAAAAAAAAAAAAAAAAA28 /* Feature.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -214,6 +222,7 @@
 				BB9999999999999999999999 /* HabitStore.swift */,
 				BBAAAAAAAAAAAAAAAAAAAA10 /* ProjectStore.swift */,
 				BBAAAAAAAAAAAAAAAAAAAA11 /* StatsStore.swift */,
+				BBAAAAAAAAAAAAAAAAAAAA29 /* FeatureStore.swift */,
 				D8056FEE87250E37D114F03B /* TaskStore.swift */,
 			);
 			path = Services;
@@ -296,6 +305,14 @@
 				BBAAAAAAAAAAAAAAAAAAAA27 /* StatsView.swift */,
 			);
 			path = Stats;
+			sourceTree = "<group>";
+		};
+		CCAAAAAAAAAAAAAAAAAA10 /* Gamification */ = {
+			isa = PBXGroup;
+			children = (
+				BBAAAAAAAAAAAAAAAAAAAA30 /* FeatureUnlockModal.swift */,
+			);
+			path = Gamification;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -386,6 +403,9 @@
 				AA3333333333333333333333 /* FocusSession.swift in Sources */,
 				AA8888888888888888888888 /* FocusStore.swift in Sources */,
 				AAAAAAAAAAAAAAAAAAAAAA18 /* FocusView.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA28 /* Feature.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA29 /* FeatureStore.swift in Sources */,
+				AAAAAAAAAAAAAAAAAAAAAA30 /* FeatureUnlockModal.swift in Sources */,
 				AA4444444444444444444444 /* Habit.swift in Sources */,
 				AA9999999999999999999999 /* HabitStore.swift in Sources */,
 				892FDB8EE395C67C570A4CC4 /* InboxView.swift in Sources */,

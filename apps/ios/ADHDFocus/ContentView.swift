@@ -29,42 +29,71 @@ struct MainTabView: View {
     @State private var selectedTab = 0
     @StateObject private var taskStore = TaskStore()
     @StateObject private var projectStore = ProjectStore()
+    @StateObject private var featureStore = FeatureStore()
 
     var body: some View {
-        TabView(selection: $selectedTab) {
-            TodayView(taskStore: taskStore)
-                .tabItem {
-                    Label("Today", systemImage: "sun.max.fill")
-                }
-                .tag(0)
+        ZStack {
+            TabView(selection: $selectedTab) {
+                // Inbox - always available
+                InboxView(taskStore: taskStore)
+                    .tabItem {
+                        Label("Inbox", systemImage: "tray.fill")
+                    }
+                    .tag(0)
 
-            InboxView(taskStore: taskStore)
-                .tabItem {
-                    Label("Inbox", systemImage: "tray.fill")
+                // Today - unlocks at level 1 (after first task to today)
+                if featureStore.isUnlocked(.navToday) {
+                    TodayView(taskStore: taskStore)
+                        .tabItem {
+                            Label("Today", systemImage: "sun.max.fill")
+                        }
+                        .tag(1)
                 }
-                .tag(1)
 
-            ChecklistView()
-                .tabItem {
-                    Label("Checklist", systemImage: "checklist")
+                // Checklist - unlocks later
+                if featureStore.isUnlocked(.navChecklist) {
+                    ChecklistView()
+                        .tabItem {
+                            Label("Checklist", systemImage: "checklist")
+                        }
+                        .tag(2)
                 }
-                .tag(2)
 
-            FocusView(taskStore: taskStore)
-                .tabItem {
-                    Label("Focus", systemImage: "timer")
+                // Focus - unlocks after some tasks completed
+                if featureStore.isUnlocked(.navFocus) {
+                    FocusView(taskStore: taskStore)
+                        .tabItem {
+                            Label("Focus", systemImage: "timer")
+                        }
+                        .tag(3)
                 }
-                .tag(3)
 
-            MoreView(taskStore: taskStore, projectStore: projectStore)
-                .tabItem {
-                    Label("More", systemImage: "ellipsis")
+                // More - always available
+                MoreView(taskStore: taskStore, projectStore: projectStore, featureStore: featureStore)
+                    .tabItem {
+                        Label("More", systemImage: "ellipsis")
+                    }
+                    .tag(4)
+            }
+
+            // Feature unlock modal
+            if featureStore.showUnlockModal, let feature = featureStore.newlyUnlockedFeature {
+                FeatureUnlockModal(feature: feature) {
+                    featureStore.dismissUnlockModal()
                 }
-                .tag(4)
+                .transition(.opacity)
+                .zIndex(100)
+            }
         }
+        .animation(.default, value: featureStore.showUnlockModal)
         .task {
+            await featureStore.fetchFeatures()
             await taskStore.fetchTasks()
             await projectStore.fetchProjects()
+        }
+        .refreshable {
+            await featureStore.fetchFeatures()
+            await taskStore.fetchTasks()
         }
     }
 }
@@ -73,6 +102,7 @@ struct MoreView: View {
     @EnvironmentObject var authManager: AuthManager
     @ObservedObject var taskStore: TaskStore
     @ObservedObject var projectStore: ProjectStore
+    @ObservedObject var featureStore: FeatureStore
     @State private var showQuickActions = false
 
     var body: some View {
@@ -96,53 +126,85 @@ struct MoreView: View {
                         }
                         .padding(.vertical, 8)
                     }
+
+                    // Level progress
+                    HStack {
+                        Image(systemName: "sparkles")
+                            .foregroundStyle(.yellow)
+                        Text("Level \(featureStore.level)")
+                            .font(.subheadline)
+                        Spacer()
+                        Text("\(featureStore.xp) XP")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
 
-                // Task views
+                // Task views - show only unlocked
                 Section("Tasks") {
-                    NavigationLink {
-                        ProjectsView(projectStore: projectStore, taskStore: taskStore)
-                    } label: {
-                        Label("Projects", systemImage: "folder.fill")
+                    // Projects
+                    if featureStore.isUnlocked(.navProjects) {
+                        NavigationLink {
+                            ProjectsView(projectStore: projectStore, taskStore: taskStore)
+                        } label: {
+                            Label("Projects", systemImage: "folder.fill")
+                        }
                     }
 
-                    NavigationLink {
-                        ScheduledView(taskStore: taskStore)
-                    } label: {
-                        Label("Scheduled", systemImage: "calendar")
+                    // Scheduled
+                    if featureStore.isUnlocked(.navScheduled) {
+                        NavigationLink {
+                            ScheduledView(taskStore: taskStore)
+                        } label: {
+                            Label("Scheduled", systemImage: "calendar")
+                        }
                     }
 
-                    NavigationLink {
-                        CompletedView(taskStore: taskStore)
-                    } label: {
-                        Label("Completed", systemImage: "checkmark.circle.fill")
+                    // Completed
+                    if featureStore.isUnlocked(.navCompleted) {
+                        NavigationLink {
+                            CompletedView(taskStore: taskStore)
+                        } label: {
+                            Label("Completed", systemImage: "checkmark.circle.fill")
+                        }
                     }
 
-                    Button {
-                        showQuickActions = true
-                    } label: {
-                        Label("Quick Capture", systemImage: "bolt.fill")
+                    // Quick Actions
+                    if featureStore.isUnlocked(.navQuickActions) {
+                        Button {
+                            showQuickActions = true
+                        } label: {
+                            Label("Quick Capture", systemImage: "bolt.fill")
+                        }
                     }
                 }
 
-                // Stats & Gamification
-                Section("Progress") {
-                    NavigationLink {
-                        StatsView()
-                    } label: {
-                        Label("Statistics", systemImage: "chart.bar.fill")
-                    }
+                // Stats & Gamification - show only unlocked
+                if featureStore.isUnlocked(.navStats) || featureStore.isUnlocked(.navAchievements) || featureStore.isUnlocked(.navCreatures) {
+                    Section("Progress") {
+                        if featureStore.isUnlocked(.navStats) {
+                            NavigationLink {
+                                StatsView()
+                            } label: {
+                                Label("Statistics", systemImage: "chart.bar.fill")
+                            }
+                        }
 
-                    NavigationLink {
-                        AchievementsView()
-                    } label: {
-                        Label("Achievements", systemImage: "trophy.fill")
-                    }
+                        if featureStore.isUnlocked(.navAchievements) {
+                            NavigationLink {
+                                AchievementsView()
+                            } label: {
+                                Label("Achievements", systemImage: "trophy.fill")
+                            }
+                        }
 
-                    NavigationLink {
-                        CreaturesView()
-                    } label: {
-                        Label("Creatures", systemImage: "pawprint.fill")
+                        if featureStore.isUnlocked(.navCreatures) {
+                            NavigationLink {
+                                CreaturesView()
+                            } label: {
+                                Label("Creatures", systemImage: "pawprint.fill")
+                            }
+                        }
                     }
                 }
 
