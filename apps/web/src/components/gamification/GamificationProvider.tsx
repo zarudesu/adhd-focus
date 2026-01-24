@@ -210,10 +210,13 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
     // Show feature unlock modal for the first new feature
     // (we'll show one at a time to avoid overwhelm)
     if (newlyUnlocked.length > 0 && !featureUnlockModal.open && !calmReview.visible && !levelUpModal.open) {
-      setFeatureUnlockModal({
-        open: true,
-        feature: newlyUnlocked[0],
-      });
+      // Use setTimeout to avoid setState during render
+      setTimeout(() => {
+        setFeatureUnlockModal({
+          open: true,
+          feature: newlyUnlocked[0],
+        });
+      }, 0);
     }
   }, [navFeatures, featuresLoading, featureUnlockModal.open, calmReview.visible, levelUpModal.open]);
 

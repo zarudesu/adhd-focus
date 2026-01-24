@@ -114,7 +114,8 @@ export function FeatureUnlockModal({
   useEffect(() => {
     if (!open || !canvasRef.current) return;
 
-    setConfettiVisible(true);
+    // Use setTimeout to avoid setState during render
+    setTimeout(() => setConfettiVisible(true), 0);
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
