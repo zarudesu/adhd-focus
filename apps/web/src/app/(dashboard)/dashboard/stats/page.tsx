@@ -445,7 +445,7 @@ function StatsContent() {
             <CardHeader className="flex flex-row items-center gap-2 space-y-0">
               <Trophy className="h-5 w-5 text-muted-foreground" />
               <CardTitle>Achievements</CardTitle>
-              {state?.achievements && state.achievements.length > 0 && (
+              {state?.achievements && state.achievements.length >= 3 && (
                 <span className="ml-auto text-sm text-muted-foreground">
                   {state.achievements.length} unlocked
                 </span>

@@ -28,11 +28,17 @@ import {
   Ghost,
   BarChart3,
   Sparkles,
+  Flag,
+  Battery,
+  Clock,
+  Repeat,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { FEATURE_TUTORIALS } from '@/lib/feature-tutorials';
 
 // Map feature codes to icons
 const FEATURE_ICONS: Record<string, React.ElementType> = {
+  // Navigation features
   nav_inbox: Inbox,
   nav_process: Sparkles,
   nav_today: Sun,
@@ -46,10 +52,19 @@ const FEATURE_ICONS: Record<string, React.ElementType> = {
   nav_creatures: Ghost,
   nav_stats: BarChart3,
   nav_settings: Settings,
+  // Task features
+  priority_basic: Flag,
+  priority_full: Flag,
+  task_energy: Battery,
+  task_duration: Clock,
+  task_recurrence: Repeat,
+  task_projects: Folder,
+  task_scheduling: Calendar,
 };
 
 // Feature descriptions for the modal
 const FEATURE_DESCRIPTIONS: Record<string, string> = {
+  // Navigation features
   nav_inbox: 'Capture thoughts quickly without organizing',
   nav_process: 'Clear your inbox one task at a time',
   nav_today: 'Focus on what matters today',
@@ -63,6 +78,14 @@ const FEATURE_DESCRIPTIONS: Record<string, string> = {
   nav_creatures: 'Collect rare creatures',
   nav_stats: 'Insights into your productivity',
   nav_settings: 'Customize your experience',
+  // Task features
+  priority_basic: 'Mark tasks as Must or Should to focus on what matters',
+  priority_full: 'Four priority levels: Must, Should, Want, and Someday',
+  task_energy: 'Match tasks to your current energy level',
+  task_duration: 'Estimate how long tasks will take',
+  task_recurrence: 'Tasks that repeat daily, weekly, or monthly',
+  task_projects: 'Organize tasks into projects',
+  task_scheduling: 'Schedule tasks for specific dates',
 };
 
 export interface FeatureUnlockData {
@@ -260,6 +283,23 @@ export function FeatureUnlockModal({
                   {description}
                 </p>
               </motion.div>
+
+              {/* Tutorial steps for non-nav features */}
+              {!feature.code.startsWith('nav_') && FEATURE_TUTORIALS[feature.code] && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.35 }}
+                  className="mt-4 text-left bg-muted/50 rounded-lg p-3"
+                >
+                  {FEATURE_TUTORIALS[feature.code].steps.map((step, index) => (
+                    <div key={index} className="flex gap-2 items-start mb-1 last:mb-0">
+                      <span className="text-sm font-medium text-primary">{index + 1}.</span>
+                      <span className="text-sm text-muted-foreground">{step}</span>
+                    </div>
+                  ))}
+                </motion.div>
+              )}
 
               {/* Button */}
               <motion.div

@@ -167,6 +167,27 @@ export const FEATURE_TUTORIALS: Record<string, TutorialContent> = {
     ],
   },
 
+  // Task features (component-level)
+  priority_basic: {
+    title: 'Priority Levels',
+    icon: '🎯',
+    steps: [
+      'Must: Critical, do first',
+      'Should: Important, schedule it',
+    ],
+  },
+
+  priority_full: {
+    title: 'Full Priority',
+    icon: '🎯',
+    steps: [
+      'Must: Critical, do first',
+      'Should: Important, schedule it',
+      'Want: Nice to have, if time permits',
+      'Someday: No rush, when inspiration strikes',
+    ],
+  },
+
   energy: {
     title: 'Energy Levels',
     icon: '⚡',

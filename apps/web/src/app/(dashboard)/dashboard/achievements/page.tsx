@@ -299,31 +299,19 @@ function AchievementsContent() {
     }
   }, [data]);
 
-  // Sort achievements: unlocked first (by date desc), then locked
+  // Filter to only unlocked achievements, sorted by date (most recent first)
   const sortedAchievements = useMemo(() => {
     if (!data) return [];
 
-    return [...data.achievements].sort((a, b) => {
-      // Unlocked first
-      if (a.isUnlocked && !b.isUnlocked) return -1;
-      if (!a.isUnlocked && b.isUnlocked) return 1;
-
-      // Both unlocked: sort by date (most recent first)
-      if (a.isUnlocked && b.isUnlocked) {
+    // Only show unlocked achievements
+    return data.achievements
+      .filter(a => a.isUnlocked)
+      .sort((a, b) => {
+        // Sort by date (most recent first)
         const dateA = a.unlockedAt ? new Date(a.unlockedAt).getTime() : 0;
         const dateB = b.unlockedAt ? new Date(b.unlockedAt).getTime() : 0;
         return dateB - dateA;
-      }
-
-      // Both locked: sort by progress (closest to completion first)
-      if (a.progress && b.progress) {
-        const progressA = a.progress.current / a.progress.target;
-        const progressB = b.progress.current / b.progress.target;
-        return progressB - progressA;
-      }
-
-      return 0;
-    });
+      });
   }, [data]);
 
   // Count new (unseen) achievements
@@ -364,34 +352,46 @@ function AchievementsContent() {
     <>
       <PageHeader
         title="Achievements"
-        description={`${data.stats.unlocked} of ${data.stats.visible} unlocked`}
+        description={data.stats.unlocked >= 3 ? `${data.stats.unlocked} of ${data.stats.visible} unlocked` : 'Your progress milestones'}
       />
       <main className="p-4">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Left: Achievement list */}
           <div className="flex-1 space-y-2 order-2 lg:order-1">
-            <AnimatePresence>
-              {sortedAchievements.map((ach, index) => (
-                <motion.div
-                  key={ach.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.03 }}
-                >
-                  <AchievementRow
-                    achievement={ach}
-                    isNew={ach.isUnlocked && !seenIds.has(ach.id)}
-                  />
-                </motion.div>
-              ))}
-            </AnimatePresence>
+            {sortedAchievements.length === 0 ? (
+              <div className="text-center py-12">
+                <Trophy className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                <p className="text-muted-foreground">
+                  Complete tasks to earn achievements
+                </p>
+                <p className="text-sm text-muted-foreground/70 mt-1">
+                  Your progress milestones will appear here
+                </p>
+              </div>
+            ) : (
+              <AnimatePresence>
+                {sortedAchievements.map((ach, index) => (
+                  <motion.div
+                    key={ach.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.03 }}
+                  >
+                    <AchievementRow
+                      achievement={ach}
+                      isNew={ach.isUnlocked && !seenIds.has(ach.id)}
+                    />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            )}
 
             {/* Hidden achievements hint */}
-            {data.stats.total > data.stats.visible && (
+            {data.stats.total > data.stats.visible && sortedAchievements.length > 0 && (
               <div className="text-center py-4 text-sm text-muted-foreground">
                 <span className="inline-flex items-center gap-2">
                   <Lock className="h-4 w-4" />
-                  {data.stats.total - data.stats.visible} hidden achievements
+                  More achievements to discover
                 </span>
               </div>
             )}
