@@ -87,8 +87,8 @@ jobs:
             # Pull latest staging image
             docker pull ghcr.io/${{ github.repository_owner }}/adhd-focus-web:staging
 
-            # Restart staging services (web + db if needed)
-            docker compose -f docker-compose.staging.yml --env-file .env.staging up -d
+            # Restart staging services (force recreate to pick up new image)
+            docker compose -f docker-compose.staging.yml --env-file .env.staging up -d --force-recreate
 
             # Restart main Caddy to pick up any config changes
             docker compose restart caddy

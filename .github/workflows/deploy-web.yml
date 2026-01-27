@@ -86,8 +86,8 @@ jobs:
             # Pull latest image
             docker pull ghcr.io/${{ github.repository_owner }}/adhd-focus-web:latest
 
-            # Restart web service
-            docker compose up -d --no-deps web
+            # Restart web service (force recreate to pick up new image)
+            docker compose up -d --no-deps --force-recreate web
 
             # Cleanup old images
             docker image prune -f
