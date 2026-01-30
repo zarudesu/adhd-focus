@@ -436,6 +436,21 @@
   overflow: hidden;
 }
 
+/* XP gain glow on progress bar */
+@keyframes xp-glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 4px 0 hsl(var(--primary) / 0.3);
+  }
+  50% {
+    box-shadow: 0 0 12px 2px hsl(var(--primary) / 0.6);
+  }
+}
+
+.xp-glow [data-slot="progress-indicator"],
+.xp-glow > div {
+  animation: xp-glow-pulse 0.75s ease-in-out 2;
+}
+
 .animate-feature-shimmer::after {
   content: '';
   position: absolute;

@@ -270,6 +270,24 @@ export default function SettingsPage() {
 
               <Separator />
 
+              {/* Celebrate Completed Tasks */}
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Celebrate Completed Tasks</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Animate XP bar when you complete a task
+                  </p>
+                </div>
+                <Switch
+                  checked={prefs?.enableCelebrations ?? true}
+                  onCheckedChange={(checked) =>
+                    updatePreference('enableCelebrations', checked)
+                  }
+                />
+              </div>
+
+              <Separator />
+
               {/* Reduce Animations */}
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">

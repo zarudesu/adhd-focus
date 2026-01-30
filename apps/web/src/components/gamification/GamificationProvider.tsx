@@ -68,6 +68,11 @@ interface NavFeature {
   firstOpenedAt: Date | null;
 }
 
+interface XpGainEvent {
+  amount: number;
+  timestamp: number;
+}
+
 interface GamificationContextType {
   showLevelUp: (newLevel: number, unlockedFeatures?: string[]) => void;
   handleTaskComplete: (event: GamificationEvent) => void;
@@ -88,6 +93,8 @@ interface GamificationContextType {
   markFeatureOpened: (code: string) => Promise<{ isFirstOpen: boolean; tutorial: unknown } | null>;
   // Deferred achievements - show queued achievements (called from Today page)
   showDeferredAchievements: () => void;
+  // XP gain event for progress bar animation
+  xpGainEvent: XpGainEvent | null;
 }
 
 const GamificationContext = createContext<GamificationContextType | null>(null);
@@ -176,6 +183,9 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
 
   // Track previously seen unlocked features to detect new unlocks
   const previousUnlockedRef = useRef<Set<string>>(new Set());
+
+  // XP gain event for LevelProgress animation
+  const [xpGainEvent, setXpGainEvent] = useState<XpGainEvent | null>(null);
 
   // Deferred achievements - stored until user navigates to main page
   const deferredAchievementsRef = useRef<Achievement[]>([]);
@@ -295,6 +305,11 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
       }]);
     }
 
+    // Fire XP gain event for progress bar animation
+    if (event.xpAwarded && event.xpAwarded > 0) {
+      setXpGainEvent({ amount: event.xpAwarded, timestamp: Date.now() });
+    }
+
     // Always refresh features after task completion events (updates menu)
     // Features can unlock based on: tasks completed, level up, achievements
     // This ensures newly unlocked features appear in sidebar without page reload
@@ -339,7 +354,7 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
   }, []);
 
   return (
-    <GamificationContext.Provider value={{ showLevelUp, handleTaskComplete, showCalmReview, state, loading, levelProgress, refresh, refreshAll, navFeatures, featuresLoading, isNewlyUnlocked, markFeatureOpened, showDeferredAchievements }}>
+    <GamificationContext.Provider value={{ showLevelUp, handleTaskComplete, showCalmReview, state, loading, levelProgress, refresh, refreshAll, navFeatures, featuresLoading, isNewlyUnlocked, markFeatureOpened, showDeferredAchievements, xpGainEvent }}>
       {children}
 
       {/* Calm Review - Reflection, not reward */}

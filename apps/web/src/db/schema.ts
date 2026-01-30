@@ -695,6 +695,8 @@ export interface UserPreferences {
   defaultLandingPage?: "inbox" | "today" | "scheduled" | "projects" | "completed";
   /** Reduce animations for calmer experience */
   reduceAnimations?: boolean;
+  /** Celebrate completed tasks with XP bar animation */
+  enableCelebrations?: boolean;
 }
 
 // Gamification condition types
