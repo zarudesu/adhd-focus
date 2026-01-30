@@ -434,6 +434,30 @@ export const rewardLogs = pgTable("reward_log", {
 ]);
 
 // ===================
+// Project Wiki Pages
+// ===================
+
+export const projectWikiPages = pgTable("project_wiki_page", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  projectId: uuid("project_id")
+    .notNull()
+    .references(() => projects.id, { onDelete: "cascade" }),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+
+  title: text("title").default("Untitled").notNull(),
+  content: jsonb("content"), // BlockNote JSON document
+  sortOrder: integer("sort_order").default(0),
+
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("wiki_page_project_id_idx").on(table.projectId),
+  index("wiki_page_user_id_idx").on(table.userId),
+]);
+
+// ===================
 // Daily Checklist (Habits)
 // ===================
 
@@ -590,6 +614,18 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
     references: [users.id],
   }),
   tasks: many(tasks),
+  wikiPages: many(projectWikiPages),
+}));
+
+export const projectWikiPagesRelations = relations(projectWikiPages, ({ one }) => ({
+  project: one(projects, {
+    fields: [projectWikiPages.projectId],
+    references: [projects.id],
+  }),
+  user: one(users, {
+    fields: [projectWikiPages.userId],
+    references: [users.id],
+  }),
 }));
 
 export const tasksRelations = relations(tasks, ({ one, many }) => ({
@@ -806,6 +842,10 @@ export type HabitCheck = typeof habitChecks.$inferSelect;
 export type NewHabitCheck = typeof habitChecks.$inferInsert;
 export type DailyReview = typeof dailyReviews.$inferSelect;
 export type NewDailyReview = typeof dailyReviews.$inferInsert;
+
+// Wiki types
+export type ProjectWikiPage = typeof projectWikiPages.$inferSelect;
+export type NewProjectWikiPage = typeof projectWikiPages.$inferInsert;
 
 // Feature codes as const for type safety
 export const FEATURE_CODES = {
