@@ -107,8 +107,8 @@ function ProjectsContent() {
                     variant="outline"
                     size="sm"
                     className={cn(
-                      'w-9 h-9 text-lg',
-                      newEmoji === emoji && 'border-primary bg-primary/5'
+                      'w-9 h-9 text-lg dark:bg-muted dark:border-border',
+                      newEmoji === emoji && 'border-primary bg-primary/10 dark:bg-primary/20 dark:border-primary ring-1 ring-primary'
                     )}
                     onClick={() => setNewEmoji(emoji)}
                   >
@@ -128,7 +128,7 @@ function ProjectsContent() {
                     aria-label={`Select color ${color}`}
                     className={cn(
                       'w-8 h-8 rounded-full transition-all',
-                      newColor === color && 'ring-2 ring-offset-2 ring-primary'
+                      newColor === color && 'ring-2 ring-offset-2 ring-primary ring-offset-background'
                     )}
                     style={{ backgroundColor: color }}
                     onClick={() => setNewColor(color)}

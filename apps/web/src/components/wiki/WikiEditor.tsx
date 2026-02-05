@@ -4,6 +4,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import { useCreateBlockNote } from '@blocknote/react';
 import { BlockNoteView } from '@blocknote/shadcn';
 import type { Block } from '@blocknote/core';
+import { useTheme } from 'next-themes';
 import '@blocknote/shadcn/style.css';
 
 interface WikiEditorProps {
@@ -12,6 +13,7 @@ interface WikiEditorProps {
 }
 
 export function WikiEditor({ content, onChange }: WikiEditorProps) {
+  const { resolvedTheme } = useTheme();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initialContentRef = useRef(content);
 
@@ -55,7 +57,7 @@ export function WikiEditor({ content, onChange }: WikiEditorProps) {
       <BlockNoteView
         editor={editor}
         onChange={handleChange}
-        theme="light"
+        theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
       />
     </div>
   );
