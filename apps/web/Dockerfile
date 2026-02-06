@@ -36,6 +36,9 @@ ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
 # Build Next.js app
 WORKDIR /app/apps/web
 ENV NEXT_TELEMETRY_DISABLED=1
+# Dummy AUTH_SECRET for build - NextAuth requires it at import time
+# Real secret is provided at runtime via docker env
+ENV AUTH_SECRET=build-placeholder
 RUN npm run build
 
 # Production stage
