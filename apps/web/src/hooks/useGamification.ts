@@ -42,7 +42,7 @@ export function calculateTaskXp(task: {
   estimatedMinutes?: number | null;
   dueDate?: string | null;
   completedAt?: string | null;
-}, streakDays: number = 0): number {
+}, streakDays: number = 0): { xp: number; wasBonus: boolean } {
   let xp = XP_CONFIG.taskComplete;
 
   // Quick task bonus
@@ -75,7 +75,18 @@ export function calculateTaskXp(task: {
   );
   xp *= streakMultiplier;
 
-  return Math.floor(xp);
+  // Variable reward: ±20% random variation
+  const variation = 0.8 + (Math.random() * 0.4);
+  xp *= variation;
+
+  // 10% chance of 2x bonus (variable ratio reinforcement)
+  let wasBonus = false;
+  if (Math.random() < 0.1) {
+    xp *= 2;
+    wasBonus = true;
+  }
+
+  return { xp: Math.floor(xp), wasBonus };
 }
 
 // Re-export rollRewardEffect as rollReward for backwards compatibility
@@ -104,6 +115,7 @@ interface GamificationState {
   creatures: (UserCreature & { creature: Creature })[];
   recentRewards: { rarity: RewardRarity; effect: string; timestamp: Date }[];
   habitStats: HabitStats;
+  lastActiveDate: string | null;
 }
 
 interface UseGamificationReturn {
@@ -158,6 +170,7 @@ export function useGamification(): UseGamificationReturn {
           longestHabitStreak: 0,
           allHabitsCompletedDays: 0,
         },
+        lastActiveDate: null,
       });
     } finally {
       setLoading(false);

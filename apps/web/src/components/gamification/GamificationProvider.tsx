@@ -28,6 +28,8 @@ import { useFeatures } from '@/hooks/useFeatures';
 import { useTasks } from '@/hooks/useTasks';
 import { useYesterdayReview } from '@/hooks/useYesterdayReview';
 import { useMorningReview } from '@/hooks/useMorningReview';
+import { useWelcomeBack } from '@/hooks/useWelcomeBack';
+import { WelcomeBackFlow } from './WelcomeBackFlow';
 import { useSession } from 'next-auth/react';
 import type { Achievement, Creature } from '@/db/schema';
 
@@ -141,6 +143,7 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
     completeYesterday,
     moveToInbox: moveTaskToInbox,
     deleteTask: deleteTaskAction,
+    archive: archiveTask,
   } = useTasks();
   const {
     data: habitsReviewData,
@@ -153,6 +156,17 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
     dismissed: morningReviewDismissed,
     dismiss: dismissMorningReview,
   } = useMorningReview(morningOverdueTasks, habitsReviewData, habitsReviewLoading);
+
+  // Welcome Back flow for returning users (3+ days away)
+  const {
+    showWelcome,
+    daysAway,
+    dismiss: dismissWelcome,
+  } = useWelcomeBack(
+    state?.lastActiveDate,
+    morningOverdueTasks.length,
+    session?.user?.id,
+  );
 
   const [morningReviewReady, setMorningReviewReady] = useState(false);
 
@@ -171,6 +185,23 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
       console.error('Failed to refresh gamification state:', err);
     }
   }, [refresh, refreshFeatures]);
+
+  // Day 3-5 Surprise — bridge the novelty cliff
+  useEffect(() => {
+    if (loading || !state) return;
+    const key = 'day-surprise-checked';
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, '1');
+
+    fetch('/api/gamification/day-surprise', { method: 'POST' })
+      .then(res => res.json())
+      .then(data => {
+        if (data.eligible && data.achievement) {
+          deferredAchievementsRef.current.push(data.achievement);
+        }
+      })
+      .catch(() => {});
+  }, [loading, state]);
 
   const [levelUpModal, setLevelUpModal] = useState<{
     open: boolean;
@@ -425,9 +456,23 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
     <GamificationContext.Provider value={{ showLevelUp, handleTaskComplete, showCalmReview, state, loading, levelProgress, refresh, refreshAll, navFeatures, featuresLoading, isNewlyUnlocked, markFeatureOpened, showDeferredAchievements, xpGainEvent, comboEvent }}>
       {children}
 
+      {/* Welcome Back Flow — shown BEFORE morning review for returning users */}
+      {showWelcome && !loading && !levelUpModal.open && !featureUnlockModal.open && (
+        <WelcomeBackFlow
+          daysAway={daysAway}
+          overdueCount={morningOverdueTasks.length}
+          onFreshStart={async () => {
+            for (const task of morningOverdueTasks) {
+              await archiveTask(task.id);
+            }
+          }}
+          onDismiss={dismissWelcome}
+        />
+      )}
+
       {/* Morning Review Modal */}
       {morningReviewReady && !morningReviewDismissed && morningReviewData.needsReview
-        && !levelUpModal.open && !featureUnlockModal.open && !calmReview.visible && (
+        && !levelUpModal.open && !featureUnlockModal.open && !calmReview.visible && !showWelcome && (
         <MorningReviewModal
           overdueTasks={morningReviewData.overdueTasks}
           habits={morningReviewData.habits}
@@ -435,6 +480,7 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
           onRescheduleToToday={rescheduleToToday}
           onMoveToInbox={moveTaskToInbox}
           onDeleteTask={async (id) => { await deleteTaskAction(id); }}
+          onArchive={async (id) => { await archiveTask(id); }}
           onSubmitHabits={submitHabitsReview}
           onDismiss={dismissMorningReview}
         />

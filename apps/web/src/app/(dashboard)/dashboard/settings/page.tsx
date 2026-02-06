@@ -211,6 +211,27 @@ export default function SettingsPage() {
 
               <Separator />
 
+              {/* Just 1 Mode */}
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label className="flex items-center gap-2">
+                    <Zap className="h-4 w-4" />
+                    Just 1 Mode
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Show only one task at a time on Today page
+                  </p>
+                </div>
+                <Switch
+                  checked={prefs?.showOnlyOneTask || false}
+                  onCheckedChange={(checked) =>
+                    updatePreference('showOnlyOneTask', checked)
+                  }
+                />
+              </div>
+
+              <Separator />
+
               {/* Theme */}
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">

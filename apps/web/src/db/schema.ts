@@ -73,7 +73,7 @@ export const users = pgTable("user", {
     longBreakMinutes: 15,
     pomodorosUntilLongBreak: 4,
     maxDailyTasks: 3,
-    showOnlyOneTask: true,
+    showOnlyOneTask: false,
     autoScheduleOverdue: true,
     morningPlanningReminder: true,
     highEnergyHours: [9, 10, 11],

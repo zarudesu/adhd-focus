@@ -57,6 +57,7 @@ interface UpdateTaskInput {
 export interface CompleteResult {
   task: Task;
   xpAwarded: number;
+  wasBonus: boolean;
   levelUp: boolean;
   newLevel: number;
   newAchievements: Achievement[];
@@ -201,7 +202,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
   const complete = useCallback(async (id: string): Promise<CompleteResult> => {
     // Prevent rapid double-clicks from awarding XP twice
     if (completingIdsRef.current.has(id)) {
-      return { task: tasks.find((t) => t.id === id) as Task, xpAwarded: 0, levelUp: false, newLevel: 1, newAchievements: [], creature: null };
+      return { task: tasks.find((t) => t.id === id) as Task, xpAwarded: 0, wasBonus: false, levelUp: false, newLevel: 1, newAchievements: [], creature: null };
     }
     completingIdsRef.current.add(id);
 
@@ -219,6 +220,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
     const result: CompleteResult = {
       task: updatedTask,
       xpAwarded: 0,
+      wasBonus: false,
       levelUp: false,
       newLevel: 1,
       newAchievements: [],
@@ -245,7 +247,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
           : updatedTask.completedAt.toISOString()
         : null;
 
-      const xpAmount = calculateTaskXp(
+      const { xp: xpAmount, wasBonus } = calculateTaskXp(
         {
           priority: task?.priority,
           energyRequired: task?.energyRequired,
@@ -265,6 +267,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
       if (xpRes.ok) {
         const xpData = await xpRes.json();
         result.xpAwarded = xpAmount;
+        result.wasBonus = wasBonus;
         result.levelUp = xpData.leveledUp || false;
         result.newLevel = xpData.newLevel || 1;
       }

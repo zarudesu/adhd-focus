@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { X, Check, Inbox, Trash2, Sun } from 'lucide-react';
+import { X, Check, Inbox, Trash2, Sun, Archive } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Task } from '@/db/schema';
 
@@ -21,6 +21,7 @@ interface MorningReviewModalProps {
   onRescheduleToToday: (id: string) => Promise<unknown>;
   onMoveToInbox: (id: string) => Promise<unknown>;
   onDeleteTask: (id: string) => Promise<unknown>;
+  onArchive?: (id: string) => Promise<unknown>;
   onSubmitHabits: (data: {
     habits: { id: string; completed: boolean; skipped: boolean }[];
   }) => Promise<void>;
@@ -36,6 +37,7 @@ export function MorningReviewModal({
   onRescheduleToToday,
   onMoveToInbox,
   onDeleteTask,
+  onArchive,
   onSubmitHabits,
   onDismiss,
 }: MorningReviewModalProps) {
@@ -161,6 +163,16 @@ export function MorningReviewModal({
               </motion.div>
             </AnimatePresence>
 
+            {/* Suggest letting go for tasks 14+ days old */}
+            {currentTask.scheduledDate && (() => {
+              const daysOld = Math.floor((Date.now() - new Date(currentTask.scheduledDate + 'T00:00:00').getTime()) / (1000 * 60 * 60 * 24));
+              return daysOld >= 14 ? (
+                <p className="text-xs text-muted-foreground text-center">
+                  This task is {daysOld} days old. It&apos;s okay to let it go.
+                </p>
+              ) : null;
+            })()}
+
             <div className="grid grid-cols-2 gap-2">
               <Button
                 variant="outline"
@@ -189,15 +201,27 @@ export function MorningReviewModal({
                 <Inbox className="h-4 w-4 mr-2" />
                 Inbox
               </Button>
-              <Button
-                variant="outline"
-                className="h-12 text-muted-foreground"
-                disabled={isProcessing}
-                onClick={() => handleTaskAction(onDeleteTask, currentTask.id)}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
-              </Button>
+              {onArchive ? (
+                <Button
+                  variant="outline"
+                  className="h-12 text-muted-foreground"
+                  disabled={isProcessing}
+                  onClick={() => handleTaskAction(onArchive, currentTask.id)}
+                >
+                  <Archive className="h-4 w-4 mr-2" />
+                  Let go
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  className="h-12 text-muted-foreground"
+                  disabled={isProcessing}
+                  onClick={() => handleTaskAction(onDeleteTask, currentTask.id)}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </Button>
+              )}
             </div>
           </div>
         )}

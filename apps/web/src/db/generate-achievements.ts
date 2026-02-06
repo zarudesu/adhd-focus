@@ -1944,6 +1944,40 @@ function generateUltraSecretAchievements() {
 }
 
 // ============================================
+// RETENTION ACHIEVEMENTS
+// ============================================
+
+function generateRetentionAchievements() {
+  // Day 3-5 surprise — bridges the novelty cliff
+  achievements.push(createAchievement(
+    'still_here',
+    'Still Here',
+    'You came back on day 3. Most don\'t. That matters.',
+    '🌱',
+    'hidden',
+    50,
+    'account_age',
+    { minDays: 3, maxDays: 5 },
+    'hidden',
+    'retention'
+  ));
+
+  // Welcome back after absence
+  achievements.push(createAchievement(
+    'comeback',
+    'Comeback',
+    'Returned after a break. The hardest part is showing up again.',
+    '🔄',
+    'hidden',
+    30,
+    'return_after_absence',
+    { minDaysAway: 3 },
+    'hidden',
+    'retention'
+  ));
+}
+
+// ============================================
 // MAIN GENERATOR
 // ============================================
 
@@ -2018,6 +2052,9 @@ function generateAllAchievements() {
 
   generateHiddenAchievements();
   console.log(`+ Hidden: ${achievements.length}`);
+
+  generateRetentionAchievements();
+  console.log(`+ Retention: ${achievements.length}`);
 
   generateUltraSecretAchievements();
   console.log(`+ Ultra Secret: ${achievements.length}`);

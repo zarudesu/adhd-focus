@@ -7,13 +7,14 @@ import { ProtectedRoute } from '@/components/gamification/ProtectedRoute';
 import { Button } from "@/components/ui/button";
 import { TaskList, AddTaskDialog } from "@/components/tasks";
 import { useTasks } from "@/hooks/useTasks";
+import { useProfile } from "@/hooks/useProfile";
 import { useGamificationEvents } from "@/components/gamification/GamificationProvider";
 import { EndOfDayReview, CloseDayButton } from "@/components/gamification/EndOfDayReview";
 import { TodayIntro, useTodayIntro } from "@/components/gamification/TodayIntro";
 import type { Task } from "@/db/schema";
 import { DailyQuests } from "@/components/gamification/DailyQuests";
 import { useQuests } from "@/hooks/useQuests";
-import { Inbox, Eye, EyeOff, Plus, ChevronDown, ChevronUp, ArrowRight } from "lucide-react";
+import { Inbox, Eye, EyeOff, Plus, ChevronDown, ChevronUp, ArrowRight, Archive } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 const MAX_DAILY_TASKS = 3;
@@ -24,6 +25,7 @@ function TodayContent() {
   const [showEndOfDay, setShowEndOfDay] = useState(false);
   const [hideCompleted, setHideCompleted] = useState(false);
   const [hideOverdue, setHideOverdue] = useState(false);
+  const [showAllTasks, setShowAllTasks] = useState(false);
   const [daySummary, setDaySummary] = useState({
     tasksCompleted: 0,
     totalTasks: 0,
@@ -43,9 +45,12 @@ function TodayContent() {
     update,
     create,
     rescheduleToToday,
+    archive,
   } = useTasks();
   const { handleTaskComplete, showCalmReview, state, refreshAll, showDeferredAchievements } = useGamificationEvents();
   const { quests, loading: questsLoading, updateProgress: updateQuestProgress } = useQuests();
+  const { profile } = useProfile();
+  const justOneMode = profile?.preferences?.showOnlyOneTask ?? false;
 
   // Show deferred achievements when user arrives at Today page
   useEffect(() => {
@@ -231,19 +236,34 @@ function TodayContent() {
                   {hideOverdue ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
                   From previous days ({overdueTasks.length})
                 </button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300"
-                  onClick={async () => {
-                    for (const task of overdueTasks) {
-                      await rescheduleToToday(task.id);
-                    }
-                  }}
-                >
-                  <ArrowRight className="h-3.5 w-3.5 mr-1" />
-                  Move all to today
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                    onClick={async () => {
+                      for (const task of overdueTasks) {
+                        await archive(task.id);
+                      }
+                    }}
+                  >
+                    <Archive className="h-3.5 w-3.5 mr-1" />
+                    Let go
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300"
+                    onClick={async () => {
+                      for (const task of overdueTasks) {
+                        await rescheduleToToday(task.id);
+                      }
+                    }}
+                  >
+                    <ArrowRight className="h-3.5 w-3.5 mr-1" />
+                    Move all to today
+                  </Button>
+                </div>
               </div>
               {!hideOverdue && (
                 <TaskList
@@ -262,25 +282,44 @@ function TodayContent() {
         {/* Daily Quests */}
         <DailyQuests quests={quests} loading={questsLoading} />
 
-        <TaskList
-          tasks={todayTasks.filter(t => t.status !== 'done')}
-          loading={loading}
-          emptyMessage="No tasks for today"
-          emptyDescription="Move tasks from Inbox or Scheduled"
-          emptyAction={
-            <Button asChild variant="outline" size="sm" className="mt-3">
-              <Link href="/dashboard/inbox">
-                <Inbox className="h-4 w-4 mr-2" />
-                Go to Inbox
-              </Link>
-            </Button>
-          }
-          onComplete={handleComplete}
-          onUncomplete={uncomplete}
-          onDelete={deleteTask}
-          onMoveToInbox={moveToInbox}
-          onTaskClick={setEditingTask}
-        />
+        {(() => {
+          const activeTasks = todayTasks.filter(t => t.status !== 'done');
+          const showJustOne = justOneMode && !showAllTasks && activeTasks.length > 1;
+          const visibleTasks = showJustOne ? activeTasks.slice(0, 1) : activeTasks;
+          const hiddenCount = activeTasks.length - visibleTasks.length;
+
+          return (
+            <>
+              <TaskList
+                tasks={visibleTasks}
+                loading={loading}
+                emptyMessage="No tasks for today"
+                emptyDescription="Move tasks from Inbox or Scheduled"
+                emptyAction={
+                  <Button asChild variant="outline" size="sm" className="mt-3">
+                    <Link href="/dashboard/inbox">
+                      <Inbox className="h-4 w-4 mr-2" />
+                      Go to Inbox
+                    </Link>
+                  </Button>
+                }
+                onComplete={handleComplete}
+                onUncomplete={uncomplete}
+                onDelete={deleteTask}
+                onMoveToInbox={moveToInbox}
+                onTaskClick={setEditingTask}
+              />
+              {showJustOne && hiddenCount > 0 && (
+                <button
+                  onClick={() => setShowAllTasks(true)}
+                  className="w-full mt-2 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors rounded-lg border border-dashed"
+                >
+                  +{hiddenCount} more task{hiddenCount !== 1 ? 's' : ''}
+                </button>
+              )}
+            </>
+          );
+        })()}
 
         {/* Completed tasks section */}
         <AnimatePresence>
