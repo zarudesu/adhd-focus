@@ -57,36 +57,48 @@ function ChecklistContent() {
   const showReviewModal = !reviewLoading && reviewData?.needsReview && !dismissed && habits.length > 0;
 
   const handleCheck = useCallback(async (id: string, skipped = false) => {
-    const result = await check(id, skipped);
+    try {
+      const result = await check(id, skipped);
 
-    // Trigger gamification events
-    if (result.xpAwarded > 0) {
-      handleTaskComplete({
-        xpAwarded: result.xpAwarded,
-        levelUp: result.levelUp ? {
-          newLevel: result.newLevel!,
-          unlockedFeatures: [],
-        } : undefined,
-      });
-    }
+      // Trigger gamification events
+      if (result.xpAwarded > 0) {
+        handleTaskComplete({
+          xpAwarded: result.xpAwarded,
+          levelUp: result.levelUp ? {
+            newLevel: result.newLevel!,
+            unlockedFeatures: [],
+          } : undefined,
+        });
+      }
 
-    // beatyour8: When all habits done, show Calm Review (not celebration)
-    if (result.allHabitsDone) {
-      handleTaskComplete({
-        xpAwarded: result.bonusXp,
-        review: {
-          trigger: 'habit_done',
-        },
-      });
+      // beatyour8: When all habits done, show Calm Review (not celebration)
+      if (result.allHabitsDone) {
+        handleTaskComplete({
+          xpAwarded: result.bonusXp,
+          review: {
+            trigger: 'habit_done',
+          },
+        });
+      }
+    } catch (err) {
+      console.error('Failed to check habit:', err);
     }
   }, [check, handleTaskComplete]);
 
   const handleUncheck = useCallback(async (id: string) => {
-    await uncheck(id);
+    try {
+      await uncheck(id);
+    } catch (err) {
+      console.error('Failed to uncheck habit:', err);
+    }
   }, [uncheck]);
 
   const handleArchive = useCallback(async (id: string) => {
-    await archive(id);
+    try {
+      await archive(id);
+    } catch (err) {
+      console.error('Failed to archive habit:', err);
+    }
   }, [archive]);
 
   const handleEdit = useCallback((id: string) => {

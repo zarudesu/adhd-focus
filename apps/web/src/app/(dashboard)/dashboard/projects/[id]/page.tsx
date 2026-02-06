@@ -35,7 +35,7 @@ function ProjectDetailContent() {
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState('');
 
-  const { projects, loading: projectsLoading } = useProjects();
+  const { projects, loading: projectsLoading, fetch: fetchProjects } = useProjects();
   const project = projects.find(p => p.id === projectId);
 
   const {
@@ -56,6 +56,7 @@ function ProjectDetailContent() {
 
   const handleComplete = useCallback(async (id: string) => {
     const result = await complete(id);
+    fetchProjects();
     handleTaskComplete({
       levelUp: result.levelUp ? {
         newLevel: result.newLevel,
@@ -65,7 +66,7 @@ function ProjectDetailContent() {
       newAchievements: result.newAchievements,
       creature: result.creature,
     });
-  }, [complete, handleTaskComplete]);
+  }, [complete, fetchProjects, handleTaskComplete]);
 
   const activeTasks = useMemo(() => tasks.filter(t => t.status !== 'done' && t.status !== 'archived'), [tasks]);
   const completedTasks = useMemo(() => tasks.filter(t => t.status === 'done'), [tasks]);
@@ -141,6 +142,7 @@ function ProjectDetailContent() {
         onOpenChange={setShowAddDialog}
         onSubmit={async (input) => {
           await create(input);
+          fetchProjects();
           refreshAll();
         }}
         defaultStatus="inbox"
