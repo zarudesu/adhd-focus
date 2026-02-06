@@ -3,8 +3,8 @@
  * POST /api/habits/reorder - Update sort order for multiple habits
  */
 
-import { NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { NextRequest, NextResponse } from 'next/server';
+import { getAuthUser } from '@/lib/mobile-auth';
 import { db } from '@/db';
 import { habits } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -15,14 +15,14 @@ interface ReorderItem {
   sortOrder: number;
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userId = session.user.id;
+    const userId = user.id;
     const body = await request.json();
     const { habits: updates } = body as { habits: ReorderItem[] };
 

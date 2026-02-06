@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getAuthUser } from "@/lib/mobile-auth";
 import { db, projectWikiPages } from "@/db";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
@@ -13,10 +13,10 @@ const updatePageSchema = z.object({
 });
 
 // GET /api/projects/[id]/wiki/[pageId] - Get single page with content
-export async function GET(_request: NextRequest, { params }: RouteParams) {
+export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -28,7 +28,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       .where(and(
         eq(projectWikiPages.id, pageId),
         eq(projectWikiPages.projectId, id),
-        eq(projectWikiPages.userId, session.user.id),
+        eq(projectWikiPages.userId, user.id),
       ))
       .limit(1);
 
@@ -46,8 +46,8 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 // PATCH /api/projects/[id]/wiki/[pageId] - Update page
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -67,7 +67,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       .where(and(
         eq(projectWikiPages.id, pageId),
         eq(projectWikiPages.projectId, id),
-        eq(projectWikiPages.userId, session.user.id),
+        eq(projectWikiPages.userId, user.id),
       ))
       .returning();
 
@@ -86,10 +86,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 }
 
 // DELETE /api/projects/[id]/wiki/[pageId] - Delete page
-export async function DELETE(_request: NextRequest, { params }: RouteParams) {
+export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -100,7 +100,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
       .where(and(
         eq(projectWikiPages.id, pageId),
         eq(projectWikiPages.projectId, id),
-        eq(projectWikiPages.userId, session.user.id),
+        eq(projectWikiPages.userId, user.id),
       ))
       .returning();
 

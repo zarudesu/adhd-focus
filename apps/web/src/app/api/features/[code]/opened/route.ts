@@ -8,7 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { getAuthUser } from '@/lib/mobile-auth';
 import { db } from '@/db';
 import { userFeatures } from '@/db/schema';
 import { eq, and, isNull } from 'drizzle-orm';
@@ -29,13 +29,13 @@ export async function POST(
   { params }: RouteParams
 ): Promise<NextResponse<FeatureOpenedResponse | { error: string }>> {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { code } = await params;
-    const userId = session.user.id;
+    const userId = user.id;
 
     // Find the user's feature record
     const [userFeature] = await db

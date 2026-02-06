@@ -3,21 +3,21 @@
  * GET /api/stats - Get user's historical daily stats
  */
 
-import { NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { NextRequest, NextResponse } from 'next/server';
+import { getAuthUser } from '@/lib/mobile-auth';
 import { db } from '@/db';
 import { dailyStats, users } from '@/db/schema';
 import { eq, and, gte, desc } from 'drizzle-orm';
 import { logError } from '@/lib/logger';
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userId = session.user.id;
+    const userId = user.id;
     const { searchParams } = new URL(request.url);
     const days = parseInt(searchParams.get('days') || '7', 10);
 
@@ -40,7 +40,7 @@ export async function GET(request: Request) {
       .orderBy(desc(dailyStats.date));
 
     // Get user totals
-    const [user] = await db
+    const [userTotals] = await db
       .select({
         totalPomodoros: users.totalPomodoros,
         totalFocusMinutes: users.totalFocusMinutes,
@@ -86,11 +86,11 @@ export async function GET(request: Request) {
       dailyStats: filledStats,
       periodTotals,
       allTime: {
-        totalPomodoros: user?.totalPomodoros || 0,
-        totalFocusMinutes: user?.totalFocusMinutes || 0,
-        totalTasksCompleted: user?.totalTasksCompleted || 0,
-        currentStreak: user?.currentStreak || 0,
-        longestStreak: user?.longestStreak || 0,
+        totalPomodoros: userTotals?.totalPomodoros || 0,
+        totalFocusMinutes: userTotals?.totalFocusMinutes || 0,
+        totalTasksCompleted: userTotals?.totalTasksCompleted || 0,
+        currentStreak: userTotals?.currentStreak || 0,
+        longestStreak: userTotals?.longestStreak || 0,
       },
     });
   } catch (error) {

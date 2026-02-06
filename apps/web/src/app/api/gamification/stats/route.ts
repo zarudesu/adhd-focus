@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { NextRequest, NextResponse } from 'next/server';
+import { getAuthUser } from '@/lib/mobile-auth';
 import { db } from '@/db';
 import {
   users,
@@ -71,17 +71,17 @@ function isFeatureUnlocked(
   return false;
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userId = session.user.id;
+    const userId = user.id;
 
     // Get user gamification data including onboarding progress and habit stats
-    const [user] = await db
+    const [dbUser] = await db
       .select({
         xp: users.xp,
         level: users.level,
@@ -111,7 +111,7 @@ export async function GET() {
       .where(eq(users.id, userId))
       .limit(1);
 
-    if (!user) {
+    if (!dbUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
@@ -137,15 +137,15 @@ export async function GET() {
 
     // Build user progress object
     const userProgress = {
-      level: user.level || 1,
-      totalTasksCompleted: user.totalTasksCompleted || 0,
-      tasksAdded: user.tasksAdded || 0,
-      tasksAssignedToday: user.tasksAssignedToday || 0,
-      tasksScheduled: user.tasksScheduled || 0,
-      projectsCreated: user.projectsCreated || 0,
-      inboxCleared: user.inboxCleared || 0,
-      focusSessionsCompleted: user.focusSessionsCompleted || 0,
-      currentStreak: user.currentStreak || 0,
+      level: dbUser.level || 1,
+      totalTasksCompleted: dbUser.totalTasksCompleted || 0,
+      tasksAdded: dbUser.tasksAdded || 0,
+      tasksAssignedToday: dbUser.tasksAssignedToday || 0,
+      tasksScheduled: dbUser.tasksScheduled || 0,
+      projectsCreated: dbUser.projectsCreated || 0,
+      inboxCleared: dbUser.inboxCleared || 0,
+      focusSessionsCompleted: dbUser.focusSessionsCompleted || 0,
+      currentStreak: dbUser.currentStreak || 0,
     };
 
     // Calculate unlocked features based on progress
@@ -222,25 +222,25 @@ export async function GET() {
       .limit(10);
 
     return NextResponse.json({
-      xp: user.xp || 0,
-      level: user.level || 1,
-      currentStreak: user.currentStreak || 0,
-      longestStreak: user.longestStreak || 0,
-      totalTasksCompleted: user.totalTasksCompleted || 0,
-      totalCreatures: user.totalCreatures || 0,
-      rarestRewardSeen: user.rarestRewardSeen,
-      lastActiveDate: user.lastActiveDate,
+      xp: dbUser.xp || 0,
+      level: dbUser.level || 1,
+      currentStreak: dbUser.currentStreak || 0,
+      longestStreak: dbUser.longestStreak || 0,
+      totalTasksCompleted: dbUser.totalTasksCompleted || 0,
+      totalCreatures: dbUser.totalCreatures || 0,
+      rarestRewardSeen: dbUser.rarestRewardSeen,
+      lastActiveDate: dbUser.lastActiveDate,
 
       // Onboarding progress
       progress: userProgress,
 
       // Habit stats
       habitStats: {
-        habitsCompleted: user.habitsCompleted || 0,
-        habitsCreated: user.habitsCreated || 0,
-        habitStreak: user.habitStreak || 0,
-        longestHabitStreak: user.longestHabitStreak || 0,
-        allHabitsCompletedDays: user.allHabitsCompletedDays || 0,
+        habitsCompleted: dbUser.habitsCompleted || 0,
+        habitsCreated: dbUser.habitsCreated || 0,
+        habitStreak: dbUser.habitStreak || 0,
+        longestHabitStreak: dbUser.longestHabitStreak || 0,
+        allHabitsCompletedDays: dbUser.allHabitsCompletedDays || 0,
       },
 
       // Features

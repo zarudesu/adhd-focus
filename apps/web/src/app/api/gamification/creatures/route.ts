@@ -3,24 +3,24 @@
  * GET /api/gamification/creatures - Get user's creature collection
  */
 
-import { NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { NextRequest, NextResponse } from 'next/server';
+import { getAuthUser } from '@/lib/mobile-auth';
 import { db } from '@/db';
 import { creatures, userCreatures, users } from '@/db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { logError } from '@/lib/logger';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userId = session.user.id;
+    const userId = user.id;
 
     // Get user's total creatures count
-    const [user] = await db
+    const [dbUser] = await db
       .select({
         totalCreatures: users.totalCreatures,
       })
@@ -99,7 +99,7 @@ export async function GET() {
       stats: {
         total: totalCount,
         caught: caughtCount,
-        totalCreaturesCaught: user?.totalCreatures || 0, // Total including duplicates
+        totalCreaturesCaught: dbUser?.totalCreatures || 0, // Total including duplicates
         byRarity,
       },
     });

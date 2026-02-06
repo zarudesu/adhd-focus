@@ -3,7 +3,7 @@
 // POST /api/habits/review - Submit daily review
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getAuthUser } from "@/lib/mobile-auth";
 import { db, users } from "@/db";
 import { dailyReviews, habitChecks, tasks, habits } from "@/db/schema";
 import { eq, and, sql, inArray } from "drizzle-orm";
@@ -30,8 +30,8 @@ const reviewSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
       .select()
       .from(dailyReviews)
       .where(and(
-        eq(dailyReviews.userId, session.user.id),
+        eq(dailyReviews.userId, user.id),
         eq(dailyReviews.date, targetDate)
       ));
 
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
       })
       .from(habits)
       .where(and(
-        eq(habits.userId, session.user.id),
+        eq(habits.userId, user.id),
         eq(habits.isArchived, false)
       ));
 
@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
       })
       .from(habitChecks)
       .where(and(
-        eq(habitChecks.userId, session.user.id),
+        eq(habitChecks.userId, user.id),
         eq(habitChecks.date, targetDate),
         inArray(habitChecks.habitId, userHabits.map(h => h.id))
       ));
@@ -121,8 +121,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
       .select()
       .from(dailyReviews)
       .where(and(
-        eq(dailyReviews.userId, session.user.id),
+        eq(dailyReviews.userId, user.id),
         eq(dailyReviews.date, data.date)
       ));
 
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
     const [review] = await db
       .insert(dailyReviews)
       .values({
-        userId: session.user.id,
+        userId: user.id,
         date: data.date,
         tasksCompleted: data.tasksCompleted || 0,
         tasksSkipped: data.tasksSkipped || 0,
@@ -180,7 +180,7 @@ export async function POST(request: NextRequest) {
       .set({
         lastReviewDate: data.date,
       })
-      .where(eq(users.id, session.user.id));
+      .where(eq(users.id, user.id));
 
     return NextResponse.json(review, { status: 201 });
   } catch (error) {

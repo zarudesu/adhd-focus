@@ -4,7 +4,7 @@
 // DELETE /api/projects/[id] - Archive project
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getAuthUser } from "@/lib/mobile-auth";
 import { db, projects, tasks } from "@/db";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
@@ -22,8 +22,8 @@ const updateProjectSchema = z.object({
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const [project] = await db
       .select()
       .from(projects)
-      .where(and(eq(projects.id, id), eq(projects.userId, session.user.id)))
+      .where(and(eq(projects.id, id), eq(projects.userId, user.id)))
       .limit(1);
 
     if (!project) {
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const projectTasks = await db
       .select()
       .from(tasks)
-      .where(and(eq(tasks.projectId, id), eq(tasks.userId, session.user.id)))
+      .where(and(eq(tasks.projectId, id), eq(tasks.userId, user.id)))
       .orderBy(tasks.sortOrder, tasks.createdAt);
 
     return NextResponse.json({ ...project, tasks: projectTasks });
@@ -55,8 +55,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -77,7 +77,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const [updatedProject] = await db
       .update(projects)
       .set(updateData)
-      .where(and(eq(projects.id, id), eq(projects.userId, session.user.id)))
+      .where(and(eq(projects.id, id), eq(projects.userId, user.id)))
       .returning();
 
     if (!updatedProject) {
@@ -96,8 +96,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -107,7 +107,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const [archivedProject] = await db
       .update(projects)
       .set({ archived: true, updatedAt: new Date() })
-      .where(and(eq(projects.id, id), eq(projects.userId, session.user.id)))
+      .where(and(eq(projects.id, id), eq(projects.userId, user.id)))
       .returning();
 
     if (!archivedProject) {

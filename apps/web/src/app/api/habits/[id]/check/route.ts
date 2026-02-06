@@ -3,7 +3,7 @@
 // DELETE /api/habits/[id]/check - Uncheck a habit for a date
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getAuthUser } from "@/lib/mobile-auth";
 import { db, users } from "@/db";
 import { habits, habitChecks } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
@@ -27,8 +27,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -42,7 +42,7 @@ export async function POST(
       .from(habits)
       .where(and(
         eq(habits.id, id),
-        eq(habits.userId, session.user.id)
+        eq(habits.userId, user.id)
       ));
 
     if (!habit) {
@@ -55,7 +55,7 @@ export async function POST(
       .from(habitChecks)
       .where(and(
         eq(habitChecks.habitId, id),
-        eq(habitChecks.userId, session.user.id),
+        eq(habitChecks.userId, user.id),
         eq(habitChecks.date, data.date)
       ));
 
@@ -71,7 +71,7 @@ export async function POST(
       .insert(habitChecks)
       .values({
         habitId: id,
-        userId: session.user.id,
+        userId: user.id,
         date: data.date,
         skipped: data.skipped || false,
         reflection: data.reflection,
@@ -97,7 +97,7 @@ export async function POST(
         .set({
           habitsCompleted: sql`${users.habitsCompleted} + 1`,
         })
-        .where(eq(users.id, session.user.id));
+        .where(eq(users.id, user.id));
     }
 
     // Check if all habits for today are done
@@ -110,7 +110,7 @@ export async function POST(
         .select({ id: habits.id })
         .from(habits)
         .where(and(
-          eq(habits.userId, session.user.id),
+          eq(habits.userId, user.id),
           eq(habits.isArchived, false)
         ));
 
@@ -119,7 +119,7 @@ export async function POST(
         .select({ habitId: habitChecks.habitId, skipped: habitChecks.skipped })
         .from(habitChecks)
         .where(and(
-          eq(habitChecks.userId, session.user.id),
+          eq(habitChecks.userId, user.id),
           eq(habitChecks.date, data.date)
         ));
 
@@ -142,7 +142,7 @@ export async function POST(
             habitStreak: sql`${users.habitStreak} + 1`,
             longestHabitStreak: sql`GREATEST(${users.longestHabitStreak}, ${users.habitStreak} + 1)`,
           })
-          .where(eq(users.id, session.user.id));
+          .where(eq(users.id, user.id));
       }
     }
 
@@ -152,7 +152,7 @@ export async function POST(
     let newLevel = null;
 
     if (totalXp > 0) {
-      const xpResult = await awardXP(session.user.id, totalXp, "habit_complete");
+      const xpResult = await awardXP(user.id, totalXp, "habit_complete");
       levelUp = xpResult.levelUp;
       newLevel = xpResult.newLevel;
     }
@@ -180,8 +180,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -199,7 +199,7 @@ export async function DELETE(
       .from(habitChecks)
       .where(and(
         eq(habitChecks.habitId, id),
-        eq(habitChecks.userId, session.user.id),
+        eq(habitChecks.userId, user.id),
         eq(habitChecks.date, date)
       ));
 
@@ -212,7 +212,7 @@ export async function DELETE(
       .delete(habitChecks)
       .where(and(
         eq(habitChecks.habitId, id),
-        eq(habitChecks.userId, session.user.id),
+        eq(habitChecks.userId, user.id),
         eq(habitChecks.date, date)
       ));
 
@@ -231,7 +231,7 @@ export async function DELETE(
         .set({
           habitsCompleted: sql`GREATEST(${users.habitsCompleted} - 1, 0)`,
         })
-        .where(eq(users.id, session.user.id));
+        .where(eq(users.id, user.id));
 
       // Note: XP is not removed - once earned, it stays
     }

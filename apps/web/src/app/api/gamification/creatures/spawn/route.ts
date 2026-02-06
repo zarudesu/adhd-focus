@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { NextRequest, NextResponse } from 'next/server';
+import { getAuthUser } from '@/lib/mobile-auth';
 import { db } from '@/db';
 import {
   users,
@@ -41,14 +41,14 @@ function checkSpawnConditions(
   return true;
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userId = session.user.id;
+    const userId = user.id;
 
     // Get optional context from body
     let body: { onTaskComplete?: boolean; isQuickTask?: boolean } = {};
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     }
 
     // Get user stats
-    const [user] = await db
+    const [dbUser] = await db
       .select({
         level: users.level,
         currentStreak: users.currentStreak,
@@ -69,7 +69,7 @@ export async function POST(request: Request) {
       .where(eq(users.id, userId))
       .limit(1);
 
-    if (!user) {
+    if (!dbUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
@@ -77,8 +77,8 @@ export async function POST(request: Request) {
     const context = {
       onTaskComplete: body.onTaskComplete ?? true,
       isQuickTask: body.isQuickTask ?? false,
-      streakDays: user.currentStreak || 0,
-      level: user.level || 1,
+      streakDays: dbUser.currentStreak || 0,
+      level: dbUser.level || 1,
       currentHour: now.getHours(),
     };
 
@@ -155,7 +155,7 @@ export async function POST(request: Request) {
       await db
         .update(users)
         .set({
-          totalCreatures: (user.totalCreatures || 0) + 1,
+          totalCreatures: (dbUser.totalCreatures || 0) + 1,
           updatedAt: new Date(),
         })
         .where(eq(users.id, userId));

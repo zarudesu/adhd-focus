@@ -3,7 +3,7 @@
 // POST /api/projects - Create project
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getAuthUser } from "@/lib/mobile-auth";
 import { db, projects, tasks, users } from "@/db";
 import { eq, and, count, sql } from "drizzle-orm";
 import { z } from "zod";
@@ -18,8 +18,8 @@ const createProjectSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -44,12 +44,12 @@ export async function GET(request: NextRequest) {
       .from(projects)
       .leftJoin(
         tasks,
-        and(eq(tasks.projectId, projects.id), eq(tasks.userId, session.user.id))
+        and(eq(tasks.projectId, projects.id), eq(tasks.userId, user.id))
       )
       .where(
         includeArchived
-          ? eq(projects.userId, session.user.id)
-          : and(eq(projects.userId, session.user.id), eq(projects.archived, false))
+          ? eq(projects.userId, user.id)
+          : and(eq(projects.userId, user.id), eq(projects.archived, false))
       )
       .groupBy(projects.id)
       .orderBy(projects.createdAt);
@@ -63,8 +63,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     const [newProject] = await db
       .insert(projects)
       .values({
-        userId: session.user.id,
+        userId: user.id,
         name: data.name,
         description: data.description || null,
         color: data.color || "#6366f1",
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
         projectsCreated: sql`COALESCE(${users.projectsCreated}, 0) + 1`,
         updatedAt: new Date(),
       })
-      .where(eq(users.id, session.user.id));
+      .where(eq(users.id, user.id));
 
     return NextResponse.json({ ...newProject, taskCount: 0, completedCount: 0 }, { status: 201 });
   } catch (error) {

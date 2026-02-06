@@ -4,18 +4,18 @@
  * GET /api/focus/sessions - Get today's focus sessions
  */
 
-import { NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { NextRequest, NextResponse } from 'next/server';
+import { getAuthUser } from '@/lib/mobile-auth';
 import { db } from '@/db';
 import { focusSessions, users, tasks } from '@/db/schema';
 import { eq, and, gte, desc } from 'drizzle-orm';
 import { logError } from '@/lib/logger';
 
 // POST - Start a new focus session
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     const [focusSession] = await db
       .insert(focusSessions)
       .values({
-        userId: session.user.id,
+        userId: user.id,
         taskId: taskId || null,
         startedAt: new Date(),
         durationMinutes: 0,
@@ -47,14 +47,14 @@ export async function POST(request: Request) {
 }
 
 // GET - Get today's focus sessions
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userId = session.user.id;
+    const userId = user.id;
 
     // Get today's start
     const today = new Date();
@@ -84,7 +84,7 @@ export async function GET() {
       .orderBy(desc(focusSessions.startedAt));
 
     // Get user's total pomodoros
-    const [user] = await db
+    const [userTotals] = await db
       .select({
         totalPomodoros: users.totalPomodoros,
         totalFocusMinutes: users.totalFocusMinutes,
@@ -107,8 +107,8 @@ export async function GET() {
       sessions,
       todayStats,
       totalStats: {
-        totalPomodoros: user?.totalPomodoros || 0,
-        totalFocusMinutes: user?.totalFocusMinutes || 0,
+        totalPomodoros: userTotals?.totalPomodoros || 0,
+        totalFocusMinutes: userTotals?.totalFocusMinutes || 0,
       },
     });
   } catch (error) {

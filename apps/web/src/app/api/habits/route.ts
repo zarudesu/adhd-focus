@@ -3,7 +3,7 @@
 // POST /api/habits - Create a new habit
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getAuthUser } from "@/lib/mobile-auth";
 import { db, users } from "@/db";
 import { habits } from "@/db/schema";
 import { eq, and, asc } from "drizzle-orm";
@@ -20,10 +20,10 @@ const createHabitSchema = z.object({
   color: z.string().optional(),
 });
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -31,7 +31,7 @@ export async function GET() {
       .select()
       .from(habits)
       .where(and(
-        eq(habits.userId, session.user.id),
+        eq(habits.userId, user.id),
         eq(habits.isArchived, false)
       ))
       .orderBy(asc(habits.sortOrder), asc(habits.createdAt));
@@ -45,8 +45,8 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     const existingHabits = await db
       .select({ sortOrder: habits.sortOrder })
       .from(habits)
-      .where(eq(habits.userId, session.user.id))
+      .where(eq(habits.userId, user.id))
       .orderBy(asc(habits.sortOrder));
 
     const maxSortOrder = existingHabits.length > 0
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     const [newHabit] = await db
       .insert(habits)
       .values({
-        userId: session.user.id,
+        userId: user.id,
         name: data.name,
         emoji: data.emoji || "✅",
         description: data.description,
@@ -83,9 +83,9 @@ export async function POST(request: NextRequest) {
     await db
       .update(users)
       .set({
-        habitsCreated: (await db.select({ count: users.habitsCreated }).from(users).where(eq(users.id, session.user.id)))[0].count! + 1,
+        habitsCreated: (await db.select({ count: users.habitsCreated }).from(users).where(eq(users.id, user.id)))[0].count! + 1,
       })
-      .where(eq(users.id, session.user.id));
+      .where(eq(users.id, user.id));
 
     return NextResponse.json(newHabit, { status: 201 });
   } catch (error) {

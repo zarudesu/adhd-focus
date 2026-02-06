@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { NextRequest, NextResponse } from 'next/server';
+import { getAuthUser } from '@/lib/mobile-auth';
 import { db } from '@/db';
 import { users, rewardLogs } from '@/db/schema';
 import { eq } from 'drizzle-orm';
@@ -13,14 +13,14 @@ function isRarer(a: string, b: string | null): boolean {
   return RARITY_ORDER.indexOf(a) > RARITY_ORDER.indexOf(b);
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userId = session.user.id;
+    const userId = user.id;
     const body = await request.json();
     const { rarity, effect, trigger } = body;
 
@@ -40,13 +40,13 @@ export async function POST(request: Request) {
     });
 
     // Update rarest reward seen if applicable
-    const [user] = await db
+    const [dbUser] = await db
       .select({ rarestRewardSeen: users.rarestRewardSeen })
       .from(users)
       .where(eq(users.id, userId))
       .limit(1);
 
-    if (user && isRarer(rarity, user.rarestRewardSeen)) {
+    if (dbUser && isRarer(rarity, dbUser.rarestRewardSeen)) {
       await db
         .update(users)
         .set({

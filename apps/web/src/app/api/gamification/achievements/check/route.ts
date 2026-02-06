@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { NextRequest, NextResponse } from 'next/server';
+import { getAuthUser } from '@/lib/mobile-auth';
 import { db } from '@/db';
 import {
   users,
@@ -365,17 +365,17 @@ async function getTaskCompletionStats(userId: string, userTimezone: string = 'UT
   return { stats, completions };
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userId = session.user.id;
+    const userId = user.id;
 
     // Get user stats and preferences (for timezone)
-    const [user] = await db
+    const [dbUser] = await db
       .select({
         level: users.level,
         totalTasksCompleted: users.totalTasksCompleted,
@@ -394,7 +394,7 @@ export async function POST(request: Request) {
       .where(eq(users.id, userId))
       .limit(1);
 
-    if (!user) {
+    if (!dbUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
@@ -417,15 +417,15 @@ export async function POST(request: Request) {
       );
 
     const userStats = {
-      level: user.level || 1,
-      totalTasksCompleted: user.totalTasksCompleted || 0,
-      currentStreak: user.currentStreak || 0,
-      longestStreak: user.longestStreak || 0,
-      habitsCompleted: user.habitsCompleted || 0,
-      habitsCreated: user.habitsCreated || 0,
-      habitStreak: user.habitStreak || 0,
-      longestHabitStreak: user.longestHabitStreak || 0,
-      allHabitsCompletedDays: user.allHabitsCompletedDays || 0,
+      level: dbUser.level || 1,
+      totalTasksCompleted: dbUser.totalTasksCompleted || 0,
+      currentStreak: dbUser.currentStreak || 0,
+      longestStreak: dbUser.longestStreak || 0,
+      habitsCompleted: dbUser.habitsCompleted || 0,
+      habitsCreated: dbUser.habitsCreated || 0,
+      habitStreak: dbUser.habitStreak || 0,
+      longestHabitStreak: dbUser.longestHabitStreak || 0,
+      allHabitsCompletedDays: dbUser.allHabitsCompletedDays || 0,
     };
 
     // First pass: check simple conditions (no DB query needed)
@@ -448,7 +448,7 @@ export async function POST(request: Request) {
     // Second pass: check achievements that need task query (only if there are any)
     if (needsTaskQuery.length > 0) {
       // Get user's timezone from preferences (default to UTC)
-      const userTimezone = (user.preferences as UserPreferences)?.timezone || 'UTC';
+      const userTimezone = (dbUser.preferences as UserPreferences)?.timezone || 'UTC';
       const { stats: taskStats, completions } = await getTaskCompletionStats(userId, userTimezone);
 
       for (const achievement of needsTaskQuery) {

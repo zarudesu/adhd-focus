@@ -4,7 +4,7 @@
 // DELETE /api/habits/[id] - Archive habit
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getAuthUser } from "@/lib/mobile-auth";
 import { db } from "@/db";
 import { habits } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
@@ -28,8 +28,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -40,7 +40,7 @@ export async function GET(
       .from(habits)
       .where(and(
         eq(habits.id, id),
-        eq(habits.userId, session.user.id)
+        eq(habits.userId, user.id)
       ));
 
     if (!habit) {
@@ -59,8 +59,8 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -74,7 +74,7 @@ export async function PATCH(
       .from(habits)
       .where(and(
         eq(habits.id, id),
-        eq(habits.userId, session.user.id)
+        eq(habits.userId, user.id)
       ));
 
     if (!existing) {
@@ -105,7 +105,7 @@ export async function PATCH(
       .set(updateData)
       .where(and(
         eq(habits.id, id),
-        eq(habits.userId, session.user.id)
+        eq(habits.userId, user.id)
       ))
       .returning();
 
@@ -124,8 +124,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -140,7 +140,7 @@ export async function DELETE(
       })
       .where(and(
         eq(habits.id, id),
-        eq(habits.userId, session.user.id)
+        eq(habits.userId, user.id)
       ))
       .returning();
 

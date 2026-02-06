@@ -3,7 +3,7 @@
 // Used for re-authentication when unlocking sensitive features
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getAuthUser } from "@/lib/mobile-auth";
 import { db, users } from "@/db";
 import { eq } from "drizzle-orm";
 import { compare } from "bcryptjs";
@@ -17,8 +17,8 @@ const verifySchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     // Must be authenticated
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -38,13 +38,13 @@ export async function POST(request: NextRequest) {
     const { password } = parsed.data;
 
     // Get user with password hash
-    const [user] = await db
+    const [dbUser] = await db
       .select({ passwordHash: users.passwordHash })
       .from(users)
-      .where(eq(users.id, session.user.id))
+      .where(eq(users.id, user.id))
       .limit(1);
 
-    if (!user?.passwordHash) {
+    if (!dbUser?.passwordHash) {
       // User logged in via OAuth, no password
       return NextResponse.json(
         { error: "Password authentication not available for this account" },
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify password
-    const valid = await compare(password, user.passwordHash);
+    const valid = await compare(password, dbUser.passwordHash);
     if (!valid) {
       return NextResponse.json(
         { error: "Incorrect password" },
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
         onboardingCompleted: true,
         updatedAt: new Date(),
       })
-      .where(eq(users.id, session.user.id));
+      .where(eq(users.id, user.id));
 
     return NextResponse.json({ success: true });
   } catch (error) {

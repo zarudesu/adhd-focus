@@ -3,8 +3,8 @@
  * PATCH /api/focus/sessions/[id] - Update/complete a focus session
  */
 
-import { NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { NextRequest, NextResponse } from 'next/server';
+import { getAuthUser } from '@/lib/mobile-auth';
 import { db } from '@/db';
 import { focusSessions, users, tasks, dailyStats } from '@/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
@@ -15,10 +15,10 @@ interface RouteParams {
 }
 
 // PATCH - Update/complete a focus session
-export async function PATCH(request: Request, { params }: RouteParams) {
+export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -33,7 +33,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       .where(
         and(
           eq(focusSessions.id, id),
-          eq(focusSessions.userId, session.user.id)
+          eq(focusSessions.userId, user.id)
         )
       )
       .limit(1);
@@ -72,7 +72,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
           totalFocusMinutes: sql`${users.totalFocusMinutes} + ${calculatedDuration}`,
           focusSessionsCompleted: sql`COALESCE(${users.focusSessionsCompleted}, 0) + 1`,
         })
-        .where(eq(users.id, session.user.id));
+        .where(eq(users.id, user.id));
 
       // Update task pomodoros if linked
       if (existingSession.taskId) {
@@ -92,7 +92,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
         .from(dailyStats)
         .where(
           and(
-            eq(dailyStats.userId, session.user.id),
+            eq(dailyStats.userId, user.id),
             eq(dailyStats.date, today)
           )
         )
@@ -108,7 +108,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
           .where(eq(dailyStats.id, existingStat.id));
       } else {
         await db.insert(dailyStats).values({
-          userId: session.user.id,
+          userId: user.id,
           date: today,
           pomodorosCompleted: pomodoroCount,
           focusMinutes: calculatedDuration,

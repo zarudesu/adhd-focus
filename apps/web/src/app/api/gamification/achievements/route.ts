@@ -3,24 +3,24 @@
  * GET /api/gamification/achievements - Get all achievements with user progress
  */
 
-import { NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { NextRequest, NextResponse } from 'next/server';
+import { getAuthUser } from '@/lib/mobile-auth';
 import { db } from '@/db';
 import { achievements, userAchievements, users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { logError } from '@/lib/logger';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userId = session.user.id;
+    const userId = user.id;
 
     // Get user stats for progress calculation
-    const [user] = await db
+    const [dbUser] = await db
       .select({
         totalTasksCompleted: users.totalTasksCompleted,
         currentStreak: users.currentStreak,
@@ -69,22 +69,22 @@ export async function GET() {
 
         if (ach.conditionType === 'task_count' && condition.count && !hasFilters && !hasTimeframe) {
           progress = {
-            current: Math.min(user?.totalTasksCompleted || 0, condition.count as number),
+            current: Math.min(dbUser?.totalTasksCompleted || 0, condition.count as number),
             target: condition.count as number,
           };
         } else if (ach.conditionType === 'streak_days' && condition.days) {
           progress = {
-            current: Math.min(user?.currentStreak || 0, condition.days as number),
+            current: Math.min(dbUser?.currentStreak || 0, condition.days as number),
             target: condition.days as number,
           };
         } else if (ach.conditionType === 'longest_streak' && condition.days) {
           progress = {
-            current: Math.min(user?.longestStreak || 0, condition.days as number),
+            current: Math.min(dbUser?.longestStreak || 0, condition.days as number),
             target: condition.days as number,
           };
         } else if (ach.conditionType === 'level' && condition.level) {
           progress = {
-            current: Math.min(user?.level || 1, condition.level as number),
+            current: Math.min(dbUser?.level || 1, condition.level as number),
             target: condition.level as number,
           };
         }

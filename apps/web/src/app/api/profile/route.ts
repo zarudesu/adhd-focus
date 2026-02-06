@@ -3,7 +3,7 @@
 // PATCH /api/profile - Update profile
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getAuthUser } from "@/lib/mobile-auth";
 import { db, users } from "@/db";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
@@ -30,14 +30,14 @@ const updateProfileSchema = z.object({
   }).optional(),
 });
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const [user] = await db
+    const [profile] = await db
       .select({
         id: users.id,
         name: users.name,
@@ -52,13 +52,13 @@ export async function GET() {
         createdAt: users.createdAt,
       })
       .from(users)
-      .where(eq(users.id, session.user.id));
+      .where(eq(users.id, user.id));
 
-    if (!user) {
+    if (!profile) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    return NextResponse.json(user);
+    return NextResponse.json(profile);
   } catch (error) {
     logError("GET /api/profile", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -67,8 +67,8 @@ export async function GET() {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -79,7 +79,7 @@ export async function PATCH(request: NextRequest) {
     const [currentUser] = await db
       .select({ preferences: users.preferences })
       .from(users)
-      .where(eq(users.id, session.user.id));
+      .where(eq(users.id, user.id));
 
     if (!currentUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -105,7 +105,7 @@ export async function PATCH(request: NextRequest) {
     const [updatedUser] = await db
       .update(users)
       .set(updateData)
-      .where(eq(users.id, session.user.id))
+      .where(eq(users.id, user.id))
       .returning({
         id: users.id,
         name: users.name,

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getAuthUser } from "@/lib/mobile-auth";
 import { db, projects, projectWikiPages } from "@/db";
 import { eq, and, asc } from "drizzle-orm";
 import { z } from "zod";
@@ -13,10 +13,10 @@ const createPageSchema = z.object({
 });
 
 // GET /api/projects/[id]/wiki - List all wiki pages (no content)
-export async function GET(_request: NextRequest, { params }: RouteParams) {
+export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -26,7 +26,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     const [project] = await db
       .select({ id: projects.id })
       .from(projects)
-      .where(and(eq(projects.id, id), eq(projects.userId, session.user.id)))
+      .where(and(eq(projects.id, id), eq(projects.userId, user.id)))
       .limit(1);
 
     if (!project) {
@@ -44,7 +44,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       .from(projectWikiPages)
       .where(and(
         eq(projectWikiPages.projectId, id),
-        eq(projectWikiPages.userId, session.user.id),
+        eq(projectWikiPages.userId, user.id),
       ))
       .orderBy(asc(projectWikiPages.sortOrder), asc(projectWikiPages.createdAt));
 
@@ -58,8 +58,8 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 // POST /api/projects/[id]/wiki - Create new wiki page
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const [project] = await db
       .select({ id: projects.id })
       .from(projects)
-      .where(and(eq(projects.id, id), eq(projects.userId, session.user.id)))
+      .where(and(eq(projects.id, id), eq(projects.userId, user.id)))
       .limit(1);
 
     if (!project) {
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .insert(projectWikiPages)
       .values({
         projectId: id,
-        userId: session.user.id,
+        userId: user.id,
         title: data.title || "Untitled",
         content: data.content || null,
       })

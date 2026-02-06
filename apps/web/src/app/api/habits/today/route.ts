@@ -2,7 +2,7 @@
 // GET /api/habits/today - Get habits with today's check status
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getAuthUser } from "@/lib/mobile-auth";
 import { db } from "@/db";
 import { habits, habitChecks } from "@/db/schema";
 import { eq, and, asc } from "drizzle-orm";
@@ -37,8 +37,8 @@ function shouldDoToday(habit: {
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const user = await getAuthUser(request);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
       .select()
       .from(habits)
       .where(and(
-        eq(habits.userId, session.user.id),
+        eq(habits.userId, user.id),
         eq(habits.isArchived, false)
       ))
       .orderBy(asc(habits.sortOrder), asc(habits.createdAt));
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
       .select()
       .from(habitChecks)
       .where(and(
-        eq(habitChecks.userId, session.user.id),
+        eq(habitChecks.userId, user.id),
         eq(habitChecks.date, date)
       ));
 
