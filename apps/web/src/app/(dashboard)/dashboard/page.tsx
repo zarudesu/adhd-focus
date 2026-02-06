@@ -45,7 +45,7 @@ function TodayContent() {
     rescheduleToToday,
   } = useTasks();
   const { handleTaskComplete, showCalmReview, state, refreshAll, showDeferredAchievements } = useGamificationEvents();
-  const { updateProgress: updateQuestProgress } = useQuests();
+  const { quests, loading: questsLoading, updateProgress: updateQuestProgress } = useQuests();
 
   // Show deferred achievements when user arrives at Today page
   useEffect(() => {
@@ -260,7 +260,7 @@ function TodayContent() {
         </AnimatePresence>
 
         {/* Daily Quests */}
-        <DailyQuests />
+        <DailyQuests quests={quests} loading={questsLoading} />
 
         <TaskList
           tasks={todayTasks.filter(t => t.status !== 'done')}

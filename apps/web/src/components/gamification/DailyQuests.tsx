@@ -3,14 +3,28 @@
 /**
  * Daily Quests — shows 3 micro-quests on the Today page.
  * Compact inline display, no modal.
+ * Receives quests via props to share state with parent.
  */
 
-import { useQuests } from '@/hooks/useQuests';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export function DailyQuests() {
-  const { quests, loading } = useQuests();
+interface Quest {
+  id: string;
+  questType: string;
+  target: number;
+  progress: number;
+  completed: boolean;
+  xpReward: number;
+  label: string;
+  emoji: string;
+}
 
+interface DailyQuestsProps {
+  quests: Quest[];
+  loading: boolean;
+}
+
+export function DailyQuests({ quests, loading }: DailyQuestsProps) {
   if (loading || quests.length === 0) return null;
 
   const allDone = quests.every(q => q.completed);
