@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import type { Task } from '@/db/schema';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +12,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   MoreHorizontal,
   Calendar,
@@ -57,7 +67,7 @@ export interface TaskCardProps {
   projectInfo?: { name: string; emoji: string } | null;
 }
 
-export function TaskCard({
+export const TaskCard = memo(function TaskCard({
   task,
   onComplete,
   onUncomplete,
@@ -71,6 +81,7 @@ export function TaskCard({
   projectInfo,
 }: TaskCardProps) {
   const [isCompleting, setIsCompleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { isUnlocked } = useFeatures();
   const isCompleted = task.status === 'done';
   const isInProgress = task.status === 'in_progress';
@@ -120,155 +131,179 @@ export function TaskCard({
   const priority = task.priority || 'should';
 
   return (
-    <div
-      className={cn(
-        'group flex items-start gap-3 rounded-lg border bg-card p-3 transition-all',
-        'hover:shadow-sm hover:border-primary/20',
-        isInProgress && 'border-primary/50 bg-primary/5',
-        isCompleted && 'opacity-60',
-        onClick && 'cursor-pointer'
-      )}
-      onClick={() => onClick?.(task)}
-    >
-      {/* Checkbox */}
-      <div className="pt-0.5">
-        <Checkbox
-          checked={isCompleted}
-          disabled={isCompleting}
-          onCheckedChange={handleCheckboxChange}
-          onClick={(e) => e.stopPropagation()}
-          className={cn(
-            'h-5 w-5',
-            isInProgress && 'border-primary'
-          )}
-        />
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 min-w-0">
-        {/* Title */}
-        <p
-          className={cn(
-            'text-sm font-medium leading-tight',
-            isCompleted && 'line-through text-muted-foreground'
-          )}
-        >
-          {task.title}
-        </p>
-
-        {/* Meta info */}
-        <div className="mt-1.5 flex flex-wrap items-center gap-2">
-          {/* Energy badge - only show if feature unlocked */}
-          {showEnergyBadge && (
-            <Badge
-              variant="secondary"
-              className={cn('text-xs px-1.5 py-0', ENERGY_CONFIG[energyRequired].className)}
-            >
-              {ENERGY_CONFIG[energyRequired].label}
-            </Badge>
-          )}
-
-          {/* Priority badge (only show must/should) - only if feature unlocked */}
-          {showPriorityBadge && (priority === 'must' || priority === 'should') && (
-            <Badge
-              variant="secondary"
-              className={cn('text-xs px-1.5 py-0', PRIORITY_CONFIG[priority].className)}
-            >
-              {PRIORITY_CONFIG[priority].label}
-            </Badge>
-          )}
-
-          {/* Estimated time */}
-          {task.estimatedMinutes && task.estimatedMinutes > 0 && (
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Clock className="h-3 w-3" />
-              {task.estimatedMinutes}m
-            </span>
-          )}
-
-          {/* Due date */}
-          {task.dueDate && (
-            <span
-              className={cn(
-                'flex items-center gap-1 text-xs',
-                isOverdue ? 'text-destructive font-medium' : 'text-muted-foreground'
-              )}
-            >
-              <Calendar className="h-3 w-3" />
-              {formatDueDate(task.dueDate)}
-            </span>
-          )}
-
-          {/* Pomodoros completed */}
-          {task.pomodorosCompleted != null && task.pomodorosCompleted > 0 && (
-            <span className="text-xs text-muted-foreground">
-              {task.pomodorosCompleted} pom
-            </span>
-          )}
-
-          {/* Project badge */}
-          {showProject && projectInfo && (
-            <Badge
-              variant="secondary"
-              className="text-xs px-1.5 py-0 bg-muted text-muted-foreground"
-            >
-              {projectInfo.emoji} {projectInfo.name}
-            </Badge>
-          )}
+    <>
+      <div
+        className={cn(
+          'group flex items-start gap-3 rounded-lg border bg-card p-3 transition-all',
+          'hover:shadow-sm hover:border-primary/20',
+          isInProgress && 'border-primary/50 bg-primary/5',
+          isCompleted && 'opacity-60',
+          onClick && 'cursor-pointer'
+        )}
+        onClick={() => onClick?.(task)}
+      >
+        {/* Checkbox */}
+        <div className="pt-0.5">
+          <Checkbox
+            checked={isCompleted}
+            disabled={isCompleting}
+            onCheckedChange={handleCheckboxChange}
+            onClick={(e) => e.stopPropagation()}
+            aria-label={isCompleted ? `Mark "${task.title}" as incomplete` : `Complete "${task.title}"`}
+            className={cn(
+              'h-5 w-5',
+              isInProgress && 'border-primary'
+            )}
+          />
         </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          {/* Title */}
+          <p
+            className={cn(
+              'text-sm font-medium leading-tight',
+              isCompleted && 'line-through text-muted-foreground'
+            )}
+          >
+            {task.title}
+          </p>
+
+          {/* Meta info */}
+          <div className="mt-1.5 flex flex-wrap items-center gap-2">
+            {/* Energy badge - only show if feature unlocked */}
+            {showEnergyBadge && (
+              <Badge
+                variant="secondary"
+                className={cn('text-xs px-1.5 py-0', ENERGY_CONFIG[energyRequired].className)}
+              >
+                {ENERGY_CONFIG[energyRequired].label}
+              </Badge>
+            )}
+
+            {/* Priority badge (only show must/should) - only if feature unlocked */}
+            {showPriorityBadge && (priority === 'must' || priority === 'should') && (
+              <Badge
+                variant="secondary"
+                className={cn('text-xs px-1.5 py-0', PRIORITY_CONFIG[priority].className)}
+              >
+                {PRIORITY_CONFIG[priority].label}
+              </Badge>
+            )}
+
+            {/* Estimated time */}
+            {task.estimatedMinutes && task.estimatedMinutes > 0 && (
+              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Clock className="h-3 w-3" />
+                {task.estimatedMinutes}m
+              </span>
+            )}
+
+            {/* Due date */}
+            {task.dueDate && (
+              <span
+                className={cn(
+                  'flex items-center gap-1 text-xs',
+                  isOverdue ? 'text-destructive font-medium' : 'text-muted-foreground'
+                )}
+              >
+                <Calendar className="h-3 w-3" />
+                {formatDueDate(task.dueDate)}
+              </span>
+            )}
+
+            {/* Pomodoros completed */}
+            {task.pomodorosCompleted != null && task.pomodorosCompleted > 0 && (
+              <span className="text-xs text-muted-foreground">
+                {task.pomodorosCompleted} pom
+              </span>
+            )}
+
+            {/* Project badge */}
+            {showProject && projectInfo && (
+              <Badge
+                variant="secondary"
+                className="text-xs px-1.5 py-0 bg-muted text-muted-foreground"
+              >
+                {projectInfo.emoji} {projectInfo.name}
+              </Badge>
+            )}
+          </div>
+        </div>
+
+        {/* Actions menu */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+              aria-label="Task actions"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {onStartFocus && task.status !== 'done' && (
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStartFocus(task.id); }}>
+                <Play className="h-4 w-4 mr-2" />
+                Start Focus
+              </DropdownMenuItem>
+            )}
+            {onMoveToToday && task.status === 'inbox' && (
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMoveToToday(task.id); }}>
+                <Sun className="h-4 w-4 mr-2" />
+                Move to Today
+              </DropdownMenuItem>
+            )}
+            {onMoveToInbox && task.status !== 'inbox' && task.status !== 'done' && (
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMoveToInbox(task.id); }}>
+                <Inbox className="h-4 w-4 mr-2" />
+                Move to Inbox
+              </DropdownMenuItem>
+            )}
+            {(onStartFocus || onMoveToToday || onMoveToInbox) && (onDelete || onArchive) && (
+              <DropdownMenuSeparator />
+            )}
+            {onArchive && task.status === 'done' && (
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onArchive(task.id); }}>
+                <Archive className="h-4 w-4 mr-2" />
+                Archive
+              </DropdownMenuItem>
+            )}
+            {onDelete && (
+              <DropdownMenuItem
+                onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(true); }}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
-      {/* Actions menu */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <MoreHorizontal className="h-4 w-4" />
-            <span className="sr-only">Task actions</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          {onStartFocus && task.status !== 'done' && (
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onStartFocus(task.id); }}>
-              <Play className="h-4 w-4 mr-2" />
-              Start Focus
-            </DropdownMenuItem>
-          )}
-          {onMoveToToday && task.status === 'inbox' && (
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMoveToToday(task.id); }}>
-              <Sun className="h-4 w-4 mr-2" />
-              Move to Today
-            </DropdownMenuItem>
-          )}
-          {onMoveToInbox && task.status !== 'inbox' && task.status !== 'done' && (
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMoveToInbox(task.id); }}>
-              <Inbox className="h-4 w-4 mr-2" />
-              Move to Inbox
-            </DropdownMenuItem>
-          )}
-          {(onStartFocus || onMoveToToday || onMoveToInbox) && (onDelete || onArchive) && (
-            <DropdownMenuSeparator />
-          )}
-          {onArchive && task.status === 'done' && (
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onArchive(task.id); }}>
-              <Archive className="h-4 w-4 mr-2" />
-              Archive
-            </DropdownMenuItem>
-          )}
-          {onDelete && (
-            <DropdownMenuItem
-              onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
-              className="text-destructive focus:text-destructive"
+      {/* Delete confirmation */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete task?</AlertDialogTitle>
+            <AlertDialogDescription>
+              &quot;{task.title}&quot; will be permanently deleted. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => onDelete?.(task.id)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              <Trash2 className="h-4 w-4 mr-2" />
               Delete
-            </DropdownMenuItem>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
-}
+});

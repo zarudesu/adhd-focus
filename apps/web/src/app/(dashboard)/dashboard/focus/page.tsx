@@ -209,6 +209,7 @@ function FocusContent() {
                   variant="outline"
                   onClick={reset}
                   disabled={status === 'idle'}
+                  aria-label="Reset timer"
                 >
                   <RotateCcw className="h-5 w-5" />
                 </Button>
@@ -235,6 +236,7 @@ function FocusContent() {
                   variant="outline"
                   onClick={skip}
                   disabled={status === 'idle'}
+                  aria-label="Skip to next mode"
                 >
                   <SkipForward className="h-5 w-5" />
                 </Button>

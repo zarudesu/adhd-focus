@@ -425,13 +425,17 @@ export function AddTaskDialog({
           )}
 
           <DialogFooter className="gap-2 sm:gap-0">
-            {/* Show added count badge in create mode */}
-            {!isEditMode && addedCount > 0 && (
+            {/* Show added count or keyboard hint in create mode */}
+            {!isEditMode && addedCount > 0 ? (
               <div className="flex items-center gap-1.5 text-sm text-muted-foreground mr-auto">
                 <Check className="h-4 w-4 text-green-500" />
                 <span>{addedCount} added</span>
               </div>
-            )}
+            ) : !isEditMode ? (
+              <span className="hidden sm:inline text-xs text-muted-foreground mr-auto">
+                Enter to add, &#x2318;+Enter from anywhere
+              </span>
+            ) : null}
             <Button
               type="button"
               variant="ghost"

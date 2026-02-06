@@ -455,6 +455,7 @@ function QuickActionsContent() {
               className="h-14"
               onClick={handleSkip}
               disabled={currentIndex >= quickTasks.length - 1}
+              aria-label="Skip to next task"
             >
               <SkipForward className="h-5 w-5" />
             </Button>
