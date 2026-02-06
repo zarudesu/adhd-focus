@@ -12,7 +12,10 @@ interface MenuItem {
 
 const MENU_ITEMS: MenuItem[] = [
   { icon: 'timer', title: 'Focus Mode', subtitle: 'Pomodoro timer', route: '/focus', color: '#6366f1' },
-  { icon: 'checkmark-done', title: 'Completed', subtitle: 'All finished tasks', route: '/completed', color: '#22c55e' },
+  { icon: 'checkbox', title: 'Checklist', subtitle: 'Daily habits', route: '/checklist', color: '#22c55e' },
+  { icon: 'checkmark-done', title: 'Completed', subtitle: 'All finished tasks', route: '/completed', color: '#10b981' },
+  { icon: 'trophy', title: 'Achievements', subtitle: 'Unlocked badges', route: '/achievements', color: '#eab308' },
+  { icon: 'paw', title: 'Creatures', subtitle: 'Your collection', route: '/creatures', color: '#a855f7' },
   { icon: 'stats-chart', title: 'Statistics', subtitle: 'Streak, level, XP', route: '/(tabs)/stats', color: '#3b82f6' },
   { icon: 'settings', title: 'Settings', subtitle: 'Profile and preferences', route: '/(tabs)/settings', color: '#6b7280' },
 ];

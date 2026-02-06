@@ -7,3 +7,5 @@ export { tasksApi, type TaskFilters } from './tasks';
 export { focusSessionsApi } from './focusSessions';
 export { profileApi } from './profile';
 export { projectsApi } from './projects';
+export { habitsApi, type CreateHabitInput } from './habits';
+export { gamificationApi } from './gamification';

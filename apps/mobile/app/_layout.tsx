@@ -69,6 +69,24 @@ function RootLayoutNav() {
           title: 'Project',
         }}
       />
+      <Stack.Screen
+        name="checklist"
+        options={{
+          title: 'Checklist',
+        }}
+      />
+      <Stack.Screen
+        name="achievements"
+        options={{
+          title: 'Achievements',
+        }}
+      />
+      <Stack.Screen
+        name="creatures"
+        options={{
+          title: 'Creatures',
+        }}
+      />
     </Stack>
   );
 }
