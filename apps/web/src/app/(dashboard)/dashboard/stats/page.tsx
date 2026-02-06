@@ -228,6 +228,17 @@ function StatsContent() {
                 <p className="text-muted-foreground">
                   {state?.currentStreak === 1 ? 'day' : 'days'} in a row
                 </p>
+                {(state?.streakShields ?? 0) > 0 && (
+                  <div className="flex items-center justify-center gap-1 mt-2">
+                    {Array.from({ length: state?.streakShields || 0 }).map((_, i) => (
+                      <span key={i} className="text-lg" title="Streak Shield">🛡️</span>
+                    ))}
+                    {Array.from({ length: 3 - (state?.streakShields || 0) }).map((_, i) => (
+                      <span key={i} className="text-lg opacity-20" title="Empty shield slot">🛡️</span>
+                    ))}
+                    <span className="text-xs text-muted-foreground ml-1">shields</span>
+                  </div>
+                )}
                 {state?.longestStreak && state.longestStreak > 0 && (
                   <p className="text-xs text-muted-foreground mt-2">
                     Longest: {state.longestStreak} days

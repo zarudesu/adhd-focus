@@ -97,6 +97,7 @@ interface GamificationState {
   level: number;
   currentStreak: number;
   longestStreak: number;
+  streakShields: number;
   totalTasksCompleted: number;
   totalCreatures: number;
   achievements: (UserAchievement & { achievement: Achievement })[];
@@ -144,6 +145,7 @@ export function useGamification(): UseGamificationReturn {
         level: 1,
         currentStreak: 0,
         longestStreak: 0,
+        streakShields: 0,
         totalTasksCompleted: 0,
         totalCreatures: 0,
         achievements: [],

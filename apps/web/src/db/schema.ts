@@ -93,6 +93,7 @@ export const users = pgTable("user", {
   // Stats
   currentStreak: integer("current_streak").default(0),
   longestStreak: integer("longest_streak").default(0),
+  streakShields: integer("streak_shields").default(0), // Protect streak on missed days (max 3)
   totalTasksCompleted: integer("total_tasks_completed").default(0),
   totalPomodoros: integer("total_pomodoros").default(0),
   totalFocusMinutes: integer("total_focus_minutes").default(0),

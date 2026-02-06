@@ -59,6 +59,7 @@ interface GamificationState {
   level: number;
   currentStreak: number;
   longestStreak: number;
+  streakShields: number;
   totalTasksCompleted: number;
   totalCreatures: number;
 }

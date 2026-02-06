@@ -10,6 +10,7 @@ import { eq, and, sql } from "drizzle-orm";
 import { z } from "zod";
 import { logError } from "@/lib/logger";
 import { awardXP } from "@/lib/gamification-server";
+import { updateStreak } from "@/lib/streak";
 
 // XP rewards for habits
 const HABIT_XP = 5; // XP per habit
@@ -144,6 +145,11 @@ export async function POST(
           })
           .where(eq(users.id, user.id));
       }
+    }
+
+    // Update daily streak (habit check counts as daily activity)
+    if (!data.skipped) {
+      await updateStreak(user.id);
     }
 
     // Award XP

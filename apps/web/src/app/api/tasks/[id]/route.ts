@@ -9,6 +9,7 @@ import { db, tasks, users } from "@/db";
 import { eq, and, sql } from "drizzle-orm";
 import { z } from "zod";
 import { logError } from "@/lib/logger";
+import { updateStreak } from "@/lib/streak";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -150,6 +151,11 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         .update(users)
         .set(progressUpdates)
         .where(eq(users.id, user.id));
+    }
+
+    // Update streak when task is completed
+    if (data.status === 'done' && !wasAlreadyDone) {
+      await updateStreak(user.id);
     }
 
     return NextResponse.json(updatedTask);
