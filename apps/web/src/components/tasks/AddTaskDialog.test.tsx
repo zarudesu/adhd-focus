@@ -1,7 +1,68 @@
+import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AddTaskDialog } from './AddTaskDialog';
+
+// Mock all shadcn UI components to avoid React 18/19 version conflict in monorepo
+// (Radix UI resolves to hoisted React 18 at monorepo root)
+vi.mock('@/components/ui/dialog', () => import('@/test/ui-mocks'));
+vi.mock('@/components/ui/select', () => import('@/test/ui-mocks'));
+vi.mock('@/components/ui/popover', () => import('@/test/ui-mocks'));
+vi.mock('@/components/ui/calendar', () => import('@/test/ui-mocks'));
+vi.mock('@/components/ui/switch', () => import('@/test/ui-mocks'));
+vi.mock('@/components/ui/checkbox', () => import('@/test/ui-mocks'));
+vi.mock('@/components/ui/button', () => import('@/test/ui-mocks'));
+vi.mock('@/components/ui/label', () => import('@/test/ui-mocks'));
+vi.mock('@/components/ui/input', () => import('@/test/ui-mocks'));
+vi.mock('@/components/ui/textarea', () => import('@/test/ui-mocks'));
+
+// Mock lucide-react — hoisted at monorepo root, uses React 18 forwardRef
+vi.mock('lucide-react', () => {
+  const icon = (name: string) => {
+    const Icon = React.forwardRef<SVGSVGElement, React.ComponentProps<'svg'>>(
+      (props, ref) => React.createElement('svg', { ...props, ref, 'data-testid': `icon-${name}` })
+    );
+    Icon.displayName = name;
+    return Icon;
+  };
+  return {
+    Loader2: icon('Loader2'),
+    Zap: icon('Zap'),
+    Battery: icon('Battery'),
+    BatteryLow: icon('BatteryLow'),
+    ChevronDown: icon('ChevronDown'),
+    ChevronUp: icon('ChevronUp'),
+    FolderOpen: icon('FolderOpen'),
+    Sun: icon('Sun'),
+    Check: icon('Check'),
+    CalendarIcon: icon('CalendarIcon'),
+  };
+});
+
+// Mock hooks used internally by AddTaskDialog
+vi.mock('@/hooks/useProjects', () => ({
+  useProjects: () => ({
+    projects: [],
+    loading: false,
+    error: null,
+    fetch: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    archive: vi.fn(),
+  }),
+}));
+
+vi.mock('@/hooks/useFeatures', () => ({
+  useFeatures: () => ({
+    isUnlocked: () => true,
+    navFeatures: [],
+    loading: false,
+    refreshFeatures: vi.fn(),
+    isNewlyUnlocked: () => false,
+    markFeatureOpened: vi.fn(),
+  }),
+}));
 
 describe('AddTaskDialog', () => {
   const user = userEvent.setup();
@@ -73,20 +134,20 @@ describe('AddTaskDialog', () => {
   });
 
   describe('form validation', () => {
-    it('disables Add Task button when title is empty', () => {
+    it('disables Add button when title is empty', () => {
       render(<AddTaskDialog {...defaultProps} />);
 
-      const submitButton = screen.getByRole('button', { name: 'Add Task' });
+      const submitButton = screen.getByRole('button', { name: 'Add' });
       expect(submitButton).toBeDisabled();
     });
 
-    it('enables Add Task button when title is entered', async () => {
+    it('enables Add button when title is entered', async () => {
       render(<AddTaskDialog {...defaultProps} />);
 
       const input = screen.getByPlaceholderText('What needs to be done?');
       await user.type(input, 'New task');
 
-      const submitButton = screen.getByRole('button', { name: 'Add Task' });
+      const submitButton = screen.getByRole('button', { name: 'Add' });
       expect(submitButton).not.toBeDisabled();
     });
   });
@@ -99,14 +160,14 @@ describe('AddTaskDialog', () => {
       const input = screen.getByPlaceholderText('What needs to be done?');
       await user.type(input, 'New task');
 
-      const submitButton = screen.getByRole('button', { name: 'Add Task' });
+      const submitButton = screen.getByRole('button', { name: 'Add' });
       await user.click(submitButton);
 
       await waitFor(() => {
         expect(onSubmit).toHaveBeenCalledWith(
           expect.objectContaining({
             title: 'New task',
-            energy_required: 'medium',
+            energyRequired: 'medium',
             priority: 'should',
           })
         );
@@ -123,13 +184,13 @@ describe('AddTaskDialog', () => {
       const highButton = screen.getByRole('button', { name: /high/i });
       await user.click(highButton);
 
-      const submitButton = screen.getByRole('button', { name: 'Add Task' });
+      const submitButton = screen.getByRole('button', { name: 'Add' });
       await user.click(submitButton);
 
       await waitFor(() => {
         expect(onSubmit).toHaveBeenCalledWith(
           expect.objectContaining({
-            energy_required: 'high',
+            energyRequired: 'high',
           })
         );
       });
@@ -145,7 +206,7 @@ describe('AddTaskDialog', () => {
       const mustButton = screen.getByRole('button', { name: 'Must' });
       await user.click(mustButton);
 
-      const submitButton = screen.getByRole('button', { name: 'Add Task' });
+      const submitButton = screen.getByRole('button', { name: 'Add' });
       await user.click(submitButton);
 
       await waitFor(() => {
@@ -167,26 +228,26 @@ describe('AddTaskDialog', () => {
       const timeButton = screen.getByRole('button', { name: '25m' });
       await user.click(timeButton);
 
-      const submitButton = screen.getByRole('button', { name: 'Add Task' });
+      const submitButton = screen.getByRole('button', { name: 'Add' });
       await user.click(submitButton);
 
       await waitFor(() => {
         expect(onSubmit).toHaveBeenCalledWith(
           expect.objectContaining({
-            estimated_minutes: 25,
+            estimatedMinutes: 25,
           })
         );
       });
     });
 
-    it('resets form after successful submission', async () => {
+    it('clears title after successful submission', async () => {
       const onSubmit = vi.fn().mockResolvedValue(undefined);
       render(<AddTaskDialog {...defaultProps} onSubmit={onSubmit} />);
 
       const input = screen.getByPlaceholderText('What needs to be done?');
       await user.type(input, 'New task');
 
-      const submitButton = screen.getByRole('button', { name: 'Add Task' });
+      const submitButton = screen.getByRole('button', { name: 'Add' });
       await user.click(submitButton);
 
       await waitFor(() => {
@@ -194,7 +255,7 @@ describe('AddTaskDialog', () => {
       });
     });
 
-    it('closes dialog after successful submission', async () => {
+    it('keeps dialog open in create mode for quick adding', async () => {
       const onOpenChange = vi.fn();
       const onSubmit = vi.fn().mockResolvedValue(undefined);
       render(<AddTaskDialog {...defaultProps} onOpenChange={onOpenChange} onSubmit={onSubmit} />);
@@ -202,12 +263,15 @@ describe('AddTaskDialog', () => {
       const input = screen.getByPlaceholderText('What needs to be done?');
       await user.type(input, 'New task');
 
-      const submitButton = screen.getByRole('button', { name: 'Add Task' });
+      const submitButton = screen.getByRole('button', { name: 'Add' });
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(onOpenChange).toHaveBeenCalledWith(false);
+        expect(onSubmit).toHaveBeenCalled();
       });
+
+      // In create mode, dialog stays open for quick adding
+      expect(onOpenChange).not.toHaveBeenCalledWith(false);
     });
   });
 
@@ -267,13 +331,13 @@ describe('AddTaskDialog', () => {
       await user.click(timeButton);
       await user.click(timeButton); // Click again to deselect
 
-      const submitButton = screen.getByRole('button', { name: 'Add Task' });
+      const submitButton = screen.getByRole('button', { name: 'Add' });
       await user.click(submitButton);
 
       await waitFor(() => {
         expect(onSubmit).toHaveBeenCalledWith(
           expect.objectContaining({
-            estimated_minutes: undefined,
+            estimatedMinutes: undefined,
           })
         );
       });
