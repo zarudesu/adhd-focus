@@ -57,6 +57,18 @@ function RootLayoutNav() {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+        name="completed"
+        options={{
+          title: 'Completed',
+        }}
+      />
+      <Stack.Screen
+        name="projects/[id]"
+        options={{
+          title: 'Project',
+        }}
+      />
     </Stack>
   );
 }

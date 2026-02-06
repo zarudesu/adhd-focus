@@ -6,3 +6,4 @@
 export { tasksApi, type TaskFilters } from './tasks';
 export { focusSessionsApi } from './focusSessions';
 export { profileApi } from './profile';
+export { projectsApi } from './projects';

@@ -15,13 +15,13 @@ export default function TabLayout() {
         tabBarActiveTintColor: activeColor,
         tabBarInactiveTintColor: inactiveColor,
         tabBarStyle: {
-          backgroundColor: isDark ? '#1a1a2e' : '#ffffff',
-          borderTopColor: isDark ? '#2d2d44' : '#e5e5e5',
+          backgroundColor: isDark ? '#0f172a' : '#ffffff',
+          borderTopColor: isDark ? '#1e293b' : '#e5e5e5',
         },
         headerStyle: {
-          backgroundColor: isDark ? '#1a1a2e' : '#ffffff',
+          backgroundColor: isDark ? '#0f172a' : '#ffffff',
         },
-        headerTintColor: isDark ? '#ffffff' : '#1a1a2e',
+        headerTintColor: isDark ? '#ffffff' : '#0f172a',
       }}
     >
       <Tabs.Screen
@@ -43,23 +43,35 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="stats"
+        name="scheduled"
         options={{
-          title: 'Stats',
+          title: 'Scheduled',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="stats-chart" size={size} color={color} />
+            <Ionicons name="calendar" size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name="settings"
+        name="projects"
         options={{
-          title: 'Settings',
+          title: 'Projects',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="settings" size={size} color={color} />
+            <Ionicons name="folder" size={size} color={color} />
           ),
         }}
       />
+      <Tabs.Screen
+        name="more"
+        options={{
+          title: 'More',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="ellipsis-horizontal" size={size} color={color} />
+          ),
+        }}
+      />
+      {/* Hide these from tab bar - accessed from More hub */}
+      <Tabs.Screen name="stats" options={{ href: null }} />
+      <Tabs.Screen name="settings" options={{ href: null }} />
     </Tabs>
   );
 }
