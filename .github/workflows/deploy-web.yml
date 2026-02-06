@@ -40,6 +40,10 @@ jobs:
         working-directory: .
         run: npm install --legacy-peer-deps
 
+      - name: Install rollup native binaries
+        working-directory: .
+        run: npm install @rollup/rollup-linux-x64-gnu --no-save
+
       - name: Lint
         run: npx eslint .
 
