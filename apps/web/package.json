@@ -17,7 +17,6 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "@adhd-focus/shared": "*",
     "@auth/core": "^0.37.0",
     "@auth/drizzle-adapter": "^1.7.0",
     "@blocknote/core": "^0.46.2",

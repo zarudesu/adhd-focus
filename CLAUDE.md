@@ -227,7 +227,7 @@ open ADHDFocus.xcodeproj
 - [x] ~~setState directly in effects~~ - FIXED (setTimeout pattern in all gamification components)
 - [x] ~~Ref access during render~~ - FIXED (moved to useEffect)
 - [x] ~~Unescaped HTML entities~~ - FIXED (`'` → `&apos;`)
-- [ ] Type duplication - not using @adhd-focus/shared
+- [x] ~~Type duplication - not using @adhd-focus/shared~~ - RESOLVED (removed dead shared package, schema.ts is source of truth)
 - [x] ~~Self-HTTP-call in registration action~~ - ALREADY FIXED (imports registerUser directly)
 
 **Accessibility:**
