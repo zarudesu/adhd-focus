@@ -1,5 +1,6 @@
 // ADHD Focus - User Registration API
 // POST /api/auth/register - Create new user
+// Rate limiting handled by middleware.ts
 
 import { NextRequest, NextResponse } from "next/server";
 import { db, users } from "@/db";
@@ -7,40 +8,6 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { hash } from "bcryptjs";
 import { logError } from "@/lib/logger";
-
-// Simple in-memory rate limiter
-const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
-const RATE_LIMIT_MAX_REQUESTS = 5; // 5 attempts per window
-
-function checkRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
-  const now = Date.now();
-  const record = rateLimitMap.get(ip);
-
-  // Clean up expired entries periodically
-  if (rateLimitMap.size > 10000) {
-    for (const [key, value] of rateLimitMap.entries()) {
-      if (now > value.resetTime) {
-        rateLimitMap.delete(key);
-      }
-    }
-  }
-
-  if (!record || now > record.resetTime) {
-    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
-    return { allowed: true };
-  }
-
-  if (record.count >= RATE_LIMIT_MAX_REQUESTS) {
-    return {
-      allowed: false,
-      retryAfter: Math.ceil((record.resetTime - now) / 1000)
-    };
-  }
-
-  record.count++;
-  return { allowed: true };
-}
 
 // Registration schema
 const registerSchema = z.object({
@@ -94,22 +61,6 @@ export async function registerUser(input: RegisterInput): Promise<RegisterResult
 }
 
 export async function POST(request: NextRequest) {
-  // Rate limiting by IP
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
-    || request.headers.get("x-real-ip")
-    || "unknown";
-
-  const rateLimit = checkRateLimit(ip);
-  if (!rateLimit.allowed) {
-    return NextResponse.json(
-      { error: "Too many registration attempts. Please try again later." },
-      {
-        status: 429,
-        headers: { "Retry-After": String(rateLimit.retryAfter) }
-      }
-    );
-  }
-
   try {
     const body = await request.json();
     const result = await registerUser(body);
