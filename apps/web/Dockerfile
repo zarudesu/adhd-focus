@@ -18,7 +18,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends python3 make g+
 # Copy all package files for workspace resolution
 COPY package.json ./
 COPY apps/web/package.json ./apps/web/
-COPY packages/shared/package.json ./packages/shared/
 
 # Install dependencies in the web workspace
 WORKDIR /app/apps/web
@@ -26,7 +25,6 @@ RUN npm install --legacy-peer-deps
 
 # Copy source files
 WORKDIR /app
-COPY packages/shared ./packages/shared
 COPY apps/web ./apps/web
 
 # Build args for Next.js (public vars baked into client bundle)
