@@ -16,7 +16,8 @@ export interface CreateHabitInput {
 
 export const habitsApi = {
   async list(): Promise<Habit[]> {
-    return api.get<Habit[]>('/habits');
+    const data = await api.get<{ habits: Habit[]; summary: unknown; date: string }>('/habits/today');
+    return data.habits;
   },
 
   async create(input: CreateHabitInput): Promise<Habit> {
