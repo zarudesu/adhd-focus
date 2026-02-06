@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -40,6 +40,16 @@ export default function ChecklistScreen() {
   } = useHabits();
   const [refreshing, setRefreshing] = useState(false);
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const checked = new Set<string>();
+    habits.forEach((h) => {
+      if (h.isCompleted || h.todayCheck) {
+        checked.add(h.id);
+      }
+    });
+    setCheckedIds(checked);
+  }, [habits]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);

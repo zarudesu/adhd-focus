@@ -1,10 +1,11 @@
 import { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, Pressable, useColorScheme, ScrollView,
-  ActivityIndicator, RefreshControl,
+  ActivityIndicator, RefreshControl, TextInput, Keyboard,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useTasks } from '../../hooks/useTasks';
 import { ENERGY_CONFIG, formatDate } from '../../lib/utils';
 
@@ -14,9 +15,11 @@ export default function TodayScreen() {
   const isDark = colorScheme === 'dark';
   const styles = createStyles(isDark);
 
-  const { tasks, todayTasks, loading, error, fetch, complete, update } = useTasks();
+  const { tasks, todayTasks, loading, error, fetch, complete, update, create } = useTasks();
   const [refreshing, setRefreshing] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
+  const [showAdd, setShowAdd] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -33,6 +36,9 @@ export default function TodayScreen() {
   const currentTask = activeTasks.find((t) => t.status === 'in_progress') || activeTasks[0];
 
   const handleComplete = async (id: string) => {
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } catch {}
     await complete(id);
   };
 
@@ -49,6 +55,7 @@ export default function TodayScreen() {
   }
 
   return (
+    <View style={{ flex: 1 }}>
     <ScrollView
       style={styles.container}
       refreshControl={
@@ -143,9 +150,39 @@ export default function TodayScreen() {
         </View>
       )}
 
+      {showAdd && (
+        <View style={styles.quickAdd}>
+          <TextInput
+            style={styles.quickAddInput}
+            placeholder="What needs to be done?"
+            placeholderTextColor={isDark ? '#6b7280' : '#9ca3af'}
+            value={newTitle}
+            onChangeText={setNewTitle}
+            autoFocus
+            onSubmitEditing={async () => {
+              if (newTitle.trim()) {
+                await create({ title: newTitle.trim(), status: 'today', scheduledDate: formatDate(new Date()) });
+                setNewTitle('');
+                setShowAdd(false);
+                Keyboard.dismiss();
+              }
+            }}
+            returnKeyType="done"
+          />
+        </View>
+      )}
+
       {/* Spacer for bottom */}
       <View style={{ height: 100 }} />
     </ScrollView>
+
+    <Pressable
+      style={styles.fab}
+      onPress={() => setShowAdd(!showAdd)}
+    >
+      <Ionicons name={showAdd ? 'close' : 'add'} size={28} color="#fff" />
+    </Pressable>
+    </View>
   );
 }
 
@@ -280,5 +317,32 @@ const createStyles = (isDark: boolean) =>
     emptySubtitle: {
       fontSize: 15,
       color: isDark ? '#9ca3af' : '#6b7280',
+    },
+    quickAdd: {
+      backgroundColor: isDark ? '#1e293b' : '#fff',
+      borderRadius: 12,
+      padding: 4,
+      marginBottom: 16,
+    },
+    quickAddInput: {
+      padding: 14,
+      fontSize: 16,
+      color: isDark ? '#fff' : '#0f172a',
+    },
+    fab: {
+      position: 'absolute',
+      bottom: 24,
+      right: 24,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: '#6366f1',
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 8,
     },
   });

@@ -4,6 +4,7 @@ import {
   ActivityIndicator, RefreshControl, Pressable,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useTasks } from '../../hooks/useTasks';
 import { ENERGY_CONFIG, formatDisplayDate, groupBy } from '../../lib/utils';
 import type { Task } from '../../types';
@@ -68,7 +69,10 @@ export default function ScheduledScreen() {
       )}
       renderItem={({ item }) => (
         <View style={styles.taskCard}>
-          <Pressable style={styles.checkbox} onPress={() => complete(item.id)}>
+          <Pressable style={styles.checkbox} onPress={async () => {
+            try { await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); } catch {}
+            complete(item.id);
+          }}>
             <Ionicons name="ellipse-outline" size={22} color={isDark ? '#6b7280' : '#9ca3af'} />
           </Pressable>
           <Text style={styles.taskTitle} numberOfLines={2}>{item.title}</Text>
