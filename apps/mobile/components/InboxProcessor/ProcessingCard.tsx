@@ -20,7 +20,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import type { Task, EnergyLevel } from '@adhd-focus/shared';
+import type { EnergyLevel } from '../../types';
 import type { Duration, ProcessingAction, ProcessingState, ProcessingCardProps } from './types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');

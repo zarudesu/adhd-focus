@@ -32,7 +32,7 @@ export function InboxProcessor({ onClose }: InboxProcessorProps) {
   const isDark = colorScheme === 'dark';
   const styles = createStyles(isDark);
 
-  const { getInboxTasks, updateTask, deleteTask, moveToToday } = useTaskStore();
+  const { getInboxTasks, updateTask, removeTask } = useTaskStore();
   const inboxTasks = getInboxTasks();
 
   // Shuffle tasks once on mount
@@ -56,10 +56,10 @@ export function InboxProcessor({ onClose }: InboxProcessorProps) {
       case 'today':
         updateTask(currentTask.id, {
           status: 'today',
-          energy_required: state.energy || 'medium',
-          estimated_minutes: estimatedMinutes,
+          energyRequired: state.energy || 'medium',
+          estimatedMinutes: estimatedMinutes,
           description: state.firstStep ? `First step: ${state.firstStep}` : currentTask.description,
-          scheduled_date: new Date().toISOString().split('T')[0],
+          scheduledDate: new Date().toISOString().split('T')[0],
         });
         break;
 
@@ -67,8 +67,8 @@ export function InboxProcessor({ onClose }: InboxProcessorProps) {
         updateTask(currentTask.id, {
           status: 'scheduled',
           priority: 'someday',
-          energy_required: state.energy || 'medium',
-          estimated_minutes: estimatedMinutes,
+          energyRequired: state.energy || 'medium',
+          estimatedMinutes: estimatedMinutes,
           description: state.firstStep ? `First step: ${state.firstStep}` : currentTask.description,
         });
         break;
@@ -77,14 +77,14 @@ export function InboxProcessor({ onClose }: InboxProcessorProps) {
         // For now, just mark as scheduled. TODO: open date picker
         updateTask(currentTask.id, {
           status: 'scheduled',
-          energy_required: state.energy || 'medium',
-          estimated_minutes: estimatedMinutes,
+          energyRequired: state.energy || 'medium',
+          estimatedMinutes: estimatedMinutes,
           description: state.firstStep ? `First step: ${state.firstStep}` : currentTask.description,
         });
         break;
 
       case 'delete':
-        deleteTask(currentTask.id);
+        removeTask(currentTask.id);
         break;
     }
 

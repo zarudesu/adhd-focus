@@ -12,9 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@adhd-focus/shared": "*",
     "@expo/vector-icons": "^14.0.0",
-    "@supabase/supabase-js": "^2.45.0",
     "expo": "~52.0.0",
     "expo-constants": "~17.0.0",
     "expo-haptics": "^15.0.8",

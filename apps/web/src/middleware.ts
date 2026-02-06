@@ -12,6 +12,7 @@ function getIP(request: NextRequest): string {
 // Route-specific rate limit configs
 const AUTH_ROUTES: Record<string, { windowMs: number; maxRequests: number; name: string }> = {
   '/api/auth/register': { windowMs: 15 * 60 * 1000, maxRequests: 5, name: 'register' },
+  '/api/mobile/auth/register': { windowMs: 15 * 60 * 1000, maxRequests: 5, name: 'mobile-register' },
   '/api/mobile/auth/login': { windowMs: 15 * 60 * 1000, maxRequests: 10, name: 'mobile-login' },
   '/api/auth/verify-credentials': { windowMs: 15 * 60 * 1000, maxRequests: 10, name: 'verify-credentials' },
 };

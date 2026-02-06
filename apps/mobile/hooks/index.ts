@@ -3,5 +3,5 @@
  */
 
 export { useTasks } from './useTasks';
-export { useAuth } from './useAuth';
 export { useFocusSession } from './useFocusSession';
+// Auth is now in lib/auth-context.tsx: import { useAuth } from '@/lib/auth-context';

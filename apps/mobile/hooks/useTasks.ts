@@ -1,12 +1,10 @@
 /**
  * Tasks Hook - Business logic for task operations
- * Wraps API calls with caching, optimistic updates, and state management
  */
-
 import { useState, useEffect, useCallback } from 'react';
-import { tasksApi, TaskFilters } from '../api';
-import type { Task, CreateTaskInput, UpdateTaskInput, TaskStatus } from '@adhd-focus/shared';
-import { formatDate } from '@adhd-focus/shared';
+import { tasksApi, type TaskFilters } from '../api';
+import type { Task, CreateTaskInput, UpdateTaskInput } from '../types';
+import { formatDate } from '../lib/utils';
 
 interface UseTasksOptions {
   filters?: TaskFilters;
@@ -14,12 +12,9 @@ interface UseTasksOptions {
 }
 
 interface UseTasksReturn {
-  // Data
   tasks: Task[];
   loading: boolean;
   error: Error | null;
-
-  // Actions
   fetch: () => Promise<void>;
   create: (input: CreateTaskInput) => Promise<Task>;
   update: (id: string, input: UpdateTaskInput) => Promise<Task>;
@@ -27,8 +22,6 @@ interface UseTasksReturn {
   delete: (id: string) => Promise<void>;
   moveToToday: (id: string) => Promise<Task>;
   moveToInbox: (id: string) => Promise<Task>;
-
-  // Computed
   todayTasks: Task[];
   inboxTasks: Task[];
   currentTask: Task | null;
@@ -41,7 +34,6 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  // Fetch tasks
   const fetch = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -55,85 +47,86 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
     }
   }, [JSON.stringify(filters)]);
 
-  // Auto-fetch on mount
   useEffect(() => {
     if (autoFetch) {
       fetch();
     }
   }, [fetch, autoFetch]);
 
-  // Create task
   const create = useCallback(async (input: CreateTaskInput): Promise<Task> => {
     const newTask = await tasksApi.create(input);
     setTasks((prev) => [newTask, ...prev]);
     return newTask;
   }, []);
 
-  // Update task
-  const update = useCallback(async (id: string, input: UpdateTaskInput): Promise<Task> => {
-    // Optimistic update
-    setTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, ...input } : t))
-    );
-
-    try {
-      const updated = await tasksApi.update(id, input);
+  const update = useCallback(
+    async (id: string, input: UpdateTaskInput): Promise<Task> => {
       setTasks((prev) =>
-        prev.map((t) => (t.id === id ? updated : t))
+        prev.map((t) => (t.id === id ? { ...t, ...input } : t))
       );
-      return updated;
-    } catch (err) {
-      // Rollback on error
-      fetch();
-      throw err;
-    }
-  }, [fetch]);
+      try {
+        const updated = await tasksApi.update(id, input);
+        setTasks((prev) =>
+          prev.map((t) => (t.id === id ? updated : t))
+        );
+        return updated;
+      } catch (err) {
+        fetch();
+        throw err;
+      }
+    },
+    [fetch]
+  );
 
-  // Complete task
-  const complete = useCallback(async (id: string): Promise<Task> => {
-    return update(id, {
-      status: 'done',
-      completed_at: new Date().toISOString(),
-    });
-  }, [update]);
+  const complete = useCallback(
+    async (id: string): Promise<Task> => {
+      return update(id, {
+        status: 'done',
+        completedAt: new Date().toISOString(),
+      });
+    },
+    [update]
+  );
 
-  // Delete task
-  const deleteTask = useCallback(async (id: string): Promise<void> => {
-    // Optimistic delete
-    setTasks((prev) => prev.filter((t) => t.id !== id));
+  const deleteTask = useCallback(
+    async (id: string): Promise<void> => {
+      setTasks((prev) => prev.filter((t) => t.id !== id));
+      try {
+        await tasksApi.delete(id);
+      } catch (err) {
+        fetch();
+        throw err;
+      }
+    },
+    [fetch]
+  );
 
-    try {
-      await tasksApi.delete(id);
-    } catch (err) {
-      fetch();
-      throw err;
-    }
-  }, [fetch]);
+  const moveToToday = useCallback(
+    async (id: string): Promise<Task> => {
+      return update(id, {
+        status: 'today',
+        scheduledDate: formatDate(new Date()),
+      });
+    },
+    [update]
+  );
 
-  // Move to today
-  const moveToToday = useCallback(async (id: string): Promise<Task> => {
-    return update(id, {
-      status: 'today',
-      scheduled_date: formatDate(new Date()),
-    });
-  }, [update]);
+  const moveToInbox = useCallback(
+    async (id: string): Promise<Task> => {
+      return update(id, {
+        status: 'inbox',
+        scheduledDate: null,
+      });
+    },
+    [update]
+  );
 
-  // Move to inbox
-  const moveToInbox = useCallback(async (id: string): Promise<Task> => {
-    return update(id, {
-      status: 'inbox',
-      scheduled_date: undefined,
-    });
-  }, [update]);
-
-  // Computed values
   const todayTasks = tasks.filter(
     (t) => t.status === 'today' || t.status === 'in_progress'
   );
-
   const inboxTasks = tasks.filter((t) => t.status === 'inbox');
-
-  const currentTask = todayTasks.find((t) => t.status === 'in_progress') || todayTasks[0] || null;
+  const currentTask =
+    todayTasks.find((t) => t.status === 'in_progress') || todayTasks[0] || null;
 
   return {
     tasks,

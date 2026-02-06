@@ -2,7 +2,9 @@ import { View, Text, StyleSheet, useColorScheme, Pressable } from 'react-native'
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useState, useEffect, useRef } from 'react';
-import { DEFAULT_POMODORO_MINUTES, DEFAULT_SHORT_BREAK_MINUTES } from '@adhd-focus/shared';
+
+const DEFAULT_POMODORO_MINUTES = 25;
+const DEFAULT_SHORT_BREAK_MINUTES = 5;
 
 type TimerState = 'focus' | 'break' | 'paused';
 

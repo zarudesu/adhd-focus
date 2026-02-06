@@ -1,4 +1,4 @@
-import type { Task, EnergyLevel } from '@adhd-focus/shared';
+import type { Task, EnergyLevel } from '../../types';
 
 export type Duration = 'quick' | 'long';
 

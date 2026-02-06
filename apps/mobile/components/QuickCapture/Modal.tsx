@@ -21,6 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useUIStore } from '../../store/uiStore';
 import { useTaskStore } from '../../store/taskStore';
+import { tasksApi } from '../../api';
 
 const SPRING_CONFIG = {
   damping: 20,
@@ -66,7 +67,12 @@ export function QuickCaptureModal() {
       // Haptics not available
     }
 
-    addTask({ title: trimmedTitle });
+    try {
+      const task = await tasksApi.create({ title: trimmedTitle });
+      addTask(task);
+    } catch {
+      // Silently fail — will sync on next fetch
+    }
     setTitle('');
 
     if (!keepOpen) {

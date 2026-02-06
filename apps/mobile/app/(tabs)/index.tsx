@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, Pressable, useColorScheme, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { STATUS_LABELS, ENERGY_LABELS } from '@adhd-focus/shared';
+import { ENERGY_CONFIG } from '../../lib/utils';
 
 export default function TodayScreen() {
   const router = useRouter();
@@ -12,9 +12,9 @@ export default function TodayScreen() {
 
   // Placeholder tasks - will come from store
   const todayTasks = [
-    { id: '1', title: 'Review project proposal', energy_required: 'high' as const, estimated_minutes: 30 },
-    { id: '2', title: 'Reply to emails', energy_required: 'low' as const, estimated_minutes: 15 },
-    { id: '3', title: 'Prepare presentation', energy_required: 'medium' as const, estimated_minutes: 45 },
+    { id: '1', title: 'Review project proposal', energyRequired: 'high' as const, estimatedMinutes: 30 },
+    { id: '2', title: 'Reply to emails', energyRequired: 'low' as const, estimatedMinutes: 15 },
+    { id: '3', title: 'Prepare presentation', energyRequired: 'medium' as const, estimatedMinutes: 45 },
   ];
 
   const currentTask = todayTasks[0];
@@ -34,13 +34,13 @@ export default function TodayScreen() {
       >
         <View style={styles.focusHeader}>
           <Text style={styles.focusLabel}>Focus on this:</Text>
-          <View style={[styles.energyBadge, { backgroundColor: ENERGY_LABELS[currentTask.energy_required].color + '20' }]}>
-            <Text>{ENERGY_LABELS[currentTask.energy_required].emoji}</Text>
+          <View style={[styles.energyBadge, { backgroundColor: ENERGY_CONFIG[currentTask.energyRequired].color + '20' }]}>
+            <Text>{ENERGY_CONFIG[currentTask.energyRequired].emoji}</Text>
           </View>
         </View>
         <Text style={styles.focusTitle}>{currentTask.title}</Text>
         <View style={styles.focusFooter}>
-          <Text style={styles.focusTime}>~{currentTask.estimated_minutes}m</Text>
+          <Text style={styles.focusTime}>~{currentTask.estimatedMinutes}m</Text>
           <View style={styles.startButton}>
             <Ionicons name="play" size={16} color="#fff" />
             <Text style={styles.startButtonText}>Start Focus</Text>
@@ -51,7 +51,7 @@ export default function TodayScreen() {
       {/* Other tasks */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>
-          {STATUS_LABELS.today.emoji} Also today ({todayTasks.length - 1} more)
+          ☀️ Also today ({todayTasks.length - 1} more)
         </Text>
         {todayTasks.slice(1).map((task) => (
           <View key={task.id} style={styles.taskCard}>
@@ -62,7 +62,7 @@ export default function TodayScreen() {
               <Text style={styles.taskTitle}>{task.title}</Text>
             </View>
             <Text style={styles.taskMeta}>
-              {ENERGY_LABELS[task.energy_required].emoji} {task.estimated_minutes}m
+              {ENERGY_CONFIG[task.energyRequired].emoji} {task.estimatedMinutes}m
             </Text>
           </View>
         ))}

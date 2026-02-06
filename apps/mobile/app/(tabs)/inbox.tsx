@@ -12,7 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTaskStore } from '../../store/taskStore';
 import { useUIStore } from '../../store/uiStore';
 import { InboxProcessor } from '../../components';
-import { ENERGY_LABELS } from '@adhd-focus/shared';
+import { ENERGY_CONFIG } from '../../lib/utils';
 
 export default function InboxScreen() {
   const colorScheme = useColorScheme();
@@ -95,7 +95,7 @@ export default function InboxScreen() {
               {item.title}
             </Text>
             <Text style={styles.taskMeta}>
-              {ENERGY_LABELS[item.energy_required]?.emoji}
+              {ENERGY_CONFIG[item.energyRequired as keyof typeof ENERGY_CONFIG]?.emoji}
             </Text>
           </View>
         )}
