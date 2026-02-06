@@ -18,10 +18,15 @@ export function ComboToast({ comboEvent }: ComboToastProps) {
 
   useEffect(() => {
     if (!comboEvent) return;
-    setCurrent({ count: comboEvent.count, bonusXp: comboEvent.bonusXp });
-    setVisible(true);
-    const timer = setTimeout(() => setVisible(false), 2500);
-    return () => clearTimeout(timer);
+    const showTimer = setTimeout(() => {
+      setCurrent({ count: comboEvent.count, bonusXp: comboEvent.bonusXp });
+      setVisible(true);
+    }, 0);
+    const hideTimer = setTimeout(() => setVisible(false), 2500);
+    return () => {
+      clearTimeout(showTimer);
+      clearTimeout(hideTimer);
+    };
   }, [comboEvent]);
 
   return (
