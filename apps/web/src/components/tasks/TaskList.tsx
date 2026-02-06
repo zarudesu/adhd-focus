@@ -22,6 +22,8 @@ export interface TaskListProps {
   onStartFocus?: (id: string) => void;
   onTaskClick?: (task: Task) => void;
   className?: string;
+  showProject?: boolean;
+  projectMap?: Map<string, { name: string; emoji: string }>;
 }
 
 // Animation variants for task cards
@@ -63,6 +65,8 @@ export function TaskList({
   onStartFocus,
   onTaskClick,
   className,
+  showProject,
+  projectMap,
 }: TaskListProps) {
   // Loading state
   if (loading) {
@@ -131,6 +135,8 @@ export function TaskList({
               onMoveToInbox={onMoveToInbox}
               onStartFocus={onStartFocus}
               onClick={onTaskClick}
+              showProject={showProject}
+              projectInfo={showProject && projectMap && task.projectId ? projectMap.get(task.projectId) : undefined}
             />
           </motion.div>
         ))}

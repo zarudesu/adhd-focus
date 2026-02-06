@@ -21,8 +21,12 @@ import { AchievementToastStack } from './AchievementToast';
 import { CreatureToastStack, type CaughtCreatureData } from './CreatureCaughtToast';
 import { FeatureUnlockModal, type FeatureUnlockData } from './FeatureUnlockModal';
 import { ReAuthModal } from './ReAuthModal';
+import { MorningReviewModal } from '@/components/tasks/MorningReviewModal';
 import { useGamification } from '@/hooks/useGamification';
 import { useFeatures } from '@/hooks/useFeatures';
+import { useTasks } from '@/hooks/useTasks';
+import { useYesterdayReview } from '@/hooks/useYesterdayReview';
+import { useMorningReview } from '@/hooks/useMorningReview';
 import { useSession } from 'next-auth/react';
 import type { Achievement, Creature } from '@/db/schema';
 
@@ -125,6 +129,35 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
     isNewlyUnlocked,
     markFeatureOpened,
   } = useFeatures();
+
+  // Morning review: overdue tasks + yesterday habits
+  const {
+    overdueTasks: morningOverdueTasks,
+    rescheduleToToday,
+    completeYesterday,
+    moveToInbox: moveTaskToInbox,
+    deleteTask: deleteTaskAction,
+  } = useTasks();
+  const {
+    data: habitsReviewData,
+    loading: habitsReviewLoading,
+    submitReview: submitHabitsReview,
+  } = useYesterdayReview();
+  const {
+    data: morningReviewData,
+    loading: morningReviewLoading,
+    dismissed: morningReviewDismissed,
+    dismiss: dismissMorningReview,
+  } = useMorningReview(morningOverdueTasks, habitsReviewData, habitsReviewLoading);
+
+  const [morningReviewReady, setMorningReviewReady] = useState(false);
+
+  // Show morning review with 1s delay after loading
+  useEffect(() => {
+    if (morningReviewLoading || loading || morningReviewDismissed || !morningReviewData.needsReview) return;
+    const timer = setTimeout(() => setMorningReviewReady(true), 1000);
+    return () => clearTimeout(timer);
+  }, [morningReviewLoading, loading, morningReviewDismissed, morningReviewData.needsReview]);
 
   // Refresh both gamification and features state
   const refreshAll = useCallback(async () => {
@@ -356,6 +389,21 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
   return (
     <GamificationContext.Provider value={{ showLevelUp, handleTaskComplete, showCalmReview, state, loading, levelProgress, refresh, refreshAll, navFeatures, featuresLoading, isNewlyUnlocked, markFeatureOpened, showDeferredAchievements, xpGainEvent }}>
       {children}
+
+      {/* Morning Review Modal */}
+      {morningReviewReady && !morningReviewDismissed && morningReviewData.needsReview
+        && !levelUpModal.open && !featureUnlockModal.open && !calmReview.visible && (
+        <MorningReviewModal
+          overdueTasks={morningReviewData.overdueTasks}
+          habits={morningReviewData.habits}
+          onCompleteYesterday={completeYesterday}
+          onRescheduleToToday={rescheduleToToday}
+          onMoveToInbox={moveTaskToInbox}
+          onDeleteTask={async (id) => { await deleteTaskAction(id); }}
+          onSubmitHabits={submitHabitsReview}
+          onDismiss={dismissMorningReview}
+        />
+      )}
 
       {/* Calm Review - Reflection, not reward */}
       {calmReview.visible && (

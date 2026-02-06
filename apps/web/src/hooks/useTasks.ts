@@ -90,8 +90,12 @@ interface UseTasksReturn {
   snoozeTask: (id: string, until: string) => Promise<Task>;
   unsnoozeTask: (id: string) => Promise<Task>;
   archive: (id: string) => Promise<Task>;
+  rescheduleToToday: (id: string) => Promise<Task>;
+  completeYesterday: (id: string) => Promise<Task>;
   todayTasks: Task[];
+  overdueTasks: Task[];
   inboxTasks: Task[];
+  allInboxTasks: Task[];
   snoozedTasks: Task[];
   scheduledTasks: Task[];
   currentTask: Task | null;
@@ -364,21 +368,55 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
     });
   }, [update]);
 
+  const rescheduleToToday = useCallback(async (id: string): Promise<Task> => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    return update(id, { scheduledDate: todayStr });
+  }, [update]);
+
+  const completeYesterday = useCallback(async (id: string): Promise<Task> => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(23, 59, 0, 0);
+    return update(id, {
+      status: 'done',
+      completedAt: yesterday.toISOString(),
+    });
+  }, [update]);
+
   // Memoize today's date string to prevent filter recalculations
   const today = useMemo(() => new Date().toISOString().split('T')[0], []);
+
+  // Overdue tasks: status today/in_progress with scheduledDate before today
+  const overdueTasks = useMemo(
+    () =>
+      tasks.filter(
+        (t) =>
+          (t.status === 'today' || t.status === 'in_progress') &&
+          t.scheduledDate != null &&
+          t.scheduledDate < today
+      ),
+    [tasks, today]
+  );
+
+  const overdueIds = useMemo(() => new Set(overdueTasks.map(t => t.id)), [overdueTasks]);
 
   const todayTasks = useMemo(
     () =>
       tasks.filter(
-        (t) =>
-          t.status === 'today' ||
-          t.status === 'in_progress' ||
-          (t.status === 'done' && (
-            t.scheduledDate === today ||
-            (t.completedAt !== null && new Date(t.completedAt).toISOString().startsWith(today))
-          ))
+        (t) => {
+          // Exclude overdue tasks from today list
+          if (overdueIds.has(t.id)) return false;
+          return (
+            t.status === 'today' ||
+            t.status === 'in_progress' ||
+            (t.status === 'done' && (
+              t.scheduledDate === today ||
+              (t.completedAt !== null && new Date(t.completedAt).toISOString().startsWith(today))
+            ))
+          );
+        }
       ),
-    [tasks, today]
+    [tasks, today, overdueIds]
   );
 
   // Inbox tasks: status is inbox, no project, and not snoozed (unless showSnoozed is true)
@@ -388,6 +426,18 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
       // Check if snoozed
       if (t.snoozedUntil && !showSnoozed) {
         // Hide if snoozedUntil is in the future
+        return t.snoozedUntil <= today;
+      }
+      return true;
+    }),
+    [tasks, showSnoozed, today]
+  );
+
+  // All inbox tasks including those with projects (for grouped inbox view)
+  const allInboxTasks = useMemo(
+    () => tasks.filter((t) => {
+      if (t.status !== 'inbox') return false;
+      if (t.snoozedUntil && !showSnoozed) {
         return t.snoozedUntil <= today;
       }
       return true;
@@ -433,8 +483,12 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
     snoozeTask,
     unsnoozeTask,
     archive,
+    rescheduleToToday,
+    completeYesterday,
     todayTasks,
+    overdueTasks,
     inboxTasks,
+    allInboxTasks,
     snoozedTasks,
     scheduledTasks,
     currentTask,

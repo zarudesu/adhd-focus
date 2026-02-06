@@ -11,7 +11,7 @@ import { useGamificationEvents } from "@/components/gamification/GamificationPro
 import { EndOfDayReview, CloseDayButton } from "@/components/gamification/EndOfDayReview";
 import { TodayIntro, useTodayIntro } from "@/components/gamification/TodayIntro";
 import type { Task } from "@/db/schema";
-import { Inbox, Eye, EyeOff, Plus } from "lucide-react";
+import { Inbox, Eye, EyeOff, Plus, ChevronDown, ChevronUp, ArrowRight } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 const MAX_DAILY_TASKS = 3;
@@ -21,6 +21,7 @@ function TodayContent() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [showEndOfDay, setShowEndOfDay] = useState(false);
   const [hideCompleted, setHideCompleted] = useState(false);
+  const [hideOverdue, setHideOverdue] = useState(false);
   const [daySummary, setDaySummary] = useState({
     tasksCompleted: 0,
     totalTasks: 0,
@@ -30,6 +31,7 @@ function TodayContent() {
   });
   const {
     todayTasks,
+    overdueTasks,
     loading,
     error,
     complete,
@@ -38,6 +40,7 @@ function TodayContent() {
     moveToInbox,
     update,
     create,
+    rescheduleToToday,
   } = useTasks();
   const { handleTaskComplete, showCalmReview, state, refreshAll, showDeferredAchievements } = useGamificationEvents();
 
@@ -116,7 +119,10 @@ function TodayContent() {
     <>
       <PageHeader
         title="Today"
-        description={`Focus on what matters most (${activeCount}/${MAX_DAILY_TASKS} tasks)`}
+        description={overdueTasks.length > 0
+          ? `${overdueTasks.length} from previous days \u00B7 ${activeCount} for today`
+          : `Focus on what matters most (${activeCount}/${MAX_DAILY_TASKS} tasks)`
+        }
         actions={
           <div className="flex items-center gap-2">
             {completedCount > 0 && (
@@ -197,6 +203,52 @@ function TodayContent() {
             {error.message}
           </div>
         )}
+
+        {/* Overdue tasks from previous days */}
+        <AnimatePresence>
+          {overdueTasks.length > 0 && (
+            <motion.div
+              className="mb-4 rounded-lg border border-amber-200 dark:border-amber-900/50 bg-amber-50/50 dark:bg-amber-950/20 p-3"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <button
+                  onClick={() => setHideOverdue(!hideOverdue)}
+                  className="flex items-center gap-1.5 text-sm font-medium text-amber-700 dark:text-amber-400"
+                >
+                  {hideOverdue ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                  From previous days ({overdueTasks.length})
+                </button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300"
+                  onClick={async () => {
+                    for (const task of overdueTasks) {
+                      await rescheduleToToday(task.id);
+                    }
+                  }}
+                >
+                  <ArrowRight className="h-3.5 w-3.5 mr-1" />
+                  Move all to today
+                </Button>
+              </div>
+              {!hideOverdue && (
+                <TaskList
+                  tasks={overdueTasks}
+                  onComplete={handleComplete}
+                  onUncomplete={uncomplete}
+                  onDelete={deleteTask}
+                  onMoveToInbox={moveToInbox}
+                  onTaskClick={setEditingTask}
+                />
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <TaskList
           tasks={todayTasks.filter(t => t.status !== 'done')}

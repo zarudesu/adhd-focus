@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+
+
 import { TaskList, AddTaskDialog } from "@/components/tasks";
 import { useTasks } from "@/hooks/useTasks";
+import { useProjects } from "@/hooks/useProjects";
 import { useProfile } from "@/hooks/useProfile";
 import { useFeatures } from "@/hooks/useFeatures";
 import { useGamificationEvents } from "@/components/gamification/GamificationProvider";
@@ -33,8 +35,9 @@ export default function InboxPage() {
 
   const { profile, loading: profileLoading } = useProfile();
   const { navFeatures, loading: featuresLoading } = useFeatures();
+  const { projects } = useProjects();
   const {
-    inboxTasks,
+    allInboxTasks,
     snoozedTasks,
     loading,
     error,
@@ -42,11 +45,42 @@ export default function InboxPage() {
     uncomplete,
     deleteTask,
     moveToToday,
-    unsnoozeTask,
     update,
     create,
   } = useTasks({ showSnoozed });
   const { handleTaskComplete, refreshAll } = useGamificationEvents();
+
+  // Build project map for badges and grouping
+  const projectMap = useMemo(
+    () => new Map(projects.map(p => [p.id, { name: p.name, emoji: p.emoji || '' }])),
+    [projects]
+  );
+
+  // Group allInboxTasks by projectId
+  const groupedTasks = useMemo(() => {
+    const groups = new Map<string | null, Task[]>();
+    for (const task of allInboxTasks) {
+      const key = task.projectId || null;
+      const existing = groups.get(key) || [];
+      existing.push(task);
+      groups.set(key, existing);
+    }
+    return groups;
+  }, [allInboxTasks]);
+
+  // Sorted group keys: null first, then projects alphabetically
+  const sortedGroupKeys = useMemo(() => {
+    const keys = Array.from(groupedTasks.keys());
+    return keys.sort((a, b) => {
+      if (a === null) return -1;
+      if (b === null) return 1;
+      const nameA = projectMap.get(a)?.name || '';
+      const nameB = projectMap.get(b)?.name || '';
+      return nameA.localeCompare(nameB);
+    });
+  }, [groupedTasks, projectMap]);
+
+  const hasMultipleGroups = sortedGroupKeys.length > 1;
 
   // Check if user should be redirected to their preferred landing page
   useEffect(() => {
@@ -87,7 +121,8 @@ export default function InboxPage() {
     });
   }, [complete, handleTaskComplete]);
 
-  const estimatedMinutes = Math.ceil(inboxTasks.length * 0.5); // ~30 sec per task
+  const totalInboxCount = allInboxTasks.length;
+  const estimatedMinutes = Math.ceil(totalInboxCount * 0.5); // ~30 sec per task
 
   const handleStartProcessing = () => {
     router.push('/dashboard/inbox/process');
@@ -97,17 +132,17 @@ export default function InboxPage() {
     <>
       <PageHeader
         title="Inbox"
-        description={`Quick capture, process later (${inboxTasks.length} items)`}
+        description={`Quick capture, process later (${totalInboxCount} items)`}
         actions={
           <div className="flex items-center gap-2">
             <Button size="sm" onClick={() => setShowAddDialog(true)}>
               <Plus className="h-4 w-4 mr-1" />
               Add
             </Button>
-            {inboxTasks.length > 0 && navFeatures.find(f => f.code === 'nav_process')?.isUnlocked && (
+            {totalInboxCount > 0 && navFeatures.find(f => f.code === 'nav_process')?.isUnlocked && (
               <Button size="sm" variant="secondary" onClick={handleStartProcessing}>
                 <Sparkles className="h-4 w-4 mr-1" />
-                Triage ({inboxTasks.length})
+                Triage ({totalInboxCount})
               </Button>
             )}
           </div>
@@ -160,7 +195,7 @@ export default function InboxPage() {
               Add a thought
             </Button>
             {/* Show Triage button when Process is unlocked and there are tasks */}
-            {inboxTasks.length >= 3 && navFeatures.find(f => f.code === 'nav_process')?.isUnlocked && (
+            {totalInboxCount >= 3 && navFeatures.find(f => f.code === 'nav_process')?.isUnlocked && (
               <Button
                 size="lg"
                 variant="secondary"
@@ -168,12 +203,12 @@ export default function InboxPage() {
                 className="h-14 px-6 text-base gap-2"
               >
                 <Sparkles className="h-5 w-5" />
-                Triage ({inboxTasks.length})
+                Triage ({totalInboxCount})
               </Button>
             )}
           </div>
           {/* Show hint about Triage when it's available */}
-          {inboxTasks.length >= 3 && navFeatures.find(f => f.code === 'nav_process')?.isUnlocked && (
+          {totalInboxCount >= 3 && navFeatures.find(f => f.code === 'nav_process')?.isUnlocked && (
             <p className="text-sm text-muted-foreground text-center max-w-md">
               <span className="font-medium text-foreground">Triage</span> — go through each item one by one, decide what to do: schedule it, do it now, or delete. Takes ~{estimatedMinutes} min.
             </p>
@@ -205,17 +240,48 @@ export default function InboxPage() {
               </div>
             )}
           </div>
-          <TaskList
-            tasks={inboxTasks}
-            loading={loading}
-            emptyMessage="Inbox is empty"
-            emptyDescription="Quick capture ideas here, process them later"
-            onComplete={handleComplete}
-            onUncomplete={uncomplete}
-            onDelete={deleteTask}
-            onMoveToToday={moveToToday}
-            onTaskClick={setEditingTask}
-          />
+
+          {/* Grouped by project when multiple groups exist */}
+          {hasMultipleGroups ? (
+            <div className="space-y-4">
+              {sortedGroupKeys.map(key => {
+                const tasks = groupedTasks.get(key) || [];
+                const project = key ? projectMap.get(key) : null;
+                const label = project ? `${project.emoji} ${project.name}` : '\uD83D\uDCE5 No project';
+
+                return (
+                  <div key={key ?? 'no-project'}>
+                    <h4 className="text-sm font-medium text-muted-foreground mb-1.5">
+                      {label} ({tasks.length})
+                    </h4>
+                    <TaskList
+                      tasks={tasks}
+                      onComplete={handleComplete}
+                      onUncomplete={uncomplete}
+                      onDelete={deleteTask}
+                      onMoveToToday={moveToToday}
+                      onTaskClick={setEditingTask}
+                      showProject={false}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <TaskList
+              tasks={allInboxTasks}
+              loading={loading}
+              emptyMessage="Inbox is empty"
+              emptyDescription="Quick capture ideas here, process them later"
+              onComplete={handleComplete}
+              onUncomplete={uncomplete}
+              onDelete={deleteTask}
+              onMoveToToday={moveToToday}
+              onTaskClick={setEditingTask}
+              showProject={!!projects.length}
+              projectMap={projectMap}
+            />
+          )}
         </div>
       </main>
     </>

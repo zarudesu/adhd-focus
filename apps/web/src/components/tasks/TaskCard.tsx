@@ -54,6 +54,7 @@ export interface TaskCardProps {
   onStartFocus?: (id: string) => void;
   onClick?: (task: Task) => void;
   showProject?: boolean;
+  projectInfo?: { name: string; emoji: string } | null;
 }
 
 export function TaskCard({
@@ -67,6 +68,7 @@ export function TaskCard({
   onStartFocus,
   onClick,
   showProject = false,
+  projectInfo,
 }: TaskCardProps) {
   const [isCompleting, setIsCompleting] = useState(false);
   const { isUnlocked } = useFeatures();
@@ -202,6 +204,16 @@ export function TaskCard({
             <span className="text-xs text-muted-foreground">
               {task.pomodorosCompleted} pom
             </span>
+          )}
+
+          {/* Project badge */}
+          {showProject && projectInfo && (
+            <Badge
+              variant="secondary"
+              className="text-xs px-1.5 py-0 bg-muted text-muted-foreground"
+            >
+              {projectInfo.emoji} {projectInfo.name}
+            </Badge>
           )}
         </div>
       </div>

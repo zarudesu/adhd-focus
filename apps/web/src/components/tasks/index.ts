@@ -6,3 +6,5 @@ export type { TaskListProps } from './TaskList';
 
 export { AddTaskDialog } from './AddTaskDialog';
 export type { AddTaskDialogProps } from './AddTaskDialog';
+
+export { MorningReviewModal } from './MorningReviewModal';
