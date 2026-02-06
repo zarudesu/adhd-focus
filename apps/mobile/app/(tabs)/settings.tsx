@@ -1,38 +1,115 @@
-import { View, Text, StyleSheet, useColorScheme, ScrollView, Pressable, Switch } from 'react-native';
+import { View, Text, StyleSheet, useColorScheme, ScrollView, Pressable, Switch, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '../../lib/auth-context';
+import { api } from '../../lib/api-client';
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  preferences?: {
+    pomodoroMinutes?: number;
+    dailyTaskLimit?: number;
+    notificationsEnabled?: boolean;
+  };
+}
 
 export default function SettingsScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const styles = createStyles(isDark);
+  const { user: authUser, signOut } = useAuth();
 
-  const [showOnlyOne, setShowOnlyOne] = useState(true);
-  const [notifications, setNotifications] = useState(true);
-  const [morningReminder, setMorningReminder] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
+  const [preferences, setPreferences] = useState({
+    pomodoroMinutes: 25,
+    dailyTaskLimit: 3,
+    notificationsEnabled: true,
+  });
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      const data = await api.get<User>('/profile');
+      setUser(data);
+      if (data.preferences) {
+        setPreferences({
+          pomodoroMinutes: data.preferences.pomodoroMinutes || 25,
+          dailyTaskLimit: data.preferences.dailyTaskLimit || 3,
+          notificationsEnabled: data.preferences.notificationsEnabled !== false,
+        });
+      }
+    } catch (err) {
+      console.error('Failed to fetch profile:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updatePreferences = async (key: keyof typeof preferences, value: any) => {
+    const updated = { ...preferences, [key]: value };
+    setPreferences(updated);
+    setUpdating(true);
+
+    try {
+      await api.post('/profile', { preferences: updated });
+    } catch (err) {
+      console.error('Failed to update preferences:', err);
+      // Revert on error
+      setPreferences(preferences);
+      Alert.alert('Error', 'Failed to update preferences');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleSignOut = () => {
+    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Sign Out', style: 'destructive', onPress: signOut },
+    ]);
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#6366f1" />
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container}>
+      {/* Profile */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Profile</Text>
+        <View style={styles.settingRow}>
+          <View style={styles.avatarCircle}>
+            <Text style={styles.avatarText}>
+              {(user?.name || authUser?.email || '?')[0].toUpperCase()}
+            </Text>
+          </View>
+          <View style={styles.profileInfo}>
+            <Text style={styles.profileName}>{user?.name || authUser?.name || 'User'}</Text>
+            <Text style={styles.profileEmail}>{user?.email || authUser?.email || ''}</Text>
+          </View>
+        </View>
+      </View>
+
       {/* Focus Settings */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Focus Settings</Text>
 
-        <View style={styles.settingRow}>
-          <View style={styles.settingInfo}>
-            <Text style={styles.settingLabel}>Show only one task</Text>
-            <Text style={styles.settingDesc}>Hide other tasks during focus</Text>
-          </View>
-          <Switch
-            value={showOnlyOne}
-            onValueChange={setShowOnlyOne}
-            trackColor={{ false: '#3e3e3e', true: '#6366f1' }}
-          />
-        </View>
-
         <Pressable style={styles.settingRow}>
           <View style={styles.settingInfo}>
             <Text style={styles.settingLabel}>Pomodoro duration</Text>
-            <Text style={styles.settingDesc}>25 minutes</Text>
+            <Text style={styles.settingDesc}>{preferences.pomodoroMinutes} minutes</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={isDark ? '#6b7280' : '#9ca3af'} />
         </Pressable>
@@ -40,7 +117,7 @@ export default function SettingsScreen() {
         <Pressable style={styles.settingRow}>
           <View style={styles.settingInfo}>
             <Text style={styles.settingLabel}>Daily task limit</Text>
-            <Text style={styles.settingDesc}>3 tasks maximum</Text>
+            <Text style={styles.settingDesc}>{preferences.dailyTaskLimit} tasks maximum</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={isDark ? '#6b7280' : '#9ca3af'} />
         </Pressable>
@@ -56,21 +133,10 @@ export default function SettingsScreen() {
             <Text style={styles.settingDesc}>Reminders and updates</Text>
           </View>
           <Switch
-            value={notifications}
-            onValueChange={setNotifications}
+            value={preferences.notificationsEnabled}
+            onValueChange={(value) => updatePreferences('notificationsEnabled', value)}
             trackColor={{ false: '#3e3e3e', true: '#6366f1' }}
-          />
-        </View>
-
-        <View style={styles.settingRow}>
-          <View style={styles.settingInfo}>
-            <Text style={styles.settingLabel}>Morning planning reminder</Text>
-            <Text style={styles.settingDesc}>Remind to plan your day at 9:00 AM</Text>
-          </View>
-          <Switch
-            value={morningReminder}
-            onValueChange={setMorningReminder}
-            trackColor={{ false: '#3e3e3e', true: '#6366f1' }}
+            disabled={updating}
           />
         </View>
       </View>
@@ -79,20 +145,9 @@ export default function SettingsScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Account</Text>
 
-        <Pressable style={styles.settingRow}>
-          <View style={styles.settingInfo}>
-            <Text style={styles.settingLabel}>Sign in</Text>
-            <Text style={styles.settingDesc}>Sync your data across devices</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color={isDark ? '#6b7280' : '#9ca3af'} />
-        </Pressable>
-
-        <Pressable style={styles.settingRow}>
-          <View style={styles.settingInfo}>
-            <Text style={styles.settingLabel}>Export data</Text>
-            <Text style={styles.settingDesc}>Download your tasks as JSON</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color={isDark ? '#6b7280' : '#9ca3af'} />
+        <Pressable style={styles.signOutButton} onPress={handleSignOut}>
+          <Ionicons name="log-out-outline" size={20} color="#ef4444" />
+          <Text style={styles.signOutText}>Sign Out</Text>
         </Pressable>
       </View>
 
@@ -112,14 +167,14 @@ const createStyles = (isDark: boolean) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: isDark ? '#16213e' : '#f5f5f5',
+      backgroundColor: isDark ? '#0f172a' : '#f5f5f5',
       padding: 16,
     },
     section: {
       marginBottom: 32,
     },
     sectionTitle: {
-      fontSize: 14,
+      fontSize: 13,
       fontWeight: '600',
       color: isDark ? '#9ca3af' : '#6b7280',
       marginBottom: 12,
@@ -130,7 +185,7 @@ const createStyles = (isDark: boolean) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      backgroundColor: isDark ? '#1a1a2e' : '#fff',
+      backgroundColor: isDark ? '#1e293b' : '#fff',
       padding: 16,
       borderRadius: 12,
       marginBottom: 8,
@@ -142,11 +197,51 @@ const createStyles = (isDark: boolean) =>
     settingLabel: {
       fontSize: 16,
       fontWeight: '500',
-      color: isDark ? '#fff' : '#1a1a2e',
+      color: isDark ? '#fff' : '#0f172a',
     },
     settingDesc: {
       fontSize: 14,
       color: isDark ? '#6b7280' : '#9ca3af',
       marginTop: 2,
+    },
+    avatarCircle: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: '#6366f1',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 14,
+    },
+    avatarText: {
+      color: '#fff',
+      fontSize: 20,
+      fontWeight: '700',
+    },
+    profileInfo: {
+      flex: 1,
+    },
+    profileName: {
+      fontSize: 17,
+      fontWeight: '600',
+      color: isDark ? '#fff' : '#0f172a',
+    },
+    profileEmail: {
+      fontSize: 14,
+      color: isDark ? '#9ca3af' : '#6b7280',
+      marginTop: 2,
+    },
+    signOutButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: isDark ? '#1e293b' : '#fff',
+      padding: 16,
+      borderRadius: 12,
+      gap: 10,
+    },
+    signOutText: {
+      color: '#ef4444',
+      fontSize: 16,
+      fontWeight: '500',
     },
   });

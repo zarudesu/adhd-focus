@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,9 +7,11 @@ import {
   Pressable,
   FlatList,
   Modal,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTaskStore } from '../../store/taskStore';
+import { useTasks } from '../../hooks/useTasks';
 import { useUIStore } from '../../store/uiStore';
 import { InboxProcessor } from '../../components';
 import { ENERGY_CONFIG } from '../../lib/utils';
@@ -20,11 +22,16 @@ export default function InboxScreen() {
   const styles = createStyles(isDark);
 
   const [isProcessing, setIsProcessing] = useState(false);
-  const { getInboxTasks } = useTaskStore();
+  const [refreshing, setRefreshing] = useState(false);
+  const { inboxTasks, loading, fetch, tasks } = useTasks();
   const { openQuickCapture } = useUIStore();
-
-  const inboxTasks = getInboxTasks();
   const taskCount = inboxTasks.length;
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetch();
+    setRefreshing(false);
+  }, [fetch]);
 
   // Warning levels
   const getWarningLevel = () => {
@@ -36,7 +43,14 @@ export default function InboxScreen() {
 
   const warningLevel = getWarningLevel();
 
-  // Empty state
+  if (loading && tasks.length === 0) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#6366f1" />
+      </View>
+    );
+  }
+
   if (taskCount === 0) {
     return (
       <View style={styles.container}>
@@ -55,18 +69,16 @@ export default function InboxScreen() {
     );
   }
 
-  // Inbox with tasks
   return (
     <View style={styles.container}>
-      {/* Warning banner */}
       {warningLevel && (
-        <View style={[styles.warningBanner, styles[`warning_${warningLevel}`]]}>
+        <View style={[styles.warningBanner, warningLevel === 'critical' && styles.warningCritical, warningLevel === 'warning' && styles.warningWarn, warningLevel === 'info' && styles.warningInfo]}>
           <Ionicons
             name={warningLevel === 'critical' ? 'alert-circle' : 'information-circle'}
             size={18}
             color={warningLevel === 'critical' ? '#ef4444' : warningLevel === 'warning' ? '#f59e0b' : '#6366f1'}
           />
-          <Text style={[styles.warningText, styles[`warningText_${warningLevel}`]]}>
+          <Text style={[styles.warningText, warningLevel === 'critical' && { color: '#ef4444' }, warningLevel === 'warning' && { color: '#d97706' }, warningLevel === 'info' && { color: '#6366f1' }]}>
             {warningLevel === 'critical'
               ? `${taskCount} items! Time to process.`
               : warningLevel === 'warning'
@@ -76,18 +88,19 @@ export default function InboxScreen() {
         </View>
       )}
 
-      {/* Process all button */}
       <Pressable style={styles.processButton} onPress={() => setIsProcessing(true)}>
         <Ionicons name="flash" size={20} color="#fff" />
         <Text style={styles.processButtonText}>Process all ({taskCount})</Text>
         <Text style={styles.processTime}>~{Math.ceil(taskCount * 0.5)} min</Text>
       </Pressable>
 
-      {/* Task list */}
       <Text style={styles.listHeader}>Or pick one:</Text>
       <FlatList
         data={inboxTasks}
         keyExtractor={(item) => item.id}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366f1" />
+        }
         renderItem={({ item }) => (
           <View style={styles.taskItem}>
             <View style={styles.taskDot} />
@@ -95,7 +108,7 @@ export default function InboxScreen() {
               {item.title}
             </Text>
             <Text style={styles.taskMeta}>
-              {ENERGY_CONFIG[item.energyRequired as keyof typeof ENERGY_CONFIG]?.emoji}
+              {item.energyRequired ? ENERGY_CONFIG[item.energyRequired]?.emoji : ''}
             </Text>
           </View>
         )}
@@ -103,14 +116,13 @@ export default function InboxScreen() {
         showsVerticalScrollIndicator={false}
       />
 
-      {/* Inbox Processor Modal */}
       <Modal
         visible={isProcessing}
         animationType="slide"
         presentationStyle="fullScreen"
         onRequestClose={() => setIsProcessing(false)}
       >
-        <InboxProcessor onClose={() => setIsProcessing(false)} />
+        <InboxProcessor onClose={() => { setIsProcessing(false); fetch(); }} />
       </Modal>
     </View>
   );
@@ -120,10 +132,9 @@ const createStyles = (isDark: boolean) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: isDark ? '#16213e' : '#f5f5f5',
+      backgroundColor: isDark ? '#0f172a' : '#f5f5f5',
       padding: 16,
     },
-    // Warning banners
     warningBanner: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -132,13 +143,13 @@ const createStyles = (isDark: boolean) =>
       marginBottom: 16,
       gap: 8,
     },
-    warning_info: {
+    warningInfo: {
       backgroundColor: isDark ? '#1e1b4b' : '#eef2ff',
     },
-    warning_warning: {
+    warningWarn: {
       backgroundColor: isDark ? '#422006' : '#fef3c7',
     },
-    warning_critical: {
+    warningCritical: {
       backgroundColor: isDark ? '#450a0a' : '#fee2e2',
     },
     warningText: {
@@ -146,16 +157,6 @@ const createStyles = (isDark: boolean) =>
       fontSize: 14,
       fontWeight: '500',
     },
-    warningText_info: {
-      color: '#6366f1',
-    },
-    warningText_warning: {
-      color: '#d97706',
-    },
-    warningText_critical: {
-      color: '#ef4444',
-    },
-    // Process button
     processButton: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -175,7 +176,6 @@ const createStyles = (isDark: boolean) =>
       color: 'rgba(255,255,255,0.7)',
       fontSize: 14,
     },
-    // List
     listHeader: {
       fontSize: 14,
       fontWeight: '600',
@@ -188,7 +188,7 @@ const createStyles = (isDark: boolean) =>
     taskItem: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: isDark ? '#1a1a2e' : '#ffffff',
+      backgroundColor: isDark ? '#1e293b' : '#ffffff',
       padding: 14,
       borderRadius: 12,
       marginBottom: 8,
@@ -203,13 +203,12 @@ const createStyles = (isDark: boolean) =>
     taskTitle: {
       flex: 1,
       fontSize: 15,
-      color: isDark ? '#ffffff' : '#1a1a2e',
+      color: isDark ? '#ffffff' : '#0f172a',
     },
     taskMeta: {
       fontSize: 14,
       marginLeft: 8,
     },
-    // Empty state
     emptyState: {
       flex: 1,
       justifyContent: 'center',
@@ -223,7 +222,7 @@ const createStyles = (isDark: boolean) =>
     emptyTitle: {
       fontSize: 24,
       fontWeight: '700',
-      color: isDark ? '#fff' : '#1a1a2e',
+      color: isDark ? '#fff' : '#0f172a',
       marginBottom: 8,
     },
     emptySubtitle: {
