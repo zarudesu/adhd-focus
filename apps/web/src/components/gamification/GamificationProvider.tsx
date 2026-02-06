@@ -161,7 +161,11 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
 
   // Refresh both gamification and features state
   const refreshAll = useCallback(async () => {
-    await Promise.all([refresh(), refreshFeatures()]);
+    try {
+      await Promise.all([refresh(), refreshFeatures()]);
+    } catch (err) {
+      console.error('Failed to refresh gamification state:', err);
+    }
   }, [refresh, refreshFeatures]);
 
   const [levelUpModal, setLevelUpModal] = useState<{
@@ -223,6 +227,9 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
   // Deferred achievements - stored until user navigates to main page
   const deferredAchievementsRef = useRef<Achievement[]>([]);
 
+  // Queue of feature unlocks waiting to be shown
+  const pendingFeatureUnlocksRef = useRef<FeatureUnlockData[]>([]);
+
   // Detect new feature unlocks when navFeatures changes
   useEffect(() => {
     if (featuresLoading) return;
@@ -232,17 +239,18 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
     );
 
     // Find newly unlocked features (in current but not in previous)
-    const newlyUnlocked: FeatureUnlockData[] = [];
     currentUnlocked.forEach(code => {
       if (!previousUnlockedRef.current.has(code)) {
         const feature = navFeatures.find(f => f.code === code);
         if (feature && feature.firstOpenedAt === null) {
-          // This is a truly new unlock (never opened before)
-          newlyUnlocked.push({
-            code: feature.code,
-            name: feature.name,
-            celebrationText: feature.celebrationText,
-          });
+          // Queue this unlock if not already queued
+          if (!pendingFeatureUnlocksRef.current.some(f => f.code === code)) {
+            pendingFeatureUnlocksRef.current.push({
+              code: feature.code,
+              name: feature.name,
+              celebrationText: feature.celebrationText,
+            });
+          }
         }
       }
     });
@@ -250,15 +258,11 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
     // Update previous set
     previousUnlockedRef.current = currentUnlocked;
 
-    // Show feature unlock modal for the first new feature
-    // (we'll show one at a time to avoid overwhelm)
-    if (newlyUnlocked.length > 0 && !featureUnlockModal.open && !calmReview.visible && !levelUpModal.open) {
-      // Use setTimeout to avoid setState during render
+    // Show next queued feature unlock if no other modals are open
+    if (pendingFeatureUnlocksRef.current.length > 0 && !featureUnlockModal.open && !calmReview.visible && !levelUpModal.open) {
+      const next = pendingFeatureUnlocksRef.current.shift()!;
       setTimeout(() => {
-        setFeatureUnlockModal({
-          open: true,
-          feature: newlyUnlocked[0],
-        });
+        setFeatureUnlockModal({ open: true, feature: next });
       }, 0);
     }
   }, [navFeatures, featuresLoading, featureUnlockModal.open, calmReview.visible, levelUpModal.open]);
@@ -355,10 +359,9 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
   const showDeferredAchievements = useCallback(() => {
     if (deferredAchievementsRef.current.length === 0) return;
 
-    // Move deferred to pending with priority sorting
+    // Move deferred to pending with priority sorting (show all, most important first)
     setPendingAchievements((prev) => {
       const combined = [...prev, ...deferredAchievementsRef.current];
-      // Keep only the first 2 most important (mastery > secret > streak > progress)
       const priorityOrder: Record<string, number> = {
         ultra_secret: 6,
         secret: 5,
@@ -368,8 +371,7 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
         progress: 1,
       };
       return combined
-        .sort((a, b) => (priorityOrder[b.category] || 0) - (priorityOrder[a.category] || 0))
-        .slice(0, 2);
+        .sort((a, b) => (priorityOrder[b.category] || 0) - (priorityOrder[a.category] || 0));
     });
 
     // Clear deferred

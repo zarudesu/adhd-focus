@@ -6,7 +6,7 @@
  * Integrated with gamification system (XP, achievements, creatures)
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { Task, Achievement, Creature } from '@/db/schema';
 import { calculateTaskXp } from './useGamification';
 
@@ -124,6 +124,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const completingIdsRef = useRef<Set<string>>(new Set());
 
   const fetch = useCallback(async () => {
     setLoading(true);
@@ -198,6 +199,12 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
   }, [fetch]);
 
   const complete = useCallback(async (id: string): Promise<CompleteResult> => {
+    // Prevent rapid double-clicks from awarding XP twice
+    if (completingIdsRef.current.has(id)) {
+      return { task: tasks.find((t) => t.id === id) as Task, xpAwarded: 0, levelUp: false, newLevel: 1, newAchievements: [], creature: null };
+    }
+    completingIdsRef.current.add(id);
+
     // Find task before completing
     const task = tasks.find((t) => t.id === id);
 
@@ -296,6 +303,8 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
     } catch (err) {
       // Gamification errors should not break task completion
       console.error('Gamification error:', err);
+    } finally {
+      completingIdsRef.current.delete(id);
     }
 
     return result;
