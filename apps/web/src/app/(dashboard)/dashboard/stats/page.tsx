@@ -15,6 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Target, CheckCircle2, Trophy, TrendingUp, Timer, Clock, ListChecks, CalendarCheck } from 'lucide-react';
 import { useGamification } from '@/hooks/useGamification';
 import { useHabits } from '@/hooks/useHabits';
+import { ActivityHeatmap } from '@/components/gamification/ActivityHeatmap';
 import { cn } from '@/lib/utils';
 
 // Stats data from API
@@ -247,6 +248,9 @@ function StatsContent() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Activity Heatmap */}
+          <ActivityHeatmap />
 
           {/* Stats Grid */}
           <div className="grid gap-4 md:grid-cols-3">
