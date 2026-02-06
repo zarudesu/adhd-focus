@@ -8,20 +8,16 @@ import { api } from '../../lib/api-client';
 interface GamificationStats {
   level: number;
   xp: number;
-  xpForNext: number;
   currentStreak: number;
   longestStreak: number;
   totalTasksCompleted: number;
-  totalPomodoros: number;
-  totalFocusMinutes: number;
-}
-
-interface Achievement {
-  id: string;
-  name: string;
-  description: string;
-  emoji: string;
-  unlockedAt?: string;
+  totalCreatures: number;
+  progress: {
+    level: number;
+    totalTasksCompleted: number;
+    tasksAdded: number;
+    focusSessionsCompleted: number;
+  };
 }
 
 export default function StatsScreen() {
@@ -30,18 +26,13 @@ export default function StatsScreen() {
   const styles = createStyles(isDark);
 
   const [stats, setStats] = useState<GamificationStats | null>(null);
-  const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
-      const [statsData, achievementsData] = await Promise.all([
-        api.get<GamificationStats>('/gamification/stats'),
-        api.get<Achievement[]>('/gamification/achievements'),
-      ]);
+      const statsData = await api.get<GamificationStats>('/gamification/stats');
       setStats(statsData);
-      setAchievements(achievementsData.slice(0, 5));
     } catch (err) {
       console.error('Failed to fetch data:', err);
     } finally {
@@ -70,15 +61,15 @@ export default function StatsScreen() {
   const s = stats || {
     level: 1,
     xp: 0,
-    xpForNext: 100,
     currentStreak: 0,
     longestStreak: 0,
     totalTasksCompleted: 0,
-    totalPomodoros: 0,
-    totalFocusMinutes: 0,
+    totalCreatures: 0,
+    progress: { level: 1, totalTasksCompleted: 0, tasksAdded: 0, focusSessionsCompleted: 0 },
   };
 
-  const xpPercent = Math.min((s.xp / s.xpForNext) * 100, 100);
+  const xpForNext = Math.floor(100 * Math.pow(s.level, 1.5));
+  const xpPercent = xpForNext > 0 ? Math.min((s.xp / xpForNext) * 100, 100) : 0;
 
   return (
     <ScrollView
@@ -101,7 +92,7 @@ export default function StatsScreen() {
         <View style={styles.xpBar}>
           <View style={[styles.xpFill, { width: `${xpPercent}%` }]} />
         </View>
-        <Text style={styles.xpText}>{s.xp} / {s.xpForNext} XP</Text>
+        <Text style={styles.xpText}>{s.xp} / {xpForNext} XP</Text>
       </View>
 
       {/* Stats Grid */}
@@ -113,13 +104,13 @@ export default function StatsScreen() {
         </View>
         <View style={styles.statCard}>
           <Text style={styles.statEmoji}>🍅</Text>
-          <Text style={styles.statNumber}>{s.totalPomodoros}</Text>
+          <Text style={styles.statNumber}>{s.progress.focusSessionsCompleted}</Text>
           <Text style={styles.statLabel}>Pomodoros</Text>
         </View>
         <View style={styles.statCard}>
-          <Text style={styles.statEmoji}>⏱️</Text>
-          <Text style={styles.statNumber}>{s.totalFocusMinutes}m</Text>
-          <Text style={styles.statLabel}>Focus time</Text>
+          <Text style={styles.statEmoji}>📝</Text>
+          <Text style={styles.statNumber}>{s.progress.tasksAdded}</Text>
+          <Text style={styles.statLabel}>Tasks added</Text>
         </View>
         <View style={styles.statCard}>
           <Text style={styles.statEmoji}>🏆</Text>
@@ -128,21 +119,7 @@ export default function StatsScreen() {
         </View>
       </View>
 
-      {/* Achievements */}
-      {achievements.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recent Achievements</Text>
-          {achievements.map((achievement) => (
-            <View key={achievement.id} style={styles.achievement}>
-              <Text style={styles.achievementEmoji}>{achievement.emoji}</Text>
-              <View style={styles.achievementContent}>
-                <Text style={styles.achievementTitle}>{achievement.name}</Text>
-                <Text style={styles.achievementDesc}>{achievement.description}</Text>
-              </View>
-            </View>
-          ))}
-        </View>
-      )}
+      <View style={{ height: 100 }} />
     </ScrollView>
   );
 }
@@ -236,41 +213,5 @@ const createStyles = (isDark: boolean) =>
       fontSize: 12,
       color: isDark ? '#9ca3af' : '#6b7280',
       marginTop: 4,
-    },
-    section: {
-      marginBottom: 24,
-    },
-    sectionTitle: {
-      fontSize: 13,
-      fontWeight: '600',
-      color: isDark ? '#9ca3af' : '#6b7280',
-      marginBottom: 12,
-      textTransform: 'uppercase',
-      letterSpacing: 0.5,
-    },
-    achievement: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: isDark ? '#1e293b' : '#fff',
-      borderRadius: 12,
-      padding: 16,
-      marginBottom: 8,
-    },
-    achievementEmoji: {
-      fontSize: 32,
-      marginRight: 16,
-    },
-    achievementContent: {
-      flex: 1,
-    },
-    achievementTitle: {
-      fontSize: 16,
-      fontWeight: '600',
-      color: isDark ? '#fff' : '#0f172a',
-    },
-    achievementDesc: {
-      fontSize: 14,
-      color: isDark ? '#9ca3af' : '#6b7280',
-      marginTop: 2,
     },
   });

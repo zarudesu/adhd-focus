@@ -70,8 +70,8 @@ export default function TabLayout() {
         }}
       />
       {/* Hide these from tab bar - accessed from More hub */}
-      <Tabs.Screen name="stats" options={{ href: null }} />
-      <Tabs.Screen name="settings" options={{ href: null }} />
+      <Tabs.Screen name="stats" options={{ href: null, title: 'Statistics' }} />
+      <Tabs.Screen name="settings" options={{ href: null, title: 'Settings' }} />
     </Tabs>
   );
 }

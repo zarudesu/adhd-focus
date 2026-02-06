@@ -1,6 +1,31 @@
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 
 const TOKEN_KEY = 'auth_token';
+
+// expo-secure-store doesn't work on web — use localStorage as fallback
+const tokenStorage = {
+  async get(): Promise<string | null> {
+    if (Platform.OS === 'web') {
+      return localStorage.getItem(TOKEN_KEY);
+    }
+    return SecureStore.getItemAsync(TOKEN_KEY);
+  },
+  async set(value: string): Promise<void> {
+    if (Platform.OS === 'web') {
+      localStorage.setItem(TOKEN_KEY, value);
+      return;
+    }
+    await SecureStore.setItemAsync(TOKEN_KEY, value);
+  },
+  async remove(): Promise<void> {
+    if (Platform.OS === 'web') {
+      localStorage.removeItem(TOKEN_KEY);
+      return;
+    }
+    await SecureStore.deleteItemAsync(TOKEN_KEY);
+  },
+};
 const BASE_URL = __DEV__
   ? 'http://localhost:3000/api'
   : 'https://beatyour8.com/api';
@@ -20,7 +45,7 @@ class APIClient {
   async loadToken(): Promise<string | null> {
     if (this.token) return this.token;
     try {
-      this.token = await SecureStore.getItemAsync(TOKEN_KEY);
+      this.token = await tokenStorage.get();
     } catch {
       this.token = null;
     }
@@ -29,12 +54,12 @@ class APIClient {
 
   async saveToken(token: string): Promise<void> {
     this.token = token;
-    await SecureStore.setItemAsync(TOKEN_KEY, token);
+    await tokenStorage.set(token);
   }
 
   async clearToken(): Promise<void> {
     this.token = null;
-    await SecureStore.deleteItemAsync(TOKEN_KEY);
+    await tokenStorage.remove();
   }
 
   hasToken(): boolean {
