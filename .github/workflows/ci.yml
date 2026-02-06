@@ -13,6 +13,9 @@ jobs:
   quality:
     name: Lint, Typecheck, Test
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
 
     steps:
       - name: Checkout repository
@@ -25,13 +28,14 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
+        working-directory: .
         run: npm ci --legacy-peer-deps
 
       - name: Lint
-        run: npm run lint --prefix apps/web
+        run: npx eslint .
 
       - name: Typecheck
-        run: npm run type-check --prefix apps/web
+        run: npx tsc --noEmit
 
       - name: Test
-        run: npm run test:run --prefix apps/web
+        run: npx vitest run

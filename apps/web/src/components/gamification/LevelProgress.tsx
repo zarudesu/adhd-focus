@@ -33,13 +33,16 @@ export function LevelProgress({ compact = false }: LevelProgressProps) {
     if (xpGainEvent.timestamp === lastEventRef.current) return;
     lastEventRef.current = xpGainEvent.timestamp;
 
-    // Show floating text
-    setFloatingXp({ amount: xpGainEvent.amount, key: xpGainEvent.timestamp });
-
-    // Trigger glow
-    setGlowing(true);
+    // Defer setState to avoid cascading renders in effect
+    const raf = requestAnimationFrame(() => {
+      setFloatingXp({ amount: xpGainEvent.amount, key: xpGainEvent.timestamp });
+      setGlowing(true);
+    });
     const timer = setTimeout(() => setGlowing(false), 1500);
-    return () => clearTimeout(timer);
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(timer);
+    };
   }, [xpGainEvent, celebrationsEnabled]);
 
   if (loading) {

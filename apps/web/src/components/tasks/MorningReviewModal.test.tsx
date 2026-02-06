@@ -4,14 +4,16 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MorningReviewModal } from './MorningReviewModal';
 // Mock framer-motion to avoid animation issues in tests
-vi.mock('framer-motion', () => ({
-  motion: {
-    div: React.forwardRef<HTMLDivElement, React.ComponentProps<'div'>>(
-      (props, ref) => React.createElement('div', { ...props, ref })
-    ),
-  },
-  AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-}));
+vi.mock('framer-motion', () => {
+  const MotionDiv = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'>>(
+    (props, ref) => React.createElement('div', { ...props, ref })
+  );
+  MotionDiv.displayName = 'MotionDiv';
+  return {
+    motion: { div: MotionDiv },
+    AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  };
+});
 
 // Mock shadcn UI components (React 18/19 monorepo conflict)
 vi.mock('@/components/ui/button', () => import('@/test/ui-mocks'));

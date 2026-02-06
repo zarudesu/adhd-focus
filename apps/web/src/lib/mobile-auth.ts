@@ -5,9 +5,11 @@ import { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 import { auth } from "./auth";
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.AUTH_SECRET || "fallback-secret-change-me"
-);
+if (!process.env.AUTH_SECRET) {
+  throw new Error("AUTH_SECRET environment variable is required");
+}
+
+const JWT_SECRET = new TextEncoder().encode(process.env.AUTH_SECRET);
 
 interface MobileSession {
   user: {

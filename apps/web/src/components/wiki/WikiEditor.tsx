@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useCreateBlockNote } from '@blocknote/react';
 import { BlockNoteView } from '@blocknote/shadcn';
 import type { Block } from '@blocknote/core';
@@ -15,17 +15,26 @@ interface WikiEditorProps {
 export function WikiEditor({ content, onChange }: WikiEditorProps) {
   const { resolvedTheme } = useTheme();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const initialContentRef = useRef(content);
+  const lastContentRef = useRef<unknown>(null);
+
+  const [initialBlocks] = useState(() =>
+    Array.isArray(content) && content.length > 0 ? (content as Block[]) : undefined
+  );
 
   const editor = useCreateBlockNote({
-    initialContent: (Array.isArray(initialContentRef.current) && initialContentRef.current.length > 0
-      ? initialContentRef.current
-      : undefined) as Block[] | undefined,
+    initialContent: initialBlocks,
   });
+
+  // Track initial content in effect (not during render)
+  useEffect(() => {
+    if (lastContentRef.current === null) {
+      lastContentRef.current = content;
+    }
+  }, [content]);
 
   // Replace content when switching pages
   useEffect(() => {
-    if (content !== initialContentRef.current && editor) {
+    if (content !== lastContentRef.current && editor) {
       try {
         if (Array.isArray(content) && content.length > 0) {
           editor.replaceBlocks(editor.document, content as Block[]);
@@ -35,7 +44,7 @@ export function WikiEditor({ content, onChange }: WikiEditorProps) {
       } catch {
         editor.replaceBlocks(editor.document, [{ type: 'paragraph' as const } as Block]);
       }
-      initialContentRef.current = content;
+      lastContentRef.current = content;
     }
   }, [content, editor]);
 
