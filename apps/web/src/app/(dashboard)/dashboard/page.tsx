@@ -11,6 +11,8 @@ import { useGamificationEvents } from "@/components/gamification/GamificationPro
 import { EndOfDayReview, CloseDayButton } from "@/components/gamification/EndOfDayReview";
 import { TodayIntro, useTodayIntro } from "@/components/gamification/TodayIntro";
 import type { Task } from "@/db/schema";
+import { DailyQuests } from "@/components/gamification/DailyQuests";
+import { useQuests } from "@/hooks/useQuests";
 import { Inbox, Eye, EyeOff, Plus, ChevronDown, ChevronUp, ArrowRight } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -43,6 +45,7 @@ function TodayContent() {
     rescheduleToToday,
   } = useTasks();
   const { handleTaskComplete, showCalmReview, state, refreshAll, showDeferredAchievements } = useGamificationEvents();
+  const { updateProgress: updateQuestProgress } = useQuests();
 
   // Show deferred achievements when user arrives at Today page
   useEffect(() => {
@@ -110,7 +113,13 @@ function TodayContent() {
       newAchievements: result.newAchievements,
       creature: result.creature,
     });
-  }, [complete, handleTaskComplete]);
+
+    // Update quest progress for task completion quests
+    updateQuestProgress('complete_tasks');
+    updateQuestProgress('complete_tasks_3');
+    updateQuestProgress('complete_tasks_5');
+    updateQuestProgress('complete_tasks_7');
+  }, [complete, handleTaskComplete, updateQuestProgress]);
 
   const completedCount = todayTasks.filter(t => t.status === 'done').length;
   const activeCount = todayTasks.filter(t => t.status !== 'done').length;
@@ -249,6 +258,9 @@ function TodayContent() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Daily Quests */}
+        <DailyQuests />
 
         <TaskList
           tasks={todayTasks.filter(t => t.status !== 'done')}

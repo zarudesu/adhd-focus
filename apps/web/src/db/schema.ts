@@ -282,6 +282,25 @@ export const dailyStats = pgTable("daily_stat", {
   uniqueIndex("daily_stat_user_date_idx").on(table.userId, table.date),
 ]);
 
+// Daily Quests — micro-tasks that give direction each day
+export const dailyQuests = pgTable("daily_quest", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  date: date("date").notNull(),
+  questType: text("quest_type").notNull(), // e.g. "complete_tasks", "focus_session", "check_habits"
+  target: integer("target").notNull(), // e.g. 3 tasks, 1 session
+  progress: integer("progress").default(0),
+  completed: boolean("completed").default(false),
+  xpReward: integer("xp_reward").notNull().default(20),
+  label: text("label").notNull(), // Display text e.g. "Complete 3 tasks"
+  emoji: text("emoji").default("🎯"),
+}, (table) => [
+  index("daily_quest_user_id_idx").on(table.userId),
+  uniqueIndex("daily_quest_user_date_type_idx").on(table.userId, table.date, table.questType),
+]);
+
 // ===================
 // Gamification Tables
 // ===================
