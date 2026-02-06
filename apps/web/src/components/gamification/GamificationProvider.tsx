@@ -19,6 +19,7 @@ import { LevelUpModal } from './LevelUpModal';
 import { CalmReview, type CalmReviewProps } from './CalmReview';
 import { AchievementToastStack } from './AchievementToast';
 import { CreatureToastStack, type CaughtCreatureData } from './CreatureCaughtToast';
+import { ComboToast } from './ComboToast';
 import { FeatureUnlockModal, type FeatureUnlockData } from './FeatureUnlockModal';
 import { ReAuthModal } from './ReAuthModal';
 import { MorningReviewModal } from '@/components/tasks/MorningReviewModal';
@@ -100,6 +101,8 @@ interface GamificationContextType {
   showDeferredAchievements: () => void;
   // XP gain event for progress bar animation
   xpGainEvent: XpGainEvent | null;
+  // Combo event for toast display
+  comboEvent: { count: number; bonusXp: number; timestamp: number } | null;
 }
 
 const GamificationContext = createContext<GamificationContextType | null>(null);
@@ -225,6 +228,12 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
   // XP gain event for LevelProgress animation
   const [xpGainEvent, setXpGainEvent] = useState<XpGainEvent | null>(null);
 
+  // Combo system — track consecutive task completions
+  const comboRef = useRef({ count: 0, lastTime: 0 });
+  const COMBO_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+  const COMBO_THRESHOLD = 3; // Minimum for combo activation
+  const [comboEvent, setComboEvent] = useState<{ count: number; bonusXp: number; timestamp: number } | null>(null);
+
   // Deferred achievements - stored until user navigates to main page
   const deferredAchievementsRef = useRef<Achievement[]>([]);
 
@@ -301,6 +310,29 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
   const handleTaskComplete = useCallback((event: GamificationEvent) => {
     // Track if we need to refresh features (for menu updates)
     let needsRefresh = false;
+
+    // Combo tracking — consecutive task completions within timeout
+    if (event.xpAwarded && event.xpAwarded > 0) {
+      const now = Date.now();
+      if (now - comboRef.current.lastTime < COMBO_TIMEOUT) {
+        comboRef.current.count += 1;
+      } else {
+        comboRef.current.count = 1;
+      }
+      comboRef.current.lastTime = now;
+
+      // Fire combo event when threshold met
+      if (comboRef.current.count >= COMBO_THRESHOLD) {
+        const bonusXp = 5 * comboRef.current.count; // 15, 20, 25, ...
+        setComboEvent({ count: comboRef.current.count, bonusXp, timestamp: now });
+        // Award combo bonus XP silently
+        fetch('/api/gamification/xp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: bonusXp, reason: 'combo_bonus' }),
+        }).catch(() => {});
+      }
+    }
 
     // Show Calm Review if requested - reflection, not reward
     if (event.review) {
@@ -390,7 +422,7 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
   }, []);
 
   return (
-    <GamificationContext.Provider value={{ showLevelUp, handleTaskComplete, showCalmReview, state, loading, levelProgress, refresh, refreshAll, navFeatures, featuresLoading, isNewlyUnlocked, markFeatureOpened, showDeferredAchievements, xpGainEvent }}>
+    <GamificationContext.Provider value={{ showLevelUp, handleTaskComplete, showCalmReview, state, loading, levelProgress, refresh, refreshAll, navFeatures, featuresLoading, isNewlyUnlocked, markFeatureOpened, showDeferredAchievements, xpGainEvent, comboEvent }}>
       {children}
 
       {/* Morning Review Modal */}
@@ -464,6 +496,9 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
         creatures={pendingCreatures}
         onDismiss={dismissCreature}
       />
+
+      {/* Combo Toast */}
+      <ComboToast comboEvent={comboEvent} />
     </GamificationContext.Provider>
   );
 }
