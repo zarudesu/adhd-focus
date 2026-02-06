@@ -25,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { ProjectCardSkeleton } from "@/components/ui/skeletons";
 
 const COLOR_OPTIONS = [
   "#6366f1", // indigo
@@ -157,7 +158,11 @@ function ProjectsContent() {
         )}
 
         {loading ? (
-          <div className="text-center py-8 text-muted-foreground">Loading...</div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <ProjectCardSkeleton key={i} />
+            ))}
+          </div>
         ) : projects.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <div className="rounded-full bg-muted p-3 mb-3">

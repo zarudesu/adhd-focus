@@ -45,6 +45,7 @@ import {
   FolderKanban,
   Plus,
 } from 'lucide-react';
+import { ProcessPageSkeleton } from '@/components/ui/skeletons';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -212,11 +213,7 @@ export default function InboxProcessPage() {
 
   // Loading state
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <ProcessPageSkeleton />;
   }
 
   // Complete state

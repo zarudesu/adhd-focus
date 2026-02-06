@@ -10,6 +10,8 @@ import { PageHeader } from '@/components/layout/page-header';
 import { ProtectedRoute } from '@/components/gamification/ProtectedRoute';
 import { Lock, Sparkles } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
+import { CreatureCardSkeleton } from '@/components/ui/skeletons';
 import { cn } from '@/lib/utils';
 
 interface CreatureData {
@@ -193,10 +195,17 @@ function CreaturesContent() {
           description="Your creature collection"
         />
         <main className="p-4 space-y-6">
-          <div className="animate-pulse space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-40 bg-muted rounded-lg" />
-            ))}
+          <Skeleton className="h-24" />
+          <Skeleton className="h-4" />
+          <div className="space-y-6">
+            <div>
+              <Skeleton className="h-6 w-32 mb-3" />
+              <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                  <CreatureCardSkeleton key={i} />
+                ))}
+              </div>
+            </div>
           </div>
         </main>
       </>

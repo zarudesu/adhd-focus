@@ -15,6 +15,7 @@ import { useProjects } from "@/hooks/useProjects";
 import { useProjectWiki } from "@/hooks/useProjectWiki";
 import { useGamificationEvents } from "@/components/gamification/GamificationProvider";
 import type { Task } from "@/db/schema";
+import { TaskGroupSkeleton } from "@/components/ui/skeletons";
 import { Plus, Settings, ArrowLeft, FolderOpen, Eye, EyeOff, FileText, Pencil, Check } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -177,7 +178,7 @@ function ProjectDetailContent() {
             )}
 
             {loading ? (
-              <div className="text-center py-8 text-muted-foreground">Loading...</div>
+              <TaskGroupSkeleton />
             ) : tasks.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <div className="rounded-full bg-muted p-3 mb-3">

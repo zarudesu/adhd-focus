@@ -13,6 +13,8 @@ import { Trophy, Lock, Check, Sparkles } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
+import { AchievementRowSkeleton } from '@/components/ui/skeletons';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Achievement {
@@ -325,10 +327,19 @@ function AchievementsContent() {
       <>
         <PageHeader title="Achievements" description="Track your progress" />
         <main className="p-4">
-          <div className="animate-pulse space-y-3">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="h-16 bg-muted rounded-lg" />
-            ))}
+          <div className="flex flex-col lg:flex-row gap-8">
+            <div className="flex-1 space-y-2 order-2 lg:order-1">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <AchievementRowSkeleton key={i} />
+              ))}
+            </div>
+            <div className="lg:w-64 flex items-start justify-center order-1 lg:order-2 py-8">
+              <div className="flex flex-col items-center gap-4">
+                <Skeleton className="h-32 w-32 rounded-full" />
+                <Skeleton className="h-10 w-24" />
+                <Skeleton className="h-1.5 w-32" />
+              </div>
+            </div>
           </div>
         </main>
       </>

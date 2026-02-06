@@ -41,6 +41,7 @@ import {
   FolderOpen,
   AlertTriangle,
 } from 'lucide-react';
+import { QuickActionsPageSkeleton } from '@/components/ui/skeletons';
 import { cn } from '@/lib/utils';
 
 type SortMode = 'random' | 'priority' | 'project' | 'energy';
@@ -255,11 +256,7 @@ function QuickActionsContent() {
 
   // Loading state
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <QuickActionsPageSkeleton />;
   }
 
   // No quick tasks

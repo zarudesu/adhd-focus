@@ -5,6 +5,7 @@
  * Shows user's gamification stats, streak, achievements, focus stats
  */
 
+import { StatsPageSkeleton } from '@/components/ui/skeletons';
 import { useState, useEffect, useMemo } from 'react';
 import { PageHeader } from '@/components/layout/page-header';
 import { ProtectedRoute } from '@/components/gamification/ProtectedRoute';
@@ -133,19 +134,7 @@ function useWipLimit() {
   return limit;
 }
 
-function StatsSkeleton() {
-  return (
-    <div className="space-y-6">
-      <Skeleton className="h-32 w-full" />
-      <div className="grid gap-4 md:grid-cols-3">
-        <Skeleton className="h-24" />
-        <Skeleton className="h-24" />
-        <Skeleton className="h-24" />
-      </div>
-      <Skeleton className="h-48" />
-    </div>
-  );
-}
+// Imported from skeletons.tsx
 
 // Simple bar chart component for weekly activity
 function WeeklyChart({ data, dataKey, label, color }: {
@@ -209,7 +198,7 @@ function StatsContent() {
           description="Track your progress"
         />
         <main className="flex-1 p-4">
-          <StatsSkeleton />
+          <StatsPageSkeleton />
         </main>
       </>
     );

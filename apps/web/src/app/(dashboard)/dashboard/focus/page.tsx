@@ -11,6 +11,7 @@ import { useTasks } from "@/hooks/useTasks";
 import { CalmReview } from "@/components/focus/CalmReview";
 import { useFeaturePageTutorial } from "@/hooks/useFeaturePageTutorial";
 import { FeatureTutorial } from "@/components/gamification/FeatureTutorial";
+import { FocusPageSkeleton } from "@/components/ui/skeletons";
 import {
   Play,
   Pause,
@@ -37,7 +38,7 @@ function FocusContent() {
   // Feature tutorial for first-time users
   const { showTutorial, tutorial, dismiss: dismissTutorial } = useFeaturePageTutorial('nav_focus');
 
-  const { todayTasks } = useTasks();
+  const { todayTasks, loading: tasksLoading } = useTasks();
 
   const {
     mode,
@@ -100,6 +101,18 @@ function FocusContent() {
   // Calculate circle progress for SVG
   const circumference = 2 * Math.PI * 120;
   const strokeDashoffset = circumference - (progress / 100) * circumference;
+
+
+  if (tasksLoading) {
+    return (
+      <>
+        <PageHeader title="Focus Mode" description="One task at a time" />
+        <main className="flex-1 p-4">
+          <FocusPageSkeleton />
+        </main>
+      </>
+    );
+  }
 
   // Show tutorial overlay for first-time users
   if (showTutorial) {

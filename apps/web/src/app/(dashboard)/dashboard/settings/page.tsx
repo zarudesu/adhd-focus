@@ -34,6 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useTheme } from "next-themes";
+import { SettingsSectionSkeleton } from "@/components/ui/skeletons";
 
 // Landing page options with their nav feature codes
 const LANDING_PAGE_OPTIONS = [
@@ -73,7 +74,11 @@ export default function SettingsPage() {
       <>
         <PageHeader title="Settings" description="Customize your experience" />
         <main className="flex-1 p-4">
-          <div className="text-center py-8 text-muted-foreground">Loading...</div>
+          <div className="max-w-2xl space-y-6">
+            <SettingsSectionSkeleton />
+            <SettingsSectionSkeleton />
+            <SettingsSectionSkeleton />
+          </div>
         </main>
       </>
     );

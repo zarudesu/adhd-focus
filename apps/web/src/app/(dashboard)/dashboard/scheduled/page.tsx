@@ -9,6 +9,7 @@ import { useTasks } from "@/hooks/useTasks";
 import { useGamificationEvents } from "@/components/gamification/GamificationProvider";
 import type { Task } from "@/db/schema";
 import { Plus, Calendar } from "lucide-react";
+import { TaskGroupSkeleton } from "@/components/ui/skeletons";
 
 function ScheduledContent() {
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -122,7 +123,11 @@ function ScheduledContent() {
         )}
 
         {loading ? (
-          <div className="text-center py-8 text-muted-foreground">Loading...</div>
+          <div className="space-y-6">
+            <TaskGroupSkeleton />
+            <TaskGroupSkeleton />
+            <TaskGroupSkeleton />
+          </div>
         ) : scheduledTasks.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <div className="rounded-full bg-muted p-3 mb-3">

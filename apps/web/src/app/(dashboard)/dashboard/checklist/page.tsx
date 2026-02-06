@@ -30,9 +30,9 @@ import {
 import {
   Plus,
   Sparkles,
-  Trophy,
-  Loader2,
+  Trophy
 } from "lucide-react";
+import { HabitSectionSkeleton } from "@/components/ui/skeletons";
 
 function ChecklistContent() {
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -215,8 +215,10 @@ function ChecklistContent() {
         )}
 
         {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <div className="space-y-4">
+            <HabitSectionSkeleton />
+            <HabitSectionSkeleton />
+            <HabitSectionSkeleton />
           </div>
         ) : habits.length === 0 ? (
           <Card>
