@@ -20,8 +20,9 @@ import { CalmReview, type CalmReviewProps } from './CalmReview';
 import { AchievementToastStack } from './AchievementToast';
 import { CreatureToastStack, type CaughtCreatureData } from './CreatureCaughtToast';
 import { ComboToast } from './ComboToast';
-import { FeatureUnlockModal, type FeatureUnlockData } from './FeatureUnlockModal';
+import { FeatureUnlockToastStack } from './FeatureUnlockToast';
 import { ReAuthModal } from './ReAuthModal';
+import { addFeatureUnlock, type PendingFeatureUnlock } from '@/lib/pending-progress';
 import { MorningReviewModal } from '@/components/tasks/MorningReviewModal';
 import { useGamification } from '@/hooks/useGamification';
 import { useFeatures } from '@/hooks/useFeatures';
@@ -155,7 +156,7 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
     loading: morningReviewLoading,
     dismissed: morningReviewDismissed,
     dismiss: dismissMorningReview,
-  } = useMorningReview(morningOverdueTasks, habitsReviewData, habitsReviewLoading);
+  } = useMorningReview(morningOverdueTasks, habitsReviewData, habitsReviewLoading, session?.user?.id);
 
   // Welcome Back flow for returning users (3+ days away)
   const {
@@ -235,14 +236,8 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
   // Phase 4: Creature toast state
   const [pendingCreatures, setPendingCreatures] = useState<CaughtCreatureData[]>([]);
 
-  // Feature unlock modal state
-  const [featureUnlockModal, setFeatureUnlockModal] = useState<{
-    open: boolean;
-    feature: FeatureUnlockData | null;
-  }>({
-    open: false,
-    feature: null,
-  });
+  // Feature unlock toast state (subtle mid-session notification)
+  const [pendingFeatureToasts, setPendingFeatureToasts] = useState<{ code: string; name: string }[]>([]);
 
   // Re-auth modal state (shown after Projects unlock)
   const [reAuthModal, setReAuthModal] = useState<{
@@ -268,30 +263,33 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
   // Deferred achievements - stored until user navigates to main page
   const deferredAchievementsRef = useRef<Achievement[]>([]);
 
-  // Queue of feature unlocks waiting to be shown
-  const pendingFeatureUnlocksRef = useRef<FeatureUnlockData[]>([]);
 
   // Detect new feature unlocks when navFeatures changes
+  // Store in localStorage for morning review + show subtle toast
   useEffect(() => {
     if (featuresLoading) return;
 
+    const userId = session?.user?.id;
     const currentUnlocked = new Set(
       navFeatures.filter(f => f.isUnlocked).map(f => f.code)
     );
 
     // Find newly unlocked features (in current but not in previous)
+    const newToasts: { code: string; name: string }[] = [];
     currentUnlocked.forEach(code => {
       if (!previousUnlockedRef.current.has(code)) {
         const feature = navFeatures.find(f => f.code === code);
         if (feature && feature.firstOpenedAt === null) {
-          // Queue this unlock if not already queued
-          if (!pendingFeatureUnlocksRef.current.some(f => f.code === code)) {
-            pendingFeatureUnlocksRef.current.push({
+          // Store in localStorage for morning review
+          if (userId) {
+            addFeatureUnlock(userId, {
               code: feature.code,
               name: feature.name,
               celebrationText: feature.celebrationText,
             });
           }
+          // Queue subtle toast
+          newToasts.push({ code: feature.code, name: feature.name });
         }
       }
     });
@@ -299,14 +297,13 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
     // Update previous set
     previousUnlockedRef.current = currentUnlocked;
 
-    // Show next queued feature unlock if no other modals are open
-    if (pendingFeatureUnlocksRef.current.length > 0 && !featureUnlockModal.open && !calmReview.visible && !levelUpModal.open) {
-      const next = pendingFeatureUnlocksRef.current.shift()!;
+    // Show subtle toasts for mid-session unlocks
+    if (newToasts.length > 0) {
       setTimeout(() => {
-        setFeatureUnlockModal({ open: true, feature: next });
+        setPendingFeatureToasts(prev => [...prev, ...newToasts]);
       }, 0);
     }
-  }, [navFeatures, featuresLoading, featureUnlockModal.open, calmReview.visible, levelUpModal.open]);
+  }, [navFeatures, featuresLoading, session?.user?.id]);
 
   const showLevelUp = useCallback((newLevel: number, unlockedFeatures: string[] = []) => {
     setLevelUpModal({
@@ -457,7 +454,7 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
       {children}
 
       {/* Welcome Back Flow — shown BEFORE morning review for returning users */}
-      {showWelcome && !loading && !levelUpModal.open && !featureUnlockModal.open && (
+      {showWelcome && !loading && !levelUpModal.open && (
         <WelcomeBackFlow
           daysAway={daysAway}
           overdueCount={morningOverdueTasks.length}
@@ -472,16 +469,26 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
 
       {/* Morning Review Modal */}
       {morningReviewReady && !morningReviewDismissed && morningReviewData.needsReview
-        && !levelUpModal.open && !featureUnlockModal.open && !calmReview.visible && !showWelcome && (
+        && !levelUpModal.open && !calmReview.visible && !showWelcome && (
         <MorningReviewModal
           overdueTasks={morningReviewData.overdueTasks}
           habits={morningReviewData.habits}
+          pendingProgress={morningReviewData.pendingProgress}
           onCompleteYesterday={completeYesterday}
           onRescheduleToToday={rescheduleToToday}
           onMoveToInbox={moveTaskToInbox}
           onDeleteTask={async (id) => { await deleteTaskAction(id); }}
           onArchive={async (id) => { await archiveTask(id); }}
           onSubmitHabits={submitHabitsReview}
+          onProgressDismiss={(featureCodes) => {
+            for (const code of featureCodes) {
+              if (code === 'nav_projects') {
+                setReAuthModal({ open: true, featureCode: code });
+              } else {
+                markFeatureOpened(code);
+              }
+            }
+          }}
           onDismiss={dismissMorningReview}
         />
       )}
@@ -502,20 +509,10 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
         unlockedFeatures={levelUpModal.unlockedFeatures}
       />
 
-      {/* Feature Unlock Modal */}
-      <FeatureUnlockModal
-        open={featureUnlockModal.open}
-        onOpenChange={(open) => setFeatureUnlockModal((prev) => ({ ...prev, open }))}
-        feature={featureUnlockModal.feature}
-        onDismiss={(code) => {
-          // For Projects, show re-auth modal first
-          if (code === 'nav_projects') {
-            setReAuthModal({ open: true, featureCode: code });
-          } else {
-            // Mark feature as opened in database so modal doesn't show again
-            markFeatureOpened(code);
-          }
-        }}
+      {/* Feature Unlock Toast — subtle mid-session notification */}
+      <FeatureUnlockToastStack
+        features={pendingFeatureToasts}
+        onDismiss={(code) => setPendingFeatureToasts(prev => prev.filter(f => f.code !== code))}
       />
 
       {/* Re-Auth Modal (shown after Projects unlock) */}

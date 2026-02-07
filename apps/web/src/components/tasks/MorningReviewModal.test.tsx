@@ -33,6 +33,22 @@ vi.mock('lucide-react', () => {
     Inbox: icon('Inbox'),
     Trash2: icon('Trash2'),
     Sun: icon('Sun'),
+    Archive: icon('Archive'),
+    Sparkles: icon('Sparkles'),
+    Calendar: icon('Calendar'),
+    CheckCircle2: icon('CheckCircle2'),
+    Folder: icon('Folder'),
+    ListChecks: icon('ListChecks'),
+    Timer: icon('Timer'),
+    Trophy: icon('Trophy'),
+    Zap: icon('Zap'),
+    Ghost: icon('Ghost'),
+    BarChart3: icon('BarChart3'),
+    Flag: icon('Flag'),
+    Battery: icon('Battery'),
+    Clock: icon('Clock'),
+    Repeat: icon('Repeat'),
+    Brain: icon('Brain'),
   };
 });
 
@@ -67,6 +83,7 @@ describe('MorningReviewModal', () => {
   const defaultProps = {
     overdueTasks: [makeTask({ id: 'task-1', title: 'Overdue task 1' })],
     habits: [],
+    pendingProgress: null as import('@/lib/pending-progress').PendingProgress | null,
     onCompleteYesterday: vi.fn().mockResolvedValue(undefined),
     onRescheduleToToday: vi.fn().mockResolvedValue(undefined),
     onMoveToInbox: vi.fn().mockResolvedValue(undefined),

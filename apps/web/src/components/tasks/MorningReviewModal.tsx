@@ -2,9 +2,68 @@
 
 import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { X, Check, Inbox, Trash2, Sun, Archive } from 'lucide-react';
+import { X, Check, Inbox, Trash2, Sun, Archive, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Task } from '@/db/schema';
+import type { PendingProgress } from '@/lib/pending-progress';
+import {
+  Calendar,
+  CheckCircle2,
+  Folder,
+  ListChecks,
+  Timer,
+  Trophy,
+  Zap,
+  Ghost,
+  BarChart3,
+  Flag,
+  Battery,
+  Clock,
+  Repeat,
+  Brain,
+} from 'lucide-react';
+
+// Feature icons — reused from FeatureUnlockModal pattern
+const FEATURE_ICONS: Record<string, React.ElementType> = {
+  nav_inbox: Inbox,
+  nav_process: Sparkles,
+  nav_today: Sun,
+  nav_scheduled: Calendar,
+  nav_projects: Folder,
+  nav_completed: CheckCircle2,
+  nav_checklist: ListChecks,
+  nav_quick_actions: Zap,
+  nav_focus: Timer,
+  nav_achievements: Trophy,
+  nav_creatures: Ghost,
+  nav_stats: BarChart3,
+  priority_basic: Flag,
+  priority_full: Flag,
+  task_energy: Battery,
+  task_duration: Clock,
+  task_recurrence: Repeat,
+  ai_auto_fill: Sparkles,
+  ai_decompose: Sparkles,
+  ai_brain_dump: Brain,
+};
+
+const FEATURE_DESCRIPTIONS: Record<string, string> = {
+  nav_inbox: 'Capture thoughts quickly without organizing',
+  nav_process: 'Clear your inbox one task at a time',
+  nav_today: 'Focus on what matters today',
+  nav_scheduled: 'Plan tasks for future dates',
+  nav_projects: 'Group related tasks together',
+  nav_completed: 'See your accomplishments',
+  nav_checklist: 'Build daily habits',
+  nav_quick_actions: 'Fast 2-minute capture mode',
+  nav_focus: 'Deep work with Pomodoro timer',
+  nav_achievements: 'Track your progress milestones',
+  nav_creatures: 'Collect rare creatures',
+  nav_stats: 'Insights into your productivity',
+  ai_auto_fill: 'AI suggests priority, energy, and time',
+  ai_decompose: 'Break big tasks into small steps',
+  ai_brain_dump: 'Turn messy thoughts into tasks',
+};
 
 interface YesterdayHabit {
   id: string;
@@ -17,6 +76,7 @@ interface YesterdayHabit {
 interface MorningReviewModalProps {
   overdueTasks: Task[];
   habits: YesterdayHabit[];
+  pendingProgress: PendingProgress | null;
   onCompleteYesterday: (id: string) => Promise<unknown>;
   onRescheduleToToday: (id: string) => Promise<unknown>;
   onMoveToInbox: (id: string) => Promise<unknown>;
@@ -25,10 +85,11 @@ interface MorningReviewModalProps {
   onSubmitHabits: (data: {
     habits: { id: string; completed: boolean; skipped: boolean }[];
   }) => Promise<void>;
+  onProgressDismiss?: (featureCodes: string[]) => void;
   onDismiss: () => void;
 }
 
-type Step = 'stale' | 'tasks' | 'habits';
+type Step = 'progress' | 'stale' | 'tasks' | 'habits';
 
 const STALE_DAYS = 14;
 
@@ -39,16 +100,21 @@ function getDaysOld(scheduledDate: string): number {
 export function MorningReviewModal({
   overdueTasks,
   habits,
+  pendingProgress,
   onCompleteYesterday,
   onRescheduleToToday,
   onMoveToInbox,
   onDeleteTask,
   onArchive,
   onSubmitHabits,
+  onProgressDismiss,
   onDismiss,
 }: MorningReviewModalProps) {
   const hasOverdue = overdueTasks.length > 0;
   const hasHabits = habits.length > 0;
+  const hasProgress = pendingProgress !== null && (
+    pendingProgress.featureUnlocks.length > 0 || pendingProgress.levelUps.length > 0
+  );
 
   // Split overdue into stale (14+ days) and recent
   const staleTasks = overdueTasks.filter(
@@ -59,7 +125,11 @@ export function MorningReviewModal({
   );
   const hasStale = staleTasks.length > 0 && !!onArchive;
 
-  const initialStep: Step = hasStale ? 'stale' : hasOverdue ? 'tasks' : 'habits';
+  const initialStep: Step = hasProgress ? 'progress'
+    : hasStale ? 'stale'
+    : hasOverdue ? 'tasks'
+    : 'habits';
+
   const [step, setStep] = useState<Step>(initialStep);
   const [processedIds, setProcessedIds] = useState<Set<string>>(new Set());
   const [habitStates, setHabitStates] = useState<Record<string, 'done' | 'skipped' | null>>(
@@ -75,7 +145,13 @@ export function MorningReviewModal({
   const processedCount = processedIds.size;
 
   const goToNextStep = useCallback((after: Step) => {
-    if (after === 'stale') {
+    if (after === 'progress') {
+      // After progress: proceed to stale → tasks → habits → done
+      if (hasStale) setStep('stale');
+      else if (totalTasks > 0) setStep('tasks');
+      else if (hasHabits) setStep('habits');
+      else onDismiss();
+    } else if (after === 'stale') {
       if (totalTasks > 0) setStep('tasks');
       else if (hasHabits) setStep('habits');
       else onDismiss();
@@ -83,7 +159,14 @@ export function MorningReviewModal({
       if (hasHabits) setStep('habits');
       else onDismiss();
     }
-  }, [totalTasks, hasHabits, onDismiss]);
+  }, [totalTasks, hasHabits, hasStale, onDismiss]);
+
+  const handleProgressDone = useCallback(() => {
+    if (pendingProgress && onProgressDismiss) {
+      onProgressDismiss(pendingProgress.featureUnlocks.map(f => f.code));
+    }
+    goToNextStep('progress');
+  }, [pendingProgress, onProgressDismiss, goToNextStep]);
 
   const handleTaskAction = useCallback(async (
     action: (id: string) => Promise<unknown>,
@@ -141,6 +224,11 @@ export function MorningReviewModal({
     }
   };
 
+  // Max level from level ups
+  const maxLevel = pendingProgress?.levelUps.length
+    ? Math.max(...pendingProgress.levelUps.map(l => l.newLevel))
+    : null;
+
   return (
     <motion.div
       className="fixed inset-0 z-50 flex items-center justify-center bg-background/95 backdrop-blur-sm"
@@ -168,7 +256,65 @@ export function MorningReviewModal({
           </Button>
         </div>
 
-        {/* Step 0: Stale tasks (14+ days old) — batch archive */}
+        {/* Step: Progress summary */}
+        {step === 'progress' && pendingProgress && (
+          <div className="space-y-6">
+            <div className="text-center space-y-2">
+              <h2 className="text-lg font-medium">
+                Your Progress
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {hasOverdue || hasHabits
+                  ? 'Before we start — here\u2019s what happened.'
+                  : 'Here\u2019s what\u2019s new.'}
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              {/* Level ups */}
+              {maxLevel && (
+                <div className="rounded-lg border bg-card p-3 flex items-center gap-3">
+                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Trophy className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Level {maxLevel} reached</p>
+                    <p className="text-xs text-muted-foreground">The system trusts you more.</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Feature unlocks */}
+              {pendingProgress.featureUnlocks.map(feature => {
+                const IconComponent = FEATURE_ICONS[feature.code] || Sparkles;
+                const description = FEATURE_DESCRIPTIONS[feature.code] || feature.celebrationText || 'A new feature is available';
+                return (
+                  <div
+                    key={feature.code}
+                    className="rounded-lg border bg-card p-3 flex items-center gap-3"
+                  >
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <IconComponent className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{feature.name}</p>
+                      <p className="text-xs text-muted-foreground">{description}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <Button
+              className="w-full"
+              onClick={handleProgressDone}
+            >
+              {hasOverdue || hasHabits ? 'Continue' : 'Nice!'}
+            </Button>
+          </div>
+        )}
+
+        {/* Step: Stale tasks (14+ days old) — batch archive */}
         {step === 'stale' && (
           <div className="space-y-6">
             <div className="text-center space-y-2">
@@ -221,7 +367,7 @@ export function MorningReviewModal({
           </div>
         )}
 
-        {/* Step 1: Overdue tasks */}
+        {/* Step: Overdue tasks */}
         {step === 'tasks' && currentTask && (
           <div className="space-y-6">
             <div className="text-center space-y-2">
@@ -307,7 +453,7 @@ export function MorningReviewModal({
           </div>
         )}
 
-        {/* Step 2: Yesterday's habits */}
+        {/* Step: Yesterday's habits */}
         {step === 'habits' && (
           <div className="space-y-6">
             <div className="text-center space-y-2">

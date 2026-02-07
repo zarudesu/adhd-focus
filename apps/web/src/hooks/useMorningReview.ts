@@ -2,6 +2,11 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import type { Task } from '@/db/schema';
+import {
+  getPendingProgress,
+  clearPendingProgress,
+  type PendingProgress,
+} from '@/lib/pending-progress';
 
 interface YesterdayHabit {
   id: string;
@@ -21,6 +26,7 @@ interface MorningReviewData {
   overdueTasks: Task[];
   habits: YesterdayHabit[];
   needsReview: boolean;
+  pendingProgress: PendingProgress | null;
 }
 
 interface UseMorningReviewReturn {
@@ -38,6 +44,7 @@ export function useMorningReview(
   overdueTasks: Task[],
   habitsReviewData: YesterdayReviewData | null,
   habitsLoading: boolean,
+  userId?: string | null,
 ): UseMorningReviewReturn {
   const [dismissed, setDismissed] = useState(() => {
     if (typeof window === 'undefined') return true;
@@ -48,12 +55,17 @@ export function useMorningReview(
 
   const data = useMemo<MorningReviewData>(() => {
     const habits = habitsReviewData?.needsReview ? habitsReviewData.habits : [];
-    const needsReview = overdueTasks.length > 0 || habits.length > 0;
-    return { overdueTasks, habits, needsReview };
-  }, [overdueTasks, habitsReviewData]);
+    const pendingProgress = userId ? getPendingProgress(userId) : null;
+    const needsReview = overdueTasks.length > 0 || habits.length > 0 || pendingProgress !== null;
+    return { overdueTasks, habits, needsReview, pendingProgress };
+  }, [overdueTasks, habitsReviewData, userId]);
 
   const dismiss = () => {
     localStorage.setItem(getTodayKey(), 'true');
+    // Clear pending progress when review is dismissed (seen or skipped)
+    if (userId) {
+      clearPendingProgress(userId);
+    }
     setDismissed(true);
   };
 
