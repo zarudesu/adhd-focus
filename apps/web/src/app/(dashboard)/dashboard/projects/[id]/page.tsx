@@ -16,12 +16,12 @@ import { useProjectWiki } from "@/hooks/useProjectWiki";
 import { useGamificationEvents } from "@/components/gamification/GamificationProvider";
 import type { Task } from "@/db/schema";
 import { TaskGroupSkeleton } from "@/components/ui/skeletons";
-import { Plus, Settings, ArrowLeft, FolderOpen, Eye, EyeOff, FileText, Pencil, Check } from "lucide-react";
+import { Plus, Settings, ArrowLeft, FolderOpen, Eye, EyeOff, FileText, BookOpen, Pencil, Check } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 const WikiEditor = dynamic(
   () => import('@/components/wiki/WikiEditor').then(mod => ({ default: mod.WikiEditor })),
-  { ssr: false, loading: () => <div className="h-[300px] border rounded-lg animate-pulse bg-muted" /> }
+  { ssr: false, loading: () => <div className="h-[400px] border border-border rounded-lg animate-pulse bg-muted" /> }
 );
 
 function ProjectDetailContent() {
@@ -235,31 +235,33 @@ function ProjectDetailContent() {
           </TabsContent>
 
           <TabsContent value="wiki" className="mt-4">
-            <div className="flex gap-4 flex-col md:flex-row">
+            <div className="flex gap-6 flex-col md:flex-row">
               {/* Page list sidebar */}
-              <div className="w-full md:w-56 shrink-0">
-                <WikiPageList
-                  pages={wiki.pages}
-                  activePageId={wiki.activePage?.id || null}
-                  onSelectPage={wiki.loadPage}
-                  onCreatePage={wiki.createPage}
-                  onDeletePage={wiki.deletePage}
-                />
+              <div className="w-full md:w-60 shrink-0">
+                <div className="sticky top-4">
+                  <WikiPageList
+                    pages={wiki.pages}
+                    activePageId={wiki.activePage?.id || null}
+                    onSelectPage={wiki.loadPage}
+                    onCreatePage={wiki.createPage}
+                    onDeletePage={wiki.deletePage}
+                  />
+                </div>
               </div>
 
               {/* Editor area */}
               <div className="flex-1 min-w-0">
                 {wiki.activePage ? (
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {/* Page title */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-between">
                       {editingTitle ? (
                         <div className="flex items-center gap-2 flex-1">
                           <Input
                             value={titleDraft}
                             onChange={(e) => setTitleDraft(e.target.value)}
                             onKeyDown={(e) => { if (e.key === 'Enter') handleSaveTitle(); if (e.key === 'Escape') setEditingTitle(false); }}
-                            className="text-lg font-semibold h-9"
+                            className="text-xl font-bold h-10"
                             autoFocus
                           />
                           <Button size="sm" variant="ghost" onClick={handleSaveTitle}>
@@ -268,11 +270,11 @@ function ProjectDetailContent() {
                         </div>
                       ) : (
                         <h2
-                          className="text-lg font-semibold cursor-pointer hover:text-muted-foreground flex items-center gap-2"
+                          className="text-xl font-bold cursor-pointer hover:text-muted-foreground flex items-center gap-2 group"
                           onClick={() => { setTitleDraft(wiki.activePage!.title); setEditingTitle(true); }}
                         >
                           {wiki.activePage.title}
-                          <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                          <Pencil className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                         </h2>
                       )}
                     </div>
@@ -283,23 +285,28 @@ function ProjectDetailContent() {
                     />
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <div className="rounded-full bg-muted p-3 mb-3">
-                      <FileText className="h-6 w-6 text-muted-foreground" />
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <div className="rounded-full bg-primary/10 p-4 mb-4">
+                      <BookOpen className="h-8 w-8 text-primary" />
                     </div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      {wiki.pages.length === 0 ? 'No wiki pages yet' : 'Select a page to edit'}
-                    </p>
-                    {wiki.pages.length === 0 && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="mt-3 gap-1.5"
-                        onClick={() => wiki.createPage()}
-                      >
-                        <Plus className="h-4 w-4" />
-                        Create first page
-                      </Button>
+                    {wiki.pages.length === 0 ? (
+                      <>
+                        <h3 className="font-semibold text-lg mb-1">Project Wiki</h3>
+                        <p className="text-sm text-muted-foreground mb-6 max-w-xs">
+                          Document ideas, meeting notes, and project details in one place
+                        </p>
+                        <Button onClick={() => wiki.createPage()} className="gap-1.5">
+                          <Plus className="h-4 w-4" />
+                          Create first page
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <h3 className="font-semibold text-lg mb-1">Select a page</h3>
+                        <p className="text-sm text-muted-foreground max-w-xs">
+                          Choose a page from the sidebar to start editing
+                        </p>
+                      </>
                     )}
                   </div>
                 )}

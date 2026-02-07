@@ -1,0 +1,24 @@
+/* Match BlockNote editor to app dark theme */
+[data-color-scheme="dark"] .bn-container,
+[data-color-scheme="dark"] .bn-editor {
+  --bn-colors-editor-background: #232323;
+  --bn-colors-editor-text: #E5E7EB;
+  --bn-colors-menu-background: #1A1A1A;
+  --bn-colors-menu-text: #E5E7EB;
+  --bn-colors-tooltip-background: #1A1A1A;
+  --bn-colors-tooltip-text: #E5E7EB;
+  --bn-colors-hovered-background: rgba(255, 255, 255, 0.08);
+  --bn-colors-selected-background: rgba(255, 255, 255, 0.12);
+  --bn-colors-disabled-background: rgba(255, 255, 255, 0.04);
+  --bn-colors-border: rgba(255, 255, 255, 0.08);
+  --bn-colors-side-menu: rgba(255, 255, 255, 0.3);
+}
+
+/* Toolbar/menu dropdowns */
+[data-color-scheme="dark"] .bn-toolbar,
+[data-color-scheme="dark"] .bn-suggestion-menu,
+[data-color-scheme="dark"] .bn-slash-menu,
+[data-color-scheme="dark"] .bn-color-picker {
+  background: #1A1A1A;
+  border-color: rgba(255, 255, 255, 0.08);
+}

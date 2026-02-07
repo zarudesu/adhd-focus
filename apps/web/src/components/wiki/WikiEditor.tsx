@@ -6,6 +6,7 @@ import { BlockNoteView } from '@blocknote/shadcn';
 import type { Block } from '@blocknote/core';
 import { useTheme } from 'next-themes';
 import '@blocknote/shadcn/style.css';
+import './wiki-editor.css';
 
 interface WikiEditorProps {
   content: unknown;
@@ -62,7 +63,7 @@ export function WikiEditor({ content, onChange }: WikiEditorProps) {
   }, []);
 
   return (
-    <div className="min-h-[300px] border rounded-lg overflow-hidden">
+    <div className="min-h-[400px] rounded-lg overflow-hidden border border-border">
       <BlockNoteView
         editor={editor}
         onChange={handleChange}
