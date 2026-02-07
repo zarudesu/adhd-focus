@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { Task } from '@/db/schema';
 import {
   Dialog,
@@ -115,11 +115,15 @@ export function DecomposeDialog({
   const selectedCount = subtasks.filter(s => s.selected).length;
   const totalMinutes = subtasks.filter(s => s.selected).reduce((sum, s) => sum + s.estimatedMinutes, 0);
 
-  // Auto-generate when opened with a task
-  const handleOpenChange = (isOpen: boolean) => {
-    if (isOpen && task && !generated && !loading) {
+  // Auto-generate when dialog opens with a task
+  useEffect(() => {
+    if (open && task && !generated && !loading) {
       generate();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, task]);
+
+  const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen) {
       setSubtasks([]);
       setGenerated(false);

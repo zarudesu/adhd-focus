@@ -30,9 +30,17 @@ interface CallGeminiOptions {
   temperature?: number;
 }
 
+export class AIRateLimitError extends Error {
+  constructor(public retryAfterSeconds?: number) {
+    super('AI rate limit exceeded');
+    this.name = 'AIRateLimitError';
+  }
+}
+
 /**
  * Call Gemini Flash and parse JSON response.
  * Returns null if API key is missing or call fails.
+ * Throws AIRateLimitError on 429 so callers can show appropriate message.
  */
 export async function callGemini<T>(options: CallGeminiOptions): Promise<T | null> {
   const client = getClient();
@@ -49,7 +57,7 @@ export async function callGemini<T>(options: CallGeminiOptions): Promise<T | nul
   });
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 5000);
+  const timeout = setTimeout(() => controller.abort(), 10000);
 
   try {
     const result = await model.generateContent({
@@ -58,7 +66,11 @@ export async function callGemini<T>(options: CallGeminiOptions): Promise<T | nul
 
     const text = result.response.text();
     return JSON.parse(text) as T;
-  } catch {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : '';
+    if (message.includes('429') || message.includes('quota') || message.includes('Too Many Requests')) {
+      throw new AIRateLimitError();
+    }
     return null;
   } finally {
     clearTimeout(timeout);

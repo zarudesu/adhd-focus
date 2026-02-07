@@ -302,7 +302,12 @@ async function seedFeatures() {
   ];
 
   for (const feature of featureData) {
-    await db.insert(features).values(feature).onConflictDoNothing();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { code, ...updateFields } = feature;
+    await db.insert(features).values(feature).onConflictDoUpdate({
+      target: features.code,
+      set: updateFields,
+    });
   }
 
   console.log(`Seeded ${featureData.length} features`);
@@ -319,7 +324,14 @@ async function seedAchievements() {
   const batchSize = 100;
   for (let i = 0; i < generatedAchievements.length; i += batchSize) {
     const batch = generatedAchievements.slice(i, i + batchSize);
-    await db.insert(achievements).values(batch).onConflictDoNothing();
+    for (const achievement of batch) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { code, ...updateFields } = achievement;
+      await db.insert(achievements).values(achievement).onConflictDoUpdate({
+        target: achievements.code,
+        set: updateFields,
+      });
+    }
 
     if ((i + batchSize) % 500 === 0 || i + batchSize >= generatedAchievements.length) {
       console.log(`  Inserted ${Math.min(i + batchSize, generatedAchievements.length)}/${generatedAchievements.length}`);
@@ -378,7 +390,12 @@ async function seedCreatures() {
   ];
 
   for (const creature of creatureData) {
-    await db.insert(creatures).values(creature).onConflictDoNothing();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { code, ...updateFields } = creature;
+    await db.insert(creatures).values(creature).onConflictDoUpdate({
+      target: creatures.code,
+      set: updateFields,
+    });
   }
 
   console.log(`Seeded ${creatureData.length} creatures`);

@@ -3,7 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/mobile-auth';
-import { callGemini, isAIEnabled } from '@/lib/ai';
+import { callGemini, isAIEnabled, AIRateLimitError } from '@/lib/ai';
 import { rateLimiters } from '@/lib/rate-limit';
 import { z } from 'zod';
 
@@ -100,6 +100,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ subtasks });
   } catch (error) {
+    if (error instanceof AIRateLimitError) {
+      return NextResponse.json({ error: 'AI is busy, try again in a minute' }, { status: 429 });
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Invalid input' }, { status: 400 });
     }
