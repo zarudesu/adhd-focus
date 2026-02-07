@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { ProtectedRoute } from '@/components/gamification/ProtectedRoute';
 import { Button } from "@/components/ui/button";
 import { TaskList, AddTaskDialog } from "@/components/tasks";
+import { DecomposeDialog } from "@/components/tasks/DecomposeDialog";
 import { useTasks } from "@/hooks/useTasks";
 import { useProfile } from "@/hooks/useProfile";
 import { useGamificationEvents } from "@/components/gamification/GamificationProvider";
@@ -22,6 +23,7 @@ const MAX_DAILY_TASKS = 3;
 function TodayContent() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [decomposeTask, setDecomposeTask] = useState<Task | null>(null);
   const [showEndOfDay, setShowEndOfDay] = useState(false);
   const [hideCompleted, setHideCompleted] = useState(false);
   const [hideOverdue, setHideOverdue] = useState(false);
@@ -126,6 +128,20 @@ function TodayContent() {
     updateQuestProgress('complete_tasks_7');
   }, [complete, handleTaskComplete, updateQuestProgress]);
 
+  // Handle creating subtasks from decomposition
+  const handleCreateSubtasks = useCallback(async (parentTaskId: string, subtasks: { title: string; estimatedMinutes: number; energyRequired: 'low' | 'medium' | 'high' }[]) => {
+    for (const subtask of subtasks) {
+      await create({
+        title: subtask.title,
+        estimatedMinutes: subtask.estimatedMinutes,
+        energyRequired: subtask.energyRequired,
+        parentTaskId,
+        status: 'today',
+      });
+    }
+    refreshAll();
+  }, [create, refreshAll]);
+
   const completedCount = todayTasks.filter(t => t.status === 'done').length;
   const activeCount = todayTasks.filter(t => t.status !== 'done').length;
 
@@ -211,6 +227,14 @@ function TodayContent() {
         defaultStatus="today"
       />
 
+      {/* Decompose Task Dialog */}
+      <DecomposeDialog
+        task={decomposeTask}
+        open={!!decomposeTask}
+        onOpenChange={(open) => !open && setDecomposeTask(null)}
+        onCreateSubtasks={handleCreateSubtasks}
+      />
+
       <main className="flex-1 p-4">
         {error && (
           <div className="mb-4 p-3 text-sm text-destructive bg-destructive/10 rounded-lg">
@@ -272,6 +296,7 @@ function TodayContent() {
                   onUncomplete={uncomplete}
                   onDelete={deleteTask}
                   onMoveToInbox={moveToInbox}
+                  onBreakDown={setDecomposeTask}
                   onTaskClick={setEditingTask}
                 />
               )}
@@ -307,6 +332,7 @@ function TodayContent() {
                 onUncomplete={uncomplete}
                 onDelete={deleteTask}
                 onMoveToInbox={moveToInbox}
+                onBreakDown={setDecomposeTask}
                 onTaskClick={setEditingTask}
               />
               {showJustOne && hiddenCount > 0 && (

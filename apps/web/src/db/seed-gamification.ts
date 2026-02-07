@@ -282,6 +282,11 @@ async function seedFeatures() {
     { code: 'focus_ai_coach', name: 'AI Focus Coach', description: 'AI productivity tips', icon: 'Bot', unlockLevel: 30, sortOrder: 100 },
     { code: 'task_attachments', name: 'Attachments', description: 'Add files to tasks', icon: 'Paperclip', unlockLevel: 30, sortOrder: 101 },
 
+    // AI FEATURES (progressive unlock)
+    { code: 'ai_auto_fill', name: 'AI Auto-Fill', description: 'AI suggests priority, energy, time', celebrationText: '✨ AI Auto-Fill unlocked! AI will suggest task details.', icon: 'Sparkles', unlockTasksAdded: 5, sortOrder: 95 },
+    { code: 'ai_decompose', name: 'AI Break Down', description: 'AI splits tasks into micro-steps', celebrationText: '✨ Break Down unlocked! AI can split tasks into small steps.', icon: 'Sparkles', unlockTasksAdded: 10, sortOrder: 96 },
+    { code: 'ai_brain_dump', name: 'AI Brain Dump', description: 'Dump thoughts, AI organizes them', celebrationText: '✨ Brain Dump unlocked! Dump everything, AI sorts it out.', icon: 'Brain', unlockInboxCleared: 1, sortOrder: 97 },
+
     // MASTER (Level 35+)
     { code: 'int_calendar', name: 'Calendar Integration', description: 'Full calendar sync', icon: 'Calendar', unlockLevel: 30, sortOrder: 102 },
     { code: 'stats_insights', name: 'AI Insights', description: 'AI productivity analysis', icon: 'Sparkles', unlockLevel: 35, sortOrder: 103 },

@@ -1978,6 +1978,124 @@ function generateRetentionAchievements() {
 }
 
 // ============================================
+// AI ACHIEVEMENTS
+// ============================================
+
+function generateAIAchievements() {
+  // First AI auto-fill
+  achievements.push(createAchievement(
+    'ai_first_suggest',
+    'AI Apprentice',
+    'Used AI auto-fill for the first time.',
+    '✨',
+    'ai',
+    15,
+    'ai_suggest_count',
+    { count: 1 },
+    'visible',
+    'ai'
+  ));
+
+  // 10 AI suggestions
+  achievements.push(createAchievement(
+    'ai_suggest_10',
+    'AI Comfortable',
+    'Let AI suggest details for 10 tasks.',
+    '🤖',
+    'ai',
+    30,
+    'ai_suggest_count',
+    { count: 10 },
+    'visible',
+    'ai'
+  ));
+
+  // 50 AI suggestions
+  achievements.push(createAchievement(
+    'ai_suggest_50',
+    'AI Partner',
+    'AI has helped you with 50 tasks. Teamwork.',
+    '🧠',
+    'ai',
+    75,
+    'ai_suggest_count',
+    { count: 50 },
+    'visible',
+    'ai'
+  ));
+
+  // First decomposition
+  achievements.push(createAchievement(
+    'ai_first_decompose',
+    'First Break Down',
+    'Broke a task into smaller steps with AI.',
+    '🔨',
+    'ai',
+    20,
+    'ai_decompose_count',
+    { count: 1 },
+    'visible',
+    'ai'
+  ));
+
+  // 10 decompositions
+  achievements.push(createAchievement(
+    'ai_decompose_10',
+    'Task Surgeon',
+    'Broke down 10 tasks. Big things = small steps.',
+    '⚡',
+    'ai',
+    50,
+    'ai_decompose_count',
+    { count: 10 },
+    'visible',
+    'ai'
+  ));
+
+  // First brain dump
+  achievements.push(createAchievement(
+    'ai_first_brain_dump',
+    'Brain Dumped',
+    'First brain dump processed by AI. Mind = clear.',
+    '🧹',
+    'ai',
+    25,
+    'ai_brain_dump_count',
+    { count: 1 },
+    'visible',
+    'ai'
+  ));
+
+  // 5 brain dumps
+  achievements.push(createAchievement(
+    'ai_brain_dump_5',
+    'Mind Sweeper',
+    'Processed 5 brain dumps. Your mind thanks you.',
+    '🌊',
+    'ai',
+    60,
+    'ai_brain_dump_count',
+    { count: 5 },
+    'visible',
+    'ai'
+  ));
+
+  // 20 brain dumps
+  achievements.push(createAchievement(
+    'ai_brain_dump_20',
+    'Thought Alchemist',
+    'Turned 20 messy brain dumps into organized tasks.',
+    '💎',
+    'ai',
+    100,
+    'ai_brain_dump_count',
+    { count: 20 },
+    'hidden',
+    'ai'
+  ));
+}
+
+// ============================================
 // MAIN GENERATOR
 // ============================================
 
@@ -2055,6 +2173,9 @@ function generateAllAchievements() {
 
   generateRetentionAchievements();
   console.log(`+ Retention: ${achievements.length}`);
+
+  generateAIAchievements();
+  console.log(`+ AI: ${achievements.length}`);
 
   generateUltraSecretAchievements();
   console.log(`+ Ultra Secret: ${achievements.length}`);

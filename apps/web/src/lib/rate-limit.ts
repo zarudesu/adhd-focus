@@ -109,6 +109,15 @@ export const rateLimiters = {
       windowMs: 60 * 1000, // 1 minute
       maxRequests: 100,
     }),
+
+  /**
+   * AI calls: 10 per minute per user
+   */
+  ai: (key: string) =>
+    checkRateLimit('ai', key, {
+      windowMs: 60 * 1000, // 1 minute
+      maxRequests: 10,
+    }),
 };
 
 /**

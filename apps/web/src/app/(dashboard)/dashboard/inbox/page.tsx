@@ -7,13 +7,14 @@ import { Button } from "@/components/ui/button";
 
 
 import { TaskList, AddTaskDialog } from "@/components/tasks";
+import { BrainDumpDialog } from "@/components/tasks/BrainDumpDialog";
 import { useTasks } from "@/hooks/useTasks";
 import { useProjects } from "@/hooks/useProjects";
 import { useProfile } from "@/hooks/useProfile";
 import { useFeatures } from "@/hooks/useFeatures";
 import { useGamificationEvents } from "@/components/gamification/GamificationProvider";
 import type { Task } from "@/db/schema";
-import { Plus, Sparkles, EyeOff, Eye } from "lucide-react";
+import { Plus, Sparkles, EyeOff, Eye, Brain } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 
@@ -29,12 +30,13 @@ const LANDING_PAGE_ROUTES: Record<string, { route: string; featureCode: string }
 export default function InboxPage() {
   const router = useRouter();
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showBrainDump, setShowBrainDump] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [showSnoozed, setShowSnoozed] = useState(false);
   const hasCheckedLanding = useRef(false);
 
   const { profile, loading: profileLoading } = useProfile();
-  const { navFeatures, loading: featuresLoading } = useFeatures();
+  const { navFeatures, loading: featuresLoading, isUnlocked } = useFeatures();
   const { projects } = useProjects();
   const {
     allInboxTasks,
@@ -128,6 +130,20 @@ export default function InboxPage() {
     router.push('/dashboard/inbox/process');
   };
 
+  // Brain dump: create multiple tasks at once
+  const handleBrainDumpCreate = useCallback(async (tasks: { title: string; priority: string; energyRequired: string; estimatedMinutes: number }[]) => {
+    for (const task of tasks) {
+      await create({
+        title: task.title,
+        priority: task.priority as 'must' | 'should' | 'want' | 'someday',
+        energyRequired: task.energyRequired as 'low' | 'medium' | 'high',
+        estimatedMinutes: task.estimatedMinutes,
+        status: 'inbox',
+      });
+    }
+    refreshAll();
+  }, [create, refreshAll]);
+
   return (
     <>
       <PageHeader
@@ -183,6 +199,13 @@ export default function InboxPage() {
           </div>
         )}
 
+        {/* Brain Dump Dialog */}
+        <BrainDumpDialog
+          open={showBrainDump}
+          onOpenChange={setShowBrainDump}
+          onCreateTasks={handleBrainDumpCreate}
+        />
+
         {/* Big centered Add button - always show */}
         <div className="flex flex-col items-center gap-4 py-6">
           <div className="flex gap-3">
@@ -194,6 +217,17 @@ export default function InboxPage() {
               <Plus className="h-5 w-5" />
               Add a thought
             </Button>
+            {isUnlocked('ai_brain_dump') && (
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => setShowBrainDump(true)}
+                className="h-14 px-6 text-base gap-2"
+              >
+                <Brain className="h-5 w-5" />
+                Brain dump
+              </Button>
+            )}
             {/* Show Triage button when Process is unlocked and there are tasks */}
             {totalInboxCount >= 3 && navFeatures.find(f => f.code === 'nav_process')?.isUnlocked && (
               <Button

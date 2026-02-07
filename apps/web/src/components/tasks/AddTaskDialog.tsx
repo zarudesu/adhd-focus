@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import type { Task } from '@/db/schema';
 import { useProjects } from '@/hooks/useProjects';
 import { useFeatures } from '@/hooks/useFeatures';
@@ -44,7 +44,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Zap, Battery, BatteryLow, ChevronDown, ChevronUp, FolderOpen, Sun, Check, CalendarIcon } from 'lucide-react';
+import { Loader2, Zap, Battery, BatteryLow, ChevronDown, ChevronUp, FolderOpen, Sun, Check, CalendarIcon, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const ENERGY_OPTIONS: { value: EnergyLevel; label: string; icon: React.ReactNode }[] = [
@@ -90,6 +90,7 @@ export function AddTaskDialog({
   const energyUnlocked = isUnlocked('energy_basic');
   const priorityUnlocked = isUnlocked('priority_basic');
   const timeEstimateUnlocked = isUnlocked('task_time_estimate');
+  const aiAutoFillUnlocked = isUnlocked('ai_auto_fill');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [energy, setEnergy] = useState<EnergyLevel>('medium');
@@ -101,6 +102,12 @@ export function AddTaskDialog({
   const [showMore, setShowMore] = useState(false);
   const [loading, setLoading] = useState(false);
   const [addedCount, setAddedCount] = useState(0);
+
+  // AI Auto-Fill
+  const [aiSuggesting, setAiSuggesting] = useState(false);
+  const [aiSuggested, setAiSuggested] = useState(false);
+  const aiDebounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const lastAiTitleRef = useRef('');
 
   // Populate form when editing
   useEffect(() => {
@@ -143,7 +150,46 @@ export function AddTaskDialog({
       setScheduledDate(undefined);
     }
     setShowMore(false);
+    setAiSuggested(false);
+    lastAiTitleRef.current = '';
   }, [defaultProjectId, forScheduled]);
+
+  // AI Auto-Fill: fetch suggestions when title changes
+  const fetchAiSuggestion = useCallback((titleText: string) => {
+    if (aiDebounceRef.current) clearTimeout(aiDebounceRef.current);
+    if (!aiAutoFillUnlocked || titleText.length < 4 || isEditMode || titleText === lastAiTitleRef.current) return;
+
+    aiDebounceRef.current = setTimeout(async () => {
+      lastAiTitleRef.current = titleText;
+      setAiSuggesting(true);
+      try {
+        const res = await fetch('/api/ai/suggest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: titleText }),
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // Only apply if fields are still at defaults (don't override user choices)
+        setEnergy((prev) => prev === 'medium' ? data.energyRequired : prev);
+        setPriority((prev) => prev === 'should' ? data.priority : prev);
+        setEstimatedMinutes((prev) => prev === undefined ? data.estimatedMinutes : prev);
+        setAiSuggested(true);
+      } catch {
+        // Silently fail — AI is optional
+      } finally {
+        setAiSuggesting(false);
+      }
+    }, 600);
+  }, [isEditMode]);
+
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (aiDebounceRef.current) clearTimeout(aiDebounceRef.current);
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -222,14 +268,25 @@ export function AddTaskDialog({
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Title - primary focus */}
           <div className="space-y-2">
-            <Input
-              autoFocus
-              placeholder="What needs to be done?"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              onKeyDown={handleTitleKeyDown}
-              className="text-base"
-            />
+            <div className="relative">
+              <Input
+                autoFocus
+                placeholder="What needs to be done?"
+                value={title}
+                onChange={(e) => {
+                  setTitle(e.target.value);
+                  fetchAiSuggestion(e.target.value);
+                }}
+                onKeyDown={handleTitleKeyDown}
+                className="text-base"
+              />
+              {aiSuggesting && (
+                <Sparkles className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground animate-pulse" />
+              )}
+              {aiSuggested && !aiSuggesting && (
+                <Sparkles className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-violet-400" />
+              )}
+            </div>
           </div>
 
           {/* For Today toggle OR Date picker for scheduled */}

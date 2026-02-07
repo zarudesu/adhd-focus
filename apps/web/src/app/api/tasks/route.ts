@@ -31,6 +31,7 @@ const createTaskSchema = z.object({
   dueDate: z.string().optional(),
   scheduledDate: z.string().optional(),
   projectId: z.string().uuid().optional(),
+  parentTaskId: z.string().uuid().optional(),
   tags: z.array(z.string()).optional(),
 });
 
@@ -127,6 +128,7 @@ export async function POST(request: NextRequest) {
         dueDate: data.dueDate,
         scheduledDate: data.scheduledDate,
         projectId: data.projectId,
+        parentTaskId: data.parentTaskId,
         tags: data.tags || [],
       } satisfies NewTask)
       .returning();

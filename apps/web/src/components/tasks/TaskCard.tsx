@@ -31,6 +31,7 @@ import {
   Trash2,
   Play,
   Archive,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFeatures } from '@/hooks/useFeatures';
@@ -62,6 +63,7 @@ export interface TaskCardProps {
   onMoveToToday?: (id: string) => void;
   onMoveToInbox?: (id: string) => void;
   onStartFocus?: (id: string) => void;
+  onBreakDown?: (task: Task) => void;
   onClick?: (task: Task) => void;
   showProject?: boolean;
   projectInfo?: { name: string; emoji: string } | null;
@@ -76,6 +78,7 @@ export const TaskCard = memo(function TaskCard({
   onMoveToToday,
   onMoveToInbox,
   onStartFocus,
+  onBreakDown,
   onClick,
   showProject = false,
   projectInfo,
@@ -262,7 +265,13 @@ export const TaskCard = memo(function TaskCard({
                 Move to Inbox
               </DropdownMenuItem>
             )}
-            {(onStartFocus || onMoveToToday || onMoveToInbox) && (onDelete || onArchive) && (
+            {onBreakDown && task.status !== 'done' && isUnlocked('ai_decompose') && (
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onBreakDown(task); }}>
+                <Sparkles className="h-4 w-4 mr-2" />
+                Break down
+              </DropdownMenuItem>
+            )}
+            {(onStartFocus || onMoveToToday || onMoveToInbox || onBreakDown) && (onDelete || onArchive) && (
               <DropdownMenuSeparator />
             )}
             {onArchive && task.status === 'done' && (

@@ -30,6 +30,7 @@ interface CreateTaskInput {
   dueDate?: string;
   scheduledDate?: string;
   projectId?: string;
+  parentTaskId?: string;
   tags?: string[];
 }
 

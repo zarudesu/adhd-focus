@@ -20,6 +20,7 @@ export interface TaskListProps {
   onMoveToToday?: (id: string) => void;
   onMoveToInbox?: (id: string) => void;
   onStartFocus?: (id: string) => void;
+  onBreakDown?: (task: Task) => void;
   onTaskClick?: (task: Task) => void;
   className?: string;
   showProject?: boolean;
@@ -63,6 +64,7 @@ export function TaskList({
   onMoveToToday,
   onMoveToInbox,
   onStartFocus,
+  onBreakDown,
   onTaskClick,
   className,
   showProject,
@@ -134,6 +136,7 @@ export function TaskList({
               onMoveToToday={onMoveToToday}
               onMoveToInbox={onMoveToInbox}
               onStartFocus={onStartFocus}
+              onBreakDown={onBreakDown}
               onClick={onTaskClick}
               showProject={showProject}
               projectInfo={showProject && projectMap && task.projectId ? projectMap.get(task.projectId) : undefined}
