@@ -28,7 +28,13 @@ interface MorningReviewModalProps {
   onDismiss: () => void;
 }
 
-type Step = 'tasks' | 'habits';
+type Step = 'stale' | 'tasks' | 'habits';
+
+const STALE_DAYS = 14;
+
+function getDaysOld(scheduledDate: string): number {
+  return Math.floor((Date.now() - new Date(scheduledDate + 'T00:00:00').getTime()) / (1000 * 60 * 60 * 24));
+}
 
 export function MorningReviewModal({
   overdueTasks,
@@ -44,17 +50,40 @@ export function MorningReviewModal({
   const hasOverdue = overdueTasks.length > 0;
   const hasHabits = habits.length > 0;
 
-  const [step, setStep] = useState<Step>(hasOverdue ? 'tasks' : 'habits');
+  // Split overdue into stale (14+ days) and recent
+  const staleTasks = overdueTasks.filter(
+    t => t.scheduledDate && getDaysOld(t.scheduledDate) >= STALE_DAYS
+  );
+  const recentOverdue = overdueTasks.filter(
+    t => !t.scheduledDate || getDaysOld(t.scheduledDate) < STALE_DAYS
+  );
+  const hasStale = staleTasks.length > 0 && !!onArchive;
+
+  const initialStep: Step = hasStale ? 'stale' : hasOverdue ? 'tasks' : 'habits';
+  const [step, setStep] = useState<Step>(initialStep);
   const [processedIds, setProcessedIds] = useState<Set<string>>(new Set());
   const [habitStates, setHabitStates] = useState<Record<string, 'done' | 'skipped' | null>>(
     () => Object.fromEntries(habits.map(h => [h.id, null]))
   );
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const remainingTasks = overdueTasks.filter(t => !processedIds.has(t.id));
+  // In tasks step, only show recent overdue (stale ones handled separately)
+  const tasksForReview = hasStale ? recentOverdue : overdueTasks;
+  const remainingTasks = tasksForReview.filter(t => !processedIds.has(t.id));
   const currentTask = remainingTasks[0];
-  const totalTasks = overdueTasks.length;
+  const totalTasks = tasksForReview.length;
   const processedCount = processedIds.size;
+
+  const goToNextStep = useCallback((after: Step) => {
+    if (after === 'stale') {
+      if (totalTasks > 0) setStep('tasks');
+      else if (hasHabits) setStep('habits');
+      else onDismiss();
+    } else if (after === 'tasks') {
+      if (hasHabits) setStep('habits');
+      else onDismiss();
+    }
+  }, [totalTasks, hasHabits, onDismiss]);
 
   const handleTaskAction = useCallback(async (
     action: (id: string) => Promise<unknown>,
@@ -66,19 +95,28 @@ export function MorningReviewModal({
       await action(taskId);
       setProcessedIds(prev => new Set([...prev, taskId]));
 
-      // If no more tasks, move to habits or dismiss
-      const newRemaining = overdueTasks.filter(t => !processedIds.has(t.id) && t.id !== taskId);
+      // If no more tasks, move to next step
+      const newRemaining = tasksForReview.filter(t => !processedIds.has(t.id) && t.id !== taskId);
       if (newRemaining.length === 0) {
-        if (hasHabits) {
-          setStep('habits');
-        } else {
-          onDismiss();
-        }
+        goToNextStep('tasks');
       }
     } finally {
       setIsProcessing(false);
     }
-  }, [isProcessing, overdueTasks, processedIds, hasHabits, onDismiss]);
+  }, [isProcessing, tasksForReview, processedIds, goToNextStep]);
+
+  const handleArchiveStale = useCallback(async () => {
+    if (isProcessing || !onArchive) return;
+    setIsProcessing(true);
+    try {
+      for (const task of staleTasks) {
+        await onArchive(task.id);
+      }
+      goToNextStep('stale');
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [isProcessing, onArchive, staleTasks, goToNextStep]);
 
   const handleHabitToggle = (id: string, state: 'done' | 'skipped') => {
     setHabitStates(prev => ({
@@ -130,6 +168,59 @@ export function MorningReviewModal({
           </Button>
         </div>
 
+        {/* Step 0: Stale tasks (14+ days old) — batch archive */}
+        {step === 'stale' && (
+          <div className="space-y-6">
+            <div className="text-center space-y-2">
+              <h2 className="text-lg font-medium">
+                {staleTasks.length === 1
+                  ? 'This task has been waiting a while.'
+                  : `${staleTasks.length} tasks have been waiting a while.`}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                It&apos;s okay to let go of what no longer fits.
+              </p>
+            </div>
+
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {staleTasks.map(task => (
+                <div
+                  key={task.id}
+                  className="rounded-lg border bg-card p-3 flex items-start justify-between"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{task.title}</p>
+                    {task.scheduledDate && (
+                      <p className="text-xs text-muted-foreground">
+                        {getDaysOld(task.scheduledDate)} days ago
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-2">
+              <Button
+                className="w-full"
+                disabled={isProcessing}
+                onClick={handleArchiveStale}
+              >
+                <Archive className="h-4 w-4 mr-2" />
+                {staleTasks.length === 1 ? 'Let it go' : `Let them all go (${staleTasks.length})`}
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
+                disabled={isProcessing}
+                onClick={() => goToNextStep('stale')}
+              >
+                Keep for now
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Step 1: Overdue tasks */}
         {step === 'tasks' && currentTask && (
           <div className="space-y-6">
@@ -162,16 +253,6 @@ export function MorningReviewModal({
                 )}
               </motion.div>
             </AnimatePresence>
-
-            {/* Suggest letting go for tasks 14+ days old */}
-            {currentTask.scheduledDate && (() => {
-              const daysOld = Math.floor((Date.now() - new Date(currentTask.scheduledDate + 'T00:00:00').getTime()) / (1000 * 60 * 60 * 24));
-              return daysOld >= 14 ? (
-                <p className="text-xs text-muted-foreground text-center">
-                  This task is {daysOld} days old. It&apos;s okay to let it go.
-                </p>
-              ) : null;
-            })()}
 
             <div className="grid grid-cols-2 gap-2">
               <Button
