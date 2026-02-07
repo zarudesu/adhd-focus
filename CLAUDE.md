@@ -1,7 +1,7 @@
 # CLAUDE.md - AI Assistant Instructions
 
 > **READ THIS FILE FIRST** in every new session or after context compaction.
-> Last updated: 2026-01-22
+> Last updated: 2026-02-05
 
 ---
 
@@ -196,6 +196,7 @@ open ADHDFocus.xcodeproj
 | GET /api/gamification/creatures | **DONE** |
 | POST /api/gamification/creatures/spawn | **DONE** |
 | POST /api/gamification/rewards/log | **DONE** |
+| POST /api/gamification/day-surprise | **DONE** |
 | GET /api/stats | **DONE** |
 | GET/POST /api/habits | **DONE** |
 | PATCH/DELETE /api/habits/[id] | **DONE** |
@@ -301,6 +302,7 @@ apps/web/src/
 │   ├── useFocusTimer.ts          # Pomodoro timer
 │   ├── useFeatures.ts            # Feature unlocks
 │   ├── useGamification.ts        # XP/levels/rewards
+│   ├── useWelcomeBack.ts         # Returning user detection
 │   └── useAuth.ts                # Auth state
 ├── db/
 │   ├── index.ts                  # Drizzle client
@@ -552,6 +554,7 @@ const { tasks, todayTasks, inboxTasks, scheduledTasks,
 **Documentation**:
 - **[docs/FEATURE_UNLOCKS.md](docs/FEATURE_UNLOCKS.md)** - Unlock conditions & rationale
 - **[apps/web/docs/GAMIFICATION.md](apps/web/docs/GAMIFICATION.md)** - XP, achievements, creatures
+- **[docs/RETENTION_RESEARCH.md](docs/RETENTION_RESEARCH.md)** - ADHD retention research & behavioral science
 
 ### Core Concept: Progressive Feature Unlocking
 
@@ -598,15 +601,18 @@ XP_to_level = floor(100 × (level ^ 1.5))
 src/
 ├── hooks/
 │   ├── useFeatures.ts        # Feature unlock checking
-│   └── useGamification.ts    # XP, levels, rewards
+│   ├── useGamification.ts    # XP, levels, rewards
+│   └── useWelcomeBack.ts     # Returning user detection (3+ days away)
 ├── components/gamification/
-│   └── FeatureGate.tsx       # Gates UI behind features
+│   ├── FeatureGate.tsx       # Gates UI behind features
+│   └── WelcomeBackFlow.tsx   # Returning user welcome modal
 ├── app/api/gamification/
 │   ├── stats/route.ts        # GET user stats
 │   ├── xp/route.ts           # POST award XP
 │   ├── achievements/check/   # POST check achievements
 │   ├── creatures/spawn/      # POST spawn creature
-│   └── rewards/log/          # POST log visual effect
+│   ├── rewards/log/          # POST log visual effect
+│   └── day-surprise/         # POST day 3-5 surprise achievement
 └── db/
     ├── schema.ts             # Gamification tables
     └── seed-gamification.ts  # Seed features/achievements/creatures
@@ -636,6 +642,7 @@ await checkAchievements();
 - **Phase 3**: ✅ Achievements UI - /dashboard/achievements page
 - **Phase 4**: ✅ Creatures collection - /dashboard/creatures page
 - **Phase 5**: TODO - FeatureGate in all UI (progressive unlock)
+- **Phase 6**: ✅ ADHD Retention features (see below)
 
 ## Troubleshooting
 
@@ -668,7 +675,29 @@ fix(auth): fix bug
 docs: update CLAUDE.md
 ```
 
-## Recent Changes (2026-01-22)
+## Recent Changes (2026-02-05)
+
+### ADHD Retention Features (Phase 6) ✅
+Based on behavioral science research (docs/RETENTION_RESEARCH.md). No DB migrations needed.
+
+**Features implemented:**
+1. **Welcome Back Flow** — Warm modal for users returning after 3+ days. "Hey. You're back." with Fresh Start option (bulk archive overdue)
+2. **Task Amnesty** — "Let go" (archive) button throughout app. Stale task review step in morning review for tasks 14+ days old (batch archive)
+3. **XP Variation** — ±20% random variation + 10% chance of 2x bonus (variable ratio reinforcement)
+4. **Just 1 Mode** — Show only 1 active task on Today page (toggle in Settings, off by default)
+5. **Day 3-5 Surprise** — Hidden "Still Here" + "Comeback" achievements for early retention
+
+**Key files:**
+- `hooks/useWelcomeBack.ts` — returning user detection
+- `components/gamification/WelcomeBackFlow.tsx` — welcome back modal
+- `components/tasks/MorningReviewModal.tsx` — stale task step (14+ days), batch archive
+- `hooks/useGamification.ts` — calculateTaskXp with variable rewards
+- `app/api/gamification/day-surprise/route.ts` — day 3-5 achievement check
+- `db/generate-achievements.ts` — retention achievements (still_here, comeback)
+- `app/(dashboard)/dashboard/page.tsx` — Just 1 mode, overdue archive button
+- `app/(dashboard)/dashboard/settings/page.tsx` — Just 1 mode toggle
+
+### Previous (2026-01-22)
 
 ### Staging Environment - LIVE ✅
 - **Production**: https://beatyour8.com (main branch)
