@@ -65,16 +65,6 @@ function TodayContent() {
   // Feature tutorial for first-time users (before daily intro)
   const { showTutorial, tutorial, dismiss: dismissTutorial } = useFeaturePageTutorial('nav_today');
 
-  if (showTutorial) {
-    return (
-      <FeatureTutorial
-        featureCode="nav_today"
-        tutorial={tutorial}
-        onComplete={dismissTutorial}
-      />
-    );
-  }
-
   // Today intro for first-time users
   const { showIntro, checked, dismissIntro } = useTodayIntro();
 
@@ -160,6 +150,17 @@ function TodayContent() {
 
   const completedCount = todayTasks.filter(t => t.status === 'done').length;
   const activeCount = todayTasks.filter(t => t.status !== 'done').length;
+
+  // Feature tutorial for first-time users
+  if (showTutorial) {
+    return (
+      <FeatureTutorial
+        featureCode="nav_today"
+        tutorial={tutorial}
+        onComplete={dismissTutorial}
+      />
+    );
+  }
 
   return (
     <>

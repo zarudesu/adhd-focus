@@ -448,6 +448,7 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
     // Phase 3: Defer achievements - store for later display on main page
     // This prevents interrupting flow during inbox processing, focus mode, etc.
     if (event.newAchievements && event.newAchievements.length > 0) {
+      // eslint-disable-next-line react-hooks/immutability -- intentional ref buffer for cross-callback accumulation
       deferredAchievementsRef.current = [
         ...deferredAchievementsRef.current,
         ...event.newAchievements,
@@ -485,6 +486,7 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
     if (deferredAchievementsRef.current.length === 0) return;
 
     const all = [...deferredAchievementsRef.current];
+    // eslint-disable-next-line react-hooks/immutability -- intentional ref buffer clear
     deferredAchievementsRef.current = [];
 
     const priorityOrder: Record<string, number> = {
