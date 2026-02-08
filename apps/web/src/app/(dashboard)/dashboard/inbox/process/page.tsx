@@ -38,12 +38,13 @@ import {
   Calendar as CalendarIcon,
   EyeOff,
   Trash2,
-  ChevronLeft,
   CheckCircle2,
   Loader2,
   Check,
   FolderKanban,
   Plus,
+  X,
+  ArrowRight,
 } from 'lucide-react';
 import { ProcessPageSkeleton } from '@/components/ui/skeletons';
 import { format } from 'date-fns';
@@ -77,12 +78,14 @@ export default function InboxProcessPage() {
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [creatingProject, setCreatingProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
+  const [pendingNext, setPendingNext] = useState(false);
+  const [lastAction, setLastAction] = useState('');
 
   const totalTasks = inboxTasks.length + processedCount;
 
   // Current task
   const currentTask = inboxTasks[currentIndex];
-  const isComplete = inboxTasks.length === 0;
+  const isComplete = inboxTasks.length === 0 && !pendingNext;
 
   // Reset selected project when task changes
   useEffect(() => {
@@ -113,16 +116,17 @@ export default function InboxProcessPage() {
     }
   }, [isComplete, inboxTasks.length, router]);
 
-  // Process actions
-  const handleAction = useCallback(async (action: () => Promise<unknown>) => {
+  // Process actions — now sets pendingNext instead of auto-advancing
+  const handleAction = useCallback(async (action: () => Promise<unknown>, actionLabel: string) => {
     if (!currentTask || processing) return;
 
     setProcessing(true);
     try {
       await action();
       setProcessedCount(c => c + 1);
-      // Task will be removed from inboxTasks automatically via useTasks
-      // Reset index if needed
+      setLastAction(actionLabel);
+      setPendingNext(true);
+      // Index adjusts automatically when task is removed from inboxTasks
       if (currentIndex >= inboxTasks.length - 1) {
         setCurrentIndex(Math.max(0, inboxTasks.length - 2));
       }
@@ -131,16 +135,24 @@ export default function InboxProcessPage() {
     }
   }, [currentTask, processing, currentIndex, inboxTasks.length]);
 
+  // Move to next task after user confirms
+  const handleNextTask = useCallback(() => {
+    setPendingNext(false);
+    setLastAction('');
+    setSelectedProject(null);
+    setCreatingProject(false);
+    setNewProjectName('');
+  }, []);
+
   // Move to today (with optional project assignment)
   const handleToday = async () => {
     if (!currentTask) return;
 
-    // If project selected, assign it first
     if (selectedProject && selectedProject !== currentTask.projectId) {
       await update(currentTask.id, { projectId: selectedProject });
     }
 
-    handleAction(() => moveToToday(currentTask.id));
+    handleAction(() => moveToToday(currentTask.id), 'Moved to Today');
   };
 
   // Schedule for later
@@ -149,15 +161,18 @@ export default function InboxProcessPage() {
     setShowCalendar(false);
     const date = new Date();
     date.setDate(date.getDate() + daysFromNow);
-    handleAction(() => scheduleTask(currentTask.id, format(date, 'yyyy-MM-dd')));
+    const label = daysFromNow === 1 ? 'Scheduled for tomorrow' :
+      daysFromNow === 7 ? 'Scheduled for next week' :
+      `Scheduled for ${format(date, 'MMM d')}`;
+    handleAction(() => scheduleTask(currentTask.id, format(date, 'yyyy-MM-dd')), label);
   };
 
-  // Not Today - snooze task in inbox until tomorrow
+  // Not Today - snooze
   const handleNotToday = () => {
     if (!currentTask) return;
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    handleAction(() => snoozeTask(currentTask.id, format(tomorrow, 'yyyy-MM-dd')));
+    handleAction(() => snoozeTask(currentTask.id, format(tomorrow, 'yyyy-MM-dd')), 'Snoozed until tomorrow');
   };
 
   // Complete task
@@ -169,7 +184,6 @@ export default function InboxProcessPage() {
       const result = await complete(currentTask.id);
       setProcessedCount(c => c + 1);
 
-      // Trigger gamification
       handleTaskComplete({
         levelUp: result.levelUp ? {
           newLevel: result.newLevel,
@@ -183,13 +197,16 @@ export default function InboxProcessPage() {
       if (currentIndex >= inboxTasks.length - 1) {
         setCurrentIndex(Math.max(0, inboxTasks.length - 2));
       }
+
+      setLastAction('Completed');
+      setPendingNext(true);
     } finally {
       setProcessing(false);
     }
   };
 
   // Delete task
-  const handleDelete = () => handleAction(() => deleteTask(currentTask.id));
+  const handleDelete = () => handleAction(() => deleteTask(currentTask.id), 'Deleted');
 
   // Edit task
   const handleEdit = () => {
@@ -206,14 +223,11 @@ export default function InboxProcessPage() {
       setSelectedProject(newProject.id);
       setNewProjectName('');
       setCreatingProject(false);
-      refreshAll(); // May unlock project-related features
+      refreshAll();
     } catch {
       // Handle error silently
     }
   };
-
-  // Check if "Next" conditions are met (project assigned)
-  const canProceed = selectedProject !== null;
 
   // Loading state
   if (loading) {
@@ -224,54 +238,45 @@ export default function InboxProcessPage() {
     return <FeatureTutorial featureCode="nav_process" tutorial={tutorial} onComplete={dismissTutorial} />;
   }
 
-  // Complete state
+  // Complete state — all tasks processed
   if (isComplete) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-4">
-        <div className="text-center max-w-md">
-          <div className="rounded-full bg-green-100 dark:bg-green-900/30 p-4 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
-            <CheckCircle2 className="h-10 w-10 text-green-600 dark:text-green-400" />
-          </div>
-          <h1 className="text-2xl font-bold mb-2">Inbox Clear!</h1>
-          <p className="text-muted-foreground mb-6">
-            {processedCount > 0
-              ? `You processed ${processedCount} task${processedCount > 1 ? 's' : ''}. Great job!`
-              : 'Your inbox is empty. Nothing to process!'}
-          </p>
-          <div className="flex gap-3 justify-center">
-            <Button variant="outline" onClick={() => router.push('/dashboard/inbox')}>
-              Back to Inbox
-            </Button>
-            <Button onClick={() => router.push('/dashboard')}>
-              <Sun className="h-4 w-4 mr-2" />
-              View Today
-            </Button>
+      <>
+        <div className="fixed inset-0 z-40 bg-background/80 backdrop-blur-md" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="text-center max-w-md">
+            <div className="rounded-full bg-green-100 dark:bg-green-900/30 p-4 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+              <CheckCircle2 className="h-10 w-10 text-green-600 dark:text-green-400" />
+            </div>
+            <h1 className="text-2xl font-bold mb-2">Inbox Clear!</h1>
+            <p className="text-muted-foreground mb-6">
+              {processedCount > 0
+                ? `You processed ${processedCount} task${processedCount > 1 ? 's' : ''}. Great job!`
+                : 'Your inbox is empty. Nothing to process!'}
+            </p>
+            <div className="flex gap-3 justify-center">
+              <Button variant="outline" onClick={() => router.push('/dashboard/inbox')}>
+                Back to Inbox
+              </Button>
+              <Button onClick={() => router.push('/dashboard')}>
+                <Sun className="h-4 w-4 mr-2" />
+                View Today
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-background relative overflow-hidden">
-      {/* Ambient glow — subtle radial gradient behind card area */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: 'radial-gradient(ellipse at 50% 40%, rgba(217, 249, 104, 0.04) 0%, transparent 50%)',
-        }}
-      />
-      {/* Vignette — subtle edge darkening for focus effect */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: 'radial-gradient(ellipse at 50% 45%, transparent 30%, rgba(26, 26, 26, 0.25) 100%)',
-        }}
-      />
+    <>
+      {/* Full-screen backdrop — blurs sidebar and everything underneath */}
+      <div className="fixed inset-0 z-40 bg-background/80 backdrop-blur-md" />
 
       {/* Exit confirmation dialog */}
       <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="z-[60]">
           <AlertDialogHeader>
             <AlertDialogTitle>Leave processing?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -302,240 +307,313 @@ export default function InboxProcessPage() {
         defaultStatus="inbox"
       />
 
-      {/* Header with progress */}
-      <header className="relative z-10 border-b bg-card/80 backdrop-blur-sm p-4">
-        <div className="max-w-2xl mx-auto">
-          <div className="flex items-center justify-between mb-3">
-            <Button variant="ghost" size="sm" onClick={handleBack}>
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Exit
-            </Button>
-            <span className="text-sm font-medium">
-              {processedCount + 1} of {totalTasks}
-            </span>
-            <div className="w-16" /> {/* Spacer for alignment */}
+      {/* Process content — floats above blur */}
+      <div className="fixed inset-0 z-50 flex flex-col overflow-auto">
+        {/* Ambient glow */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'radial-gradient(ellipse at 50% 40%, rgba(217, 249, 104, 0.04) 0%, transparent 50%)',
+          }}
+        />
+        {/* Vignette */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'radial-gradient(ellipse at 50% 45%, transparent 30%, rgba(26, 26, 26, 0.25) 100%)',
+          }}
+        />
+
+        {/* Header with progress */}
+        <header className="relative z-10 p-4">
+          <div className="max-w-md mx-auto">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm text-muted-foreground">
+                {processedCount + 1} of {totalTasks}
+              </span>
+              <button
+                onClick={handleBack}
+                className="rounded-full p-2 hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <Progress value={(processedCount / totalTasks) * 100} className="h-1.5" />
           </div>
-          <Progress value={(processedCount / totalTasks) * 100} className="h-2" />
-        </div>
-      </header>
+        </header>
 
-      {/* Main content */}
-      <main className="relative z-10 flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-md space-y-4">
-
-          {/* Task card with animation */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentTask?.id}
-              initial={{ opacity: 0, y: 20, scale: 0.97 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -20, scale: 0.97 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="relative"
-            >
-              {/* Soft glow behind card */}
-              <div
-                className="absolute -inset-8 -z-10 pointer-events-none"
-                style={{
-                  background: 'radial-gradient(ellipse at center, rgba(217, 249, 104, 0.06) 0%, transparent 70%)',
-                  filter: 'blur(30px)',
-                }}
-              />
-              <Card
-                className={cn(
-                  "border-2 border-primary/50 bg-primary/5",
-                  "transition-all cursor-pointer hover:border-primary hover:shadow-lg hover:shadow-primary/5"
-                )}
-                onClick={handleEdit}
-              >
-                <CardContent className="p-6">
-                  {/* Task title */}
-                  <h2 className="text-xl font-semibold">{currentTask?.title}</h2>
-
-                  {/* Description if exists */}
-                  {currentTask?.description && (
-                    <p className="text-muted-foreground text-sm mt-2">
-                      {currentTask.description}
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Project selector - outside card */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="flex items-center gap-2"
-          >
-            <FolderKanban className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-            {creatingProject ? (
-              <div className="flex-1 flex gap-2">
-                <Input
-                  autoFocus
-                  placeholder="Project name..."
-                  value={newProjectName}
-                  onChange={(e) => setNewProjectName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleCreateProject();
-                    if (e.key === 'Escape') {
-                      setCreatingProject(false);
-                      setNewProjectName('');
-                    }
-                  }}
-                  className="h-10"
-                />
-                <Button size="sm" onClick={handleCreateProject} disabled={!newProjectName.trim()}>
-                  <Check className="h-4 w-4" />
-                </Button>
-              </div>
-            ) : (
-              <Select
-                value={selectedProject || "none"}
-                onValueChange={(v) => {
-                  if (v === "create") {
-                    setCreatingProject(true);
-                  } else {
-                    setSelectedProject(v === "none" ? null : v);
-                  }
-                }}
-              >
-                <SelectTrigger className="flex-1 h-10">
-                  <SelectValue placeholder="Select project..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No project</SelectItem>
-                  {projects.map((project) => (
-                    <SelectItem key={project.id} value={project.id}>
-                      {project.emoji} {project.name}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value="create" className="text-primary">
-                    <span className="flex items-center gap-2">
-                      <Plus className="h-4 w-4" />
-                      Create project
-                    </span>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          </motion.div>
-
-          {/* Quick actions row - complete, delete */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="flex justify-center gap-2"
-          >
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleComplete}
-              disabled={processing}
-              className="text-green-600 hover:text-green-700 hover:bg-green-50"
-            >
-              <Check className="h-4 w-4 mr-1" />
-              Done
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDelete}
-              disabled={processing}
-              className="text-destructive hover:text-destructive"
-            >
-              <Trash2 className="h-4 w-4 mr-1" />
-              Delete
-            </Button>
-          </motion.div>
-
-          {/* Main action buttons */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="grid grid-cols-2 gap-3"
-          >
-            <Button
-              size="lg"
-              onClick={handleToday}
-              disabled={processing}
-              variant="outline"
-              className="h-14 text-base"
-            >
-              {processing ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <>
-                  <Sun className="h-5 w-5 mr-2" />
-                  Today
-                </>
-              )}
-            </Button>
-
-            <Popover open={showCalendar} onOpenChange={setShowCalendar}>
-              <PopoverTrigger asChild>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  disabled={processing}
-                  className="h-14 text-base"
+        {/* Main content */}
+        <main className="relative z-10 flex-1 flex items-center justify-center p-4">
+          <div className="w-full max-w-md">
+            <AnimatePresence mode="wait">
+              {pendingNext ? (
+                /* ── Transition screen: action confirmed, waiting for user ── */
+                <motion.div
+                  key="pending-next"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                  className="flex flex-col items-center justify-center space-y-6 py-12"
                 >
-                  <CalendarIcon className="h-5 w-5 mr-2" />
-                  Schedule
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-48 p-2" align="center">
-                <div className="grid gap-1">
-                  <Button
-                    variant="ghost"
-                    className="justify-start"
-                    onClick={() => handleSchedule(1)}
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', damping: 15, stiffness: 200, delay: 0.1 }}
+                    className="rounded-full bg-primary/10 p-4"
                   >
-                    Tomorrow
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    className="justify-start"
-                    onClick={() => handleSchedule(2)}
-                  >
-                    In 2 days
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    className="justify-start"
-                    onClick={() => handleSchedule(7)}
-                  >
-                    Next week
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    className="justify-start"
-                    onClick={() => handleSchedule(14)}
-                  >
-                    In 2 weeks
-                  </Button>
-                </div>
-              </PopoverContent>
-            </Popover>
+                    <Check className="h-8 w-8 text-primary" />
+                  </motion.div>
 
-            <Button
-              size="lg"
-              variant="secondary"
-              onClick={handleNotToday}
-              disabled={processing}
-              className="h-14 text-base col-span-2"
-            >
-              <EyeOff className="h-5 w-5 mr-2" />
-              Not Today
-            </Button>
-          </motion.div>
+                  <motion.p
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.15 }}
+                    className="text-sm text-muted-foreground"
+                  >
+                    {lastAction}
+                  </motion.p>
 
-        </div>
-      </main>
-    </div>
+                  {inboxTasks.length > 0 ? (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                    >
+                      <Button
+                        size="lg"
+                        onClick={handleNextTask}
+                        className="gap-2 px-8"
+                      >
+                        Next task
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                    >
+                      <Button
+                        size="lg"
+                        onClick={() => {
+                          setPendingNext(false);
+                          setLastAction('');
+                        }}
+                        className="gap-2 px-8"
+                      >
+                        See results
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </motion.div>
+                  )}
+                </motion.div>
+              ) : (
+                /* ── Task card + actions ── */
+                <motion.div
+                  key={currentTask?.id || 'task'}
+                  initial={{ opacity: 0, y: 20, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -20, scale: 0.97 }}
+                  transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                  className="space-y-5"
+                >
+                  {/* Task card */}
+                  <div className="relative">
+                    {/* Soft glow behind card */}
+                    <div
+                      className="absolute -inset-8 -z-10 pointer-events-none"
+                      style={{
+                        background: 'radial-gradient(ellipse at center, rgba(217, 249, 104, 0.06) 0%, transparent 70%)',
+                        filter: 'blur(30px)',
+                      }}
+                    />
+                    <Card
+                      className={cn(
+                        "border-2 border-primary/50 bg-primary/5",
+                        "transition-all cursor-pointer hover:border-primary hover:shadow-lg hover:shadow-primary/5"
+                      )}
+                      onClick={handleEdit}
+                    >
+                      <CardContent className="p-6">
+                        <h2 className="text-xl font-semibold">{currentTask?.title}</h2>
+                        {currentTask?.description && (
+                          <p className="text-muted-foreground text-sm mt-2">
+                            {currentTask.description}
+                          </p>
+                        )}
+                        <p className="text-xs text-muted-foreground/50 mt-3">Tap to edit details</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Step 1: Project selector */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                  >
+                    <p className="text-xs text-muted-foreground/60 mb-1.5">Step 1 — Assign to a project</p>
+                    <div className="flex items-center gap-2">
+                      <FolderKanban className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      {creatingProject ? (
+                        <div className="flex-1 flex gap-2">
+                          <Input
+                            autoFocus
+                            placeholder="Project name..."
+                            value={newProjectName}
+                            onChange={(e) => setNewProjectName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleCreateProject();
+                              if (e.key === 'Escape') {
+                                setCreatingProject(false);
+                                setNewProjectName('');
+                              }
+                            }}
+                            className="h-10"
+                          />
+                          <Button size="sm" onClick={handleCreateProject} disabled={!newProjectName.trim()}>
+                            <Check className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <Select
+                          value={selectedProject || "none"}
+                          onValueChange={(v) => {
+                            if (v === "create") {
+                              setCreatingProject(true);
+                            } else {
+                              setSelectedProject(v === "none" ? null : v);
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="flex-1 h-10">
+                            <SelectValue placeholder="Select project..." />
+                          </SelectTrigger>
+                          <SelectContent className="z-[60]">
+                            <SelectItem value="none">No project</SelectItem>
+                            {projects.map((project) => (
+                              <SelectItem key={project.id} value={project.id}>
+                                {project.emoji} {project.name}
+                              </SelectItem>
+                            ))}
+                            <SelectItem value="create" className="text-primary">
+                              <span className="flex items-center gap-2">
+                                <Plus className="h-4 w-4" />
+                                Create project
+                              </span>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+                  </motion.div>
+
+                  {/* Quick actions: Done / Delete */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.15 }}
+                  >
+                    <p className="text-xs text-muted-foreground/60 mb-1.5">Already done? Or not needed?</p>
+                    <div className="flex justify-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleComplete}
+                        disabled={processing}
+                        className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950/30"
+                      >
+                        <Check className="h-4 w-4 mr-1" />
+                        Done
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleDelete}
+                        disabled={processing}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete
+                      </Button>
+                    </div>
+                  </motion.div>
+
+                  {/* Step 2: Main action buttons */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <p className="text-xs text-muted-foreground/60 mb-1.5">Step 2 — When will you do this?</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button
+                        size="lg"
+                        onClick={handleToday}
+                        disabled={processing}
+                        variant="outline"
+                        className="h-14 text-base"
+                      >
+                        {processing ? (
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                        ) : (
+                          <>
+                            <Sun className="h-5 w-5 mr-2" />
+                            Today
+                          </>
+                        )}
+                      </Button>
+
+                      <Popover open={showCalendar} onOpenChange={setShowCalendar}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            size="lg"
+                            variant="outline"
+                            disabled={processing}
+                            className="h-14 text-base"
+                          >
+                            <CalendarIcon className="h-5 w-5 mr-2" />
+                            Schedule
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-48 p-2 z-[60]" align="center">
+                          <div className="grid gap-1">
+                            <Button variant="ghost" className="justify-start" onClick={() => handleSchedule(1)}>
+                              Tomorrow
+                            </Button>
+                            <Button variant="ghost" className="justify-start" onClick={() => handleSchedule(2)}>
+                              In 2 days
+                            </Button>
+                            <Button variant="ghost" className="justify-start" onClick={() => handleSchedule(7)}>
+                              Next week
+                            </Button>
+                            <Button variant="ghost" className="justify-start" onClick={() => handleSchedule(14)}>
+                              In 2 weeks
+                            </Button>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+
+                      <Button
+                        size="lg"
+                        variant="secondary"
+                        onClick={handleNotToday}
+                        disabled={processing}
+                        className="h-14 text-base col-span-2"
+                      >
+                        <EyeOff className="h-5 w-5 mr-2" />
+                        Not Today
+                      </Button>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </main>
+      </div>
+    </>
   );
 }
