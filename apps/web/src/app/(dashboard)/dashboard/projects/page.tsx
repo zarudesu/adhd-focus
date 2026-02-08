@@ -27,6 +27,8 @@ import {
 import { cn } from "@/lib/utils";
 import { ProjectCardSkeleton } from "@/components/ui/skeletons";
 
+import { useFeaturePageTutorial } from "@/hooks/useFeaturePageTutorial";
+import { FeatureTutorial } from "@/components/gamification/FeatureTutorial";
 const COLOR_OPTIONS = [
   "#6366f1", // indigo
   "#8b5cf6", // violet
@@ -51,6 +53,7 @@ function ProjectsContent() {
 
   const { projects, loading, error, create, archive } = useProjects();
   const { refreshAll } = useGamificationEvents();
+  const { showTutorial, tutorial, dismiss: dismissTutorial } = useFeaturePageTutorial('nav_projects');
 
   const handleCreate = async () => {
     if (!newName.trim()) return;
@@ -66,6 +69,18 @@ function ProjectsContent() {
       setCreating(false);
     }
   };
+
+
+  // Feature tutorial for first-time users
+  if (showTutorial) {
+    return (
+      <FeatureTutorial
+        featureCode="nav_projects"
+        tutorial={tutorial}
+        onComplete={dismissTutorial}
+      />
+    );
+  }
 
   return (
     <>

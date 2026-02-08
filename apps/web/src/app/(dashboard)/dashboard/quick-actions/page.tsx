@@ -43,6 +43,8 @@ import {
 } from 'lucide-react';
 import { QuickActionsPageSkeleton } from '@/components/ui/skeletons';
 import { cn } from '@/lib/utils';
+import { useFeaturePageTutorial } from '@/hooks/useFeaturePageTutorial';
+import { FeatureTutorial } from '@/components/gamification/FeatureTutorial';
 
 type SortMode = 'random' | 'priority' | 'project' | 'energy';
 
@@ -55,6 +57,7 @@ function QuickActionsContent() {
   const { tasks, loading, complete, update } = useTasks();
   const { projects } = useProjects();
   const { handleTaskComplete } = useGamificationEvents();
+  const { showTutorial, tutorial, dismiss: dismissTutorial } = useFeaturePageTutorial('nav_quick_actions');
 
   const [sortMode, setSortMode] = useState<SortMode>('priority');
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -257,6 +260,10 @@ function QuickActionsContent() {
   // Loading state
   if (loading) {
     return <QuickActionsPageSkeleton />;
+  }
+
+  if (showTutorial) {
+    return <FeatureTutorial featureCode="nav_quick_actions" tutorial={tutorial} onComplete={dismissTutorial} />;
   }
 
   // No quick tasks

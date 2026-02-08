@@ -17,6 +17,8 @@ import { useGamification } from '@/hooks/useGamification';
 import { useHabits } from '@/hooks/useHabits';
 import { ActivityHeatmap } from '@/components/gamification/ActivityHeatmap';
 import { cn } from '@/lib/utils';
+import { useFeaturePageTutorial } from '@/hooks/useFeaturePageTutorial';
+import { FeatureTutorial } from '@/components/gamification/FeatureTutorial';
 
 // Stats data from API
 interface DailyStat {
@@ -190,6 +192,7 @@ function StatsContent() {
   const wipLimit = useWipLimit();
   const { data: statsData, loading: statsLoading } = useStats(7);
   const { summary: habitSummary, loading: habitsLoading } = useHabits();
+  const { showTutorial, tutorial, dismiss: dismissTutorial } = useFeaturePageTutorial('nav_stats');
 
   if (loading) {
     return (
@@ -205,6 +208,10 @@ function StatsContent() {
     );
   }
 
+
+  if (showTutorial) {
+    return <FeatureTutorial featureCode="nav_stats" tutorial={tutorial} onComplete={dismissTutorial} />;
+  }
   const dailyGoalProgress = Math.min((todayTasksCount / wipLimit) * 100, 100);
   const dailyGoalComplete = todayTasksCount >= wipLimit;
 

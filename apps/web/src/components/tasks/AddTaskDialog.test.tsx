@@ -64,6 +64,17 @@ vi.mock('@/hooks/useFeatures', () => ({
   }),
 }));
 
+// Mock GamificationProvider — prevents transitive lucide-react imports
+vi.mock('@/components/gamification/GamificationProvider', () => ({
+  useGamificationContext: () => null,
+  useGamificationEvents: () => ({
+    handleTaskComplete: vi.fn(),
+    refreshAll: vi.fn(),
+    registerDialog: vi.fn(),
+    unregisterDialog: vi.fn(),
+  }),
+}));
+
 describe('AddTaskDialog', () => {
   const user = userEvent.setup();
   const defaultProps = {

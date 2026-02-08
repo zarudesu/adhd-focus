@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import type { Task } from '@/db/schema';
 import { useProjects } from '@/hooks/useProjects';
 import { useFeatures } from '@/hooks/useFeatures';
+import { useGamificationContext } from '@/components/gamification/GamificationProvider';
 import { format } from 'date-fns';
 
 type EnergyLevel = 'low' | 'medium' | 'high';
@@ -86,6 +87,15 @@ export function AddTaskDialog({
   const isEditMode = !!task;
   const { projects } = useProjects();
   const { isUnlocked } = useFeatures();
+
+  // Register dialog with gamification provider to prevent modal stacking
+  const gamificationContext = useGamificationContext();
+  useEffect(() => {
+    if (open && gamificationContext) {
+      gamificationContext.registerDialog();
+      return () => gamificationContext.unregisterDialog();
+    }
+  }, [open, gamificationContext]);
   const projectsUnlocked = isUnlocked('nav_projects');
   const energyUnlocked = isUnlocked('energy_basic');
   const priorityUnlocked = isUnlocked('priority_basic');

@@ -18,6 +18,8 @@ import { useQuests } from "@/hooks/useQuests";
 import { Inbox, Eye, EyeOff, Plus, ChevronDown, ChevronUp, ArrowRight, Archive } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
+import { useFeaturePageTutorial } from "@/hooks/useFeaturePageTutorial";
+import { FeatureTutorial } from "@/components/gamification/FeatureTutorial";
 const MAX_DAILY_TASKS = 3;
 
 function TodayContent() {
@@ -58,6 +60,20 @@ function TodayContent() {
   useEffect(() => {
     showDeferredAchievements();
   }, [showDeferredAchievements]);
+
+
+  // Feature tutorial for first-time users (before daily intro)
+  const { showTutorial, tutorial, dismiss: dismissTutorial } = useFeaturePageTutorial('nav_today');
+
+  if (showTutorial) {
+    return (
+      <FeatureTutorial
+        featureCode="nav_today"
+        tutorial={tutorial}
+        onComplete={dismissTutorial}
+      />
+    );
+  }
 
   // Today intro for first-time users
   const { showIntro, checked, dismissIntro } = useTodayIntro();

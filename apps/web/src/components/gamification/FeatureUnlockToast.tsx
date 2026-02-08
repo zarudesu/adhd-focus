@@ -41,7 +41,7 @@ function FeatureUnlockToast({ feature, onClose }: FeatureUnlockToastProps) {
 
   useEffect(() => {
     isMountedRef.current = true;
-    const closeTimer = setTimeout(() => handleClose(), 4000);
+    const closeTimer = setTimeout(() => handleClose(), 3000);
     return () => {
       isMountedRef.current = false;
       clearTimeout(closeTimer);
@@ -75,7 +75,7 @@ function FeatureUnlockToast({ feature, onClose }: FeatureUnlockToastProps) {
         <div className="h-0.5 bg-muted">
           <div
             className="h-full bg-primary/50 animate-shrink-width"
-            style={{ animationDuration: '4s' }}
+            style={{ animationDuration: '3s' }}
           />
         </div>
       </div>

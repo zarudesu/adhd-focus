@@ -33,6 +33,8 @@ import {
   Trophy
 } from "lucide-react";
 import { HabitSectionSkeleton } from "@/components/ui/skeletons";
+import { useFeaturePageTutorial } from "@/hooks/useFeaturePageTutorial";
+import { FeatureTutorial } from "@/components/gamification/FeatureTutorial";
 
 function ChecklistContent() {
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -40,6 +42,7 @@ function ChecklistContent() {
   const { habits, summary, loading, error, check, uncheck, create, update, archive, reorder, refresh } = useHabits();
   const { data: reviewData, loading: reviewLoading, submitReview, skipReview, dismissed } = useYesterdayReview();
   const { handleTaskComplete } = useGamificationEvents();
+  const { showTutorial, tutorial, dismiss: dismissTutorial } = useFeaturePageTutorial('nav_checklist');
 
   // DnD sensors
   const sensors = useSensors(
@@ -138,6 +141,18 @@ function ChecklistContent() {
   const nightHabits = habits.filter(h => h.timeOfDay === 'night' && h.shouldDoToday);
   const anytimeHabits = habits.filter(h => h.timeOfDay === 'anytime' && h.shouldDoToday);
   const notTodayHabits = habits.filter(h => !h.shouldDoToday);
+
+
+  // Feature tutorial for first-time users
+  if (showTutorial) {
+    return (
+      <FeatureTutorial
+        featureCode="nav_checklist"
+        tutorial={tutorial}
+        onComplete={dismissTutorial}
+      />
+    );
+  }
 
   return (
     <>

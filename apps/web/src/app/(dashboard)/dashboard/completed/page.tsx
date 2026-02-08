@@ -8,6 +8,8 @@ import { useTasks } from "@/hooks/useTasks";
 import type { Task } from "@/db/schema";
 import { CheckCircle2 } from "lucide-react";
 import { TaskGroupSkeleton } from "@/components/ui/skeletons";
+import { useFeaturePageTutorial } from "@/hooks/useFeaturePageTutorial";
+import { FeatureTutorial } from "@/components/gamification/FeatureTutorial";
 
 function CompletedContent() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -20,6 +22,7 @@ function CompletedContent() {
     archive,
     update,
   } = useTasks({ filters: { status: 'done' } });
+  const { showTutorial, tutorial, dismiss: dismissTutorial } = useFeaturePageTutorial('nav_completed');
 
   // Group tasks by completion date
   const groupedTasks = tasks.reduce((acc, task) => {
@@ -54,6 +57,18 @@ function CompletedContent() {
       day: 'numeric',
     });
   };
+
+
+  // Feature tutorial for first-time users
+  if (showTutorial) {
+    return (
+      <FeatureTutorial
+        featureCode="nav_completed"
+        tutorial={tutorial}
+        onComplete={dismissTutorial}
+      />
+    );
+  }
 
   return (
     <>

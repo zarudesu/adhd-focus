@@ -48,6 +48,9 @@ import {
 import { ProcessPageSkeleton } from '@/components/ui/skeletons';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useFeaturePageTutorial } from '@/hooks/useFeaturePageTutorial';
+import { FeatureTutorial } from '@/components/gamification/FeatureTutorial';
 
 export default function InboxProcessPage() {
   const router = useRouter();
@@ -63,6 +66,7 @@ export default function InboxProcessPage() {
   } = useTasks();
   const { projects, create: createProject } = useProjects();
   const { handleTaskComplete, refreshAll } = useGamificationEvents();
+  const { showTutorial, tutorial, dismiss: dismissTutorial } = useFeaturePageTutorial('nav_process');
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showExitDialog, setShowExitDialog] = useState(false);
@@ -216,6 +220,10 @@ export default function InboxProcessPage() {
     return <ProcessPageSkeleton />;
   }
 
+  if (showTutorial) {
+    return <FeatureTutorial featureCode="nav_process" tutorial={tutorial} onComplete={dismissTutorial} />;
+  }
+
   // Complete state
   if (isComplete) {
     return (
@@ -245,7 +253,22 @@ export default function InboxProcessPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="flex flex-col min-h-screen bg-background relative overflow-hidden">
+      {/* Ambient glow — subtle radial gradient behind card area */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse at 50% 40%, rgba(217, 249, 104, 0.04) 0%, transparent 50%)',
+        }}
+      />
+      {/* Vignette — subtle edge darkening for focus effect */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse at 50% 45%, transparent 30%, rgba(26, 26, 26, 0.25) 100%)',
+        }}
+      />
+
       {/* Exit confirmation dialog */}
       <AlertDialog open={showExitDialog} onOpenChange={setShowExitDialog}>
         <AlertDialogContent>
@@ -280,7 +303,7 @@ export default function InboxProcessPage() {
       />
 
       {/* Header with progress */}
-      <header className="border-b bg-card p-4">
+      <header className="relative z-10 border-b bg-card/80 backdrop-blur-sm p-4">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center justify-between mb-3">
             <Button variant="ghost" size="sm" onClick={handleBack}>
@@ -297,32 +320,56 @@ export default function InboxProcessPage() {
       </header>
 
       {/* Main content */}
-      <main className="flex-1 flex items-center justify-center p-4">
+      <main className="relative z-10 flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md space-y-4">
 
-          {/* Task card - clickable for edit, only shows task text */}
-          <Card
-            className={cn(
-              "border-2 border-primary/50 bg-primary/5",
-              "transition-all cursor-pointer hover:border-primary"
-            )}
-            onClick={handleEdit}
-          >
-            <CardContent className="p-6">
-              {/* Task title */}
-              <h2 className="text-xl font-semibold">{currentTask?.title}</h2>
+          {/* Task card with animation */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentTask?.id}
+              initial={{ opacity: 0, y: 20, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.97 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="relative"
+            >
+              {/* Soft glow behind card */}
+              <div
+                className="absolute -inset-8 -z-10 pointer-events-none"
+                style={{
+                  background: 'radial-gradient(ellipse at center, rgba(217, 249, 104, 0.06) 0%, transparent 70%)',
+                  filter: 'blur(30px)',
+                }}
+              />
+              <Card
+                className={cn(
+                  "border-2 border-primary/50 bg-primary/5",
+                  "transition-all cursor-pointer hover:border-primary hover:shadow-lg hover:shadow-primary/5"
+                )}
+                onClick={handleEdit}
+              >
+                <CardContent className="p-6">
+                  {/* Task title */}
+                  <h2 className="text-xl font-semibold">{currentTask?.title}</h2>
 
-              {/* Description if exists */}
-              {currentTask?.description && (
-                <p className="text-muted-foreground text-sm mt-2">
-                  {currentTask.description}
-                </p>
-              )}
-            </CardContent>
-          </Card>
+                  {/* Description if exists */}
+                  {currentTask?.description && (
+                    <p className="text-muted-foreground text-sm mt-2">
+                      {currentTask.description}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          </AnimatePresence>
 
           {/* Project selector - outside card */}
-          <div className="flex items-center gap-2">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="flex items-center gap-2"
+          >
             <FolderKanban className="h-4 w-4 text-muted-foreground flex-shrink-0" />
             {creatingProject ? (
               <div className="flex-1 flex gap-2">
@@ -374,10 +421,15 @@ export default function InboxProcessPage() {
                 </SelectContent>
               </Select>
             )}
-          </div>
+          </motion.div>
 
           {/* Quick actions row - complete, delete */}
-          <div className="flex justify-center gap-2">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="flex justify-center gap-2"
+          >
             <Button
               variant="outline"
               size="sm"
@@ -398,10 +450,15 @@ export default function InboxProcessPage() {
               <Trash2 className="h-4 w-4 mr-1" />
               Delete
             </Button>
-          </div>
+          </motion.div>
 
           {/* Main action buttons */}
-          <div className="grid grid-cols-2 gap-3">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="grid grid-cols-2 gap-3"
+          >
             <Button
               size="lg"
               onClick={handleToday}
@@ -475,7 +532,7 @@ export default function InboxProcessPage() {
               <EyeOff className="h-5 w-5 mr-2" />
               Not Today
             </Button>
-          </div>
+          </motion.div>
 
         </div>
       </main>

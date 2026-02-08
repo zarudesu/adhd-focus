@@ -10,6 +10,8 @@ import { useGamificationEvents } from "@/components/gamification/GamificationPro
 import type { Task } from "@/db/schema";
 import { Plus, Calendar } from "lucide-react";
 import { TaskGroupSkeleton } from "@/components/ui/skeletons";
+import { useFeaturePageTutorial } from "@/hooks/useFeaturePageTutorial";
+import { FeatureTutorial } from "@/components/gamification/FeatureTutorial";
 
 function ScheduledContent() {
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -27,6 +29,7 @@ function ScheduledContent() {
     update,
   } = useTasks();
   const { handleTaskComplete, refreshAll } = useGamificationEvents();
+  const { showTutorial, tutorial, dismiss: dismissTutorial } = useFeaturePageTutorial('nav_scheduled');
 
   // Wrapper to handle task completion with gamification
   const handleComplete = useCallback(async (id: string) => {
@@ -76,6 +79,18 @@ function ScheduledContent() {
       day: 'numeric',
     });
   };
+
+
+  // Feature tutorial for first-time users
+  if (showTutorial) {
+    return (
+      <FeatureTutorial
+        featureCode="nav_scheduled"
+        tutorial={tutorial}
+        onComplete={dismissTutorial}
+      />
+    );
+  }
 
   return (
     <>

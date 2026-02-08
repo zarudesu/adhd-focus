@@ -41,10 +41,10 @@ export function CreatureCaughtToast({ creature, isNew, count, onClose }: Creatur
   useEffect(() => {
     isMountedRef.current = true;
 
-    // Auto-close after 4 seconds
+    // Auto-close after 3 seconds
     const closeTimer = setTimeout(() => {
       handleClose();
-    }, 4000);
+    }, 3000);
 
     return () => {
       isMountedRef.current = false;
@@ -112,7 +112,7 @@ export function CreatureCaughtToast({ creature, isNew, count, onClose }: Creatur
         <div className="h-0.5 bg-muted">
           <div
             className="h-full bg-success animate-shrink-width"
-            style={{ animationDuration: '4s' }}
+            style={{ animationDuration: '3s' }}
           />
         </div>
       </div>

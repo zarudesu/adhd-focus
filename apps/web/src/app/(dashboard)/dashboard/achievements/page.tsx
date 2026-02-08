@@ -13,6 +13,8 @@ import { Trophy, Lock, Check, Sparkles } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useFeaturePageTutorial } from '@/hooks/useFeaturePageTutorial';
+import { FeatureTutorial } from '@/components/gamification/FeatureTutorial';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AchievementRowSkeleton } from '@/components/ui/skeletons';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -262,6 +264,7 @@ function AchievementsContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
+  const { showTutorial, tutorial, dismiss: dismissTutorial } = useFeaturePageTutorial('nav_achievements');
 
   useEffect(() => {
     // Load seen achievements from localStorage
@@ -344,6 +347,10 @@ function AchievementsContent() {
         </main>
       </>
     );
+  }
+
+  if (showTutorial) {
+    return <FeatureTutorial featureCode="nav_achievements" tutorial={tutorial} onComplete={dismissTutorial} />;
   }
 
   if (error || !data) {

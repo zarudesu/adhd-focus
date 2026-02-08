@@ -18,6 +18,8 @@ import { Plus, Sparkles, EyeOff, Eye, Brain } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 
+import { useFeaturePageTutorial } from "@/hooks/useFeaturePageTutorial";
+import { FeatureTutorial } from "@/components/gamification/FeatureTutorial";
 // Map landing page preference to route and feature code
 const LANDING_PAGE_ROUTES: Record<string, { route: string; featureCode: string }> = {
   inbox: { route: '/dashboard/inbox', featureCode: 'nav_inbox' },
@@ -51,6 +53,7 @@ export default function InboxPage() {
     create,
   } = useTasks({ showSnoozed });
   const { handleTaskComplete, refreshAll } = useGamificationEvents();
+  const { showTutorial, tutorial, dismiss: dismissTutorial } = useFeaturePageTutorial('nav_inbox');
 
   // Build project map for badges and grouping
   const projectMap = useMemo(
@@ -143,6 +146,18 @@ export default function InboxPage() {
     }
     refreshAll();
   }, [create, refreshAll]);
+
+
+  // Feature tutorial for first-time users
+  if (showTutorial) {
+    return (
+      <FeatureTutorial
+        featureCode="nav_inbox"
+        tutorial={tutorial}
+        onComplete={dismissTutorial}
+      />
+    );
+  }
 
   return (
     <>

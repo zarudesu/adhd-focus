@@ -13,6 +13,8 @@ import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CreatureCardSkeleton } from '@/components/ui/skeletons';
 import { cn } from '@/lib/utils';
+import { useFeaturePageTutorial } from '@/hooks/useFeaturePageTutorial';
+import { FeatureTutorial } from '@/components/gamification/FeatureTutorial';
 
 interface CreatureData {
   id: string;
@@ -170,6 +172,7 @@ function CreaturesContent() {
   const [data, setData] = useState<CreaturesResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { showTutorial, tutorial, dismiss: dismissTutorial } = useFeaturePageTutorial('nav_creatures');
 
   useEffect(() => {
     async function fetchCreatures() {
@@ -210,6 +213,10 @@ function CreaturesContent() {
         </main>
       </>
     );
+  }
+
+  if (showTutorial) {
+    return <FeatureTutorial featureCode="nav_creatures" tutorial={tutorial} onComplete={dismissTutorial} />;
   }
 
   if (error || !data) {

@@ -106,6 +106,9 @@ interface GamificationContextType {
   xpGainEvent: XpGainEvent | null;
   // Combo event for toast display
   comboEvent: { count: number; bonusXp: number; timestamp: number } | null;
+  // Dialog registry — prevents gamification modals from popping over open dialogs
+  registerDialog: () => void;
+  unregisterDialog: () => void;
 }
 
 const GamificationContext = createContext<GamificationContextType | null>(null);
@@ -116,6 +119,11 @@ export function useGamificationEvents() {
     throw new Error('useGamificationEvents must be used within GamificationProvider');
   }
   return context;
+}
+
+// Safe version — returns null if not inside provider (for optional integration)
+export function useGamificationContext() {
+  return useContext(GamificationContext);
 }
 
 interface GamificationProviderProps {
@@ -263,6 +271,14 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
   // Deferred achievements - stored until user navigates to main page
   const deferredAchievementsRef = useRef<Achievement[]>([]);
 
+  // Batch summary for when too many achievements at once
+  const [achievementBatchCount, setAchievementBatchCount] = useState(0);
+
+  // Dialog registry — track open user dialogs to prevent modal stacking
+  const dialogOpenCountRef = useRef(0);
+  const pendingCalmReviewRef = useRef<{ trigger: ReviewTrigger; context?: ReviewContext } | null>(null);
+  const pendingLevelUpFromDialogRef = useRef<{ newLevel: number; unlockedFeatures: string[] } | null>(null);
+
 
   // Detect new feature unlocks when navFeatures changes
   // Store in localStorage for morning review + show subtle toast
@@ -322,6 +338,33 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
     });
   }, []);
 
+  // Dialog registry — flush pending modals when all dialogs close
+  const flushPendingModals = useCallback(() => {
+    if (pendingCalmReviewRef.current) {
+      const { trigger, context } = pendingCalmReviewRef.current;
+      pendingCalmReviewRef.current = null;
+      setCalmReview({ visible: true, trigger, context });
+      return; // Show one modal at a time
+    }
+    if (pendingLevelUpFromDialogRef.current) {
+      const { newLevel, unlockedFeatures } = pendingLevelUpFromDialogRef.current;
+      pendingLevelUpFromDialogRef.current = null;
+      showLevelUp(newLevel, unlockedFeatures);
+    }
+  }, [showLevelUp]);
+
+  const registerDialog = useCallback(() => {
+    dialogOpenCountRef.current += 1;
+  }, []);
+
+  const unregisterDialog = useCallback(() => {
+    dialogOpenCountRef.current = Math.max(0, dialogOpenCountRef.current - 1);
+    if (dialogOpenCountRef.current === 0) {
+      // Delay to let close animation finish
+      setTimeout(flushPendingModals, 300);
+    }
+  }, [flushPendingModals]);
+
   const handleReviewComplete = useCallback(() => {
     setCalmReview((prev) => ({ ...prev, visible: false }));
 
@@ -362,13 +405,24 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
       }
     }
 
+    // Check if a user dialog is currently open (AddTaskDialog, etc.)
+    const dialogIsOpen = dialogOpenCountRef.current > 0;
+
     // Show Calm Review if requested - reflection, not reward
     if (event.review) {
-      setCalmReview({
-        visible: true,
-        trigger: event.review.trigger,
-        context: event.review.context,
-      });
+      if (dialogIsOpen) {
+        // Defer until dialog closes to prevent modal stacking
+        pendingCalmReviewRef.current = {
+          trigger: event.review.trigger,
+          context: event.review.context,
+        };
+      } else {
+        setCalmReview({
+          visible: true,
+          trigger: event.review.trigger,
+          context: event.review.context,
+        });
+      }
 
       // If there's also a level up, queue it for after review
       if (event.levelUp) {
@@ -379,8 +433,15 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
       }
       // refreshAll will be called in handleReviewComplete
     } else if (event.levelUp) {
-      // No review, show level up immediately
-      showLevelUp(event.levelUp.newLevel, event.levelUp.unlockedFeatures);
+      if (dialogIsOpen) {
+        // Defer level up until dialog closes
+        pendingLevelUpFromDialogRef.current = {
+          newLevel: event.levelUp.newLevel,
+          unlockedFeatures: event.levelUp.unlockedFeatures || [],
+        };
+      } else {
+        showLevelUp(event.levelUp.newLevel, event.levelUp.unlockedFeatures);
+      }
       needsRefresh = true; // Level up can unlock features
     }
 
@@ -417,31 +478,44 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
   }, [showLevelUp, refreshAll]);
 
   // Show deferred achievements - called when user navigates to main page
+  // Batched: max 2 individual toasts, rest collapsed into summary
+  const MAX_INDIVIDUAL_TOASTS = 2;
+
   const showDeferredAchievements = useCallback(() => {
     if (deferredAchievementsRef.current.length === 0) return;
 
-    // Move deferred to pending with priority sorting (show all, most important first)
-    setPendingAchievements((prev) => {
-      const combined = [...prev, ...deferredAchievementsRef.current];
-      const priorityOrder: Record<string, number> = {
-        ultra_secret: 6,
-        secret: 5,
-        mastery: 4,
-        hidden: 3,
-        streak: 2,
-        progress: 1,
-      };
-      return combined
-        .sort((a, b) => (priorityOrder[b.category] || 0) - (priorityOrder[a.category] || 0));
-    });
-
-    // Clear deferred
+    const all = [...deferredAchievementsRef.current];
     deferredAchievementsRef.current = [];
+
+    const priorityOrder: Record<string, number> = {
+      ultra_secret: 6,
+      secret: 5,
+      mastery: 4,
+      hidden: 3,
+      streak: 2,
+      progress: 1,
+    };
+    all.sort((a, b) => (priorityOrder[b.category] || 0) - (priorityOrder[a.category] || 0));
+
+    if (all.length <= MAX_INDIVIDUAL_TOASTS) {
+      // Show all individually
+      setPendingAchievements((prev) => [...prev, ...all]);
+      setAchievementBatchCount(0);
+    } else {
+      // Show top 1 individually + batch summary for the rest
+      setPendingAchievements((prev) => [...prev, all[0]]);
+      setAchievementBatchCount(all.length - 1);
+    }
   }, []);
 
-  // Dismiss achievement from queue
+  // Dismiss achievement from queue — when last individual one dismissed, batch count shows
   const dismissAchievement = useCallback((code: string) => {
     setPendingAchievements((prev) => prev.filter((a) => a.code !== code));
+  }, []);
+
+  // Dismiss batch summary
+  const dismissAchievementBatch = useCallback(() => {
+    setAchievementBatchCount(0);
   }, []);
 
   // Dismiss creature from queue
@@ -450,7 +524,7 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
   }, []);
 
   return (
-    <GamificationContext.Provider value={{ showLevelUp, handleTaskComplete, showCalmReview, state, loading, levelProgress, refresh, refreshAll, navFeatures, featuresLoading, isNewlyUnlocked, markFeatureOpened, showDeferredAchievements, xpGainEvent, comboEvent }}>
+    <GamificationContext.Provider value={{ showLevelUp, handleTaskComplete, showCalmReview, state, loading, levelProgress, refresh, refreshAll, navFeatures, featuresLoading, isNewlyUnlocked, markFeatureOpened, showDeferredAchievements, xpGainEvent, comboEvent, registerDialog, unregisterDialog }}>
       {children}
 
       {/* Welcome Back Flow — shown BEFORE morning review for returning users */}
@@ -509,12 +583,6 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
         unlockedFeatures={levelUpModal.unlockedFeatures}
       />
 
-      {/* Feature Unlock Toast — subtle mid-session notification */}
-      <FeatureUnlockToastStack
-        features={pendingFeatureToasts}
-        onDismiss={(code) => setPendingFeatureToasts(prev => prev.filter(f => f.code !== code))}
-      />
-
       {/* Re-Auth Modal (shown after Projects unlock) */}
       <ReAuthModal
         open={reAuthModal.open}
@@ -528,19 +596,49 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
         }}
       />
 
-      {/* Phase 3: Achievement Toasts */}
-      <AchievementToastStack
-        achievements={pendingAchievements}
-        onDismiss={dismissAchievement}
-      />
+      {/* Toast channel — only ONE toast type at a time to prevent flood */}
+      {(() => {
+        // Priority: creature > achievement > feature
+        if (pendingCreatures.length > 0) {
+          return (
+            <CreatureToastStack
+              creatures={pendingCreatures}
+              onDismiss={dismissCreature}
+            />
+          );
+        }
+        if (pendingAchievements.length > 0) {
+          return (
+            <AchievementToastStack
+              achievements={pendingAchievements}
+              onDismiss={dismissAchievement}
+              batchCount={achievementBatchCount}
+              onDismissBatch={dismissAchievementBatch}
+            />
+          );
+        }
+        if (achievementBatchCount > 0) {
+          return (
+            <AchievementToastStack
+              achievements={[]}
+              onDismiss={dismissAchievement}
+              batchCount={achievementBatchCount}
+              onDismissBatch={dismissAchievementBatch}
+            />
+          );
+        }
+        if (pendingFeatureToasts.length > 0) {
+          return (
+            <FeatureUnlockToastStack
+              features={pendingFeatureToasts}
+              onDismiss={(code) => setPendingFeatureToasts(prev => prev.filter(f => f.code !== code))}
+            />
+          );
+        }
+        return null;
+      })()}
 
-      {/* Phase 4: Creature Toasts */}
-      <CreatureToastStack
-        creatures={pendingCreatures}
-        onDismiss={dismissCreature}
-      />
-
-      {/* Combo Toast */}
+      {/* Combo Toast — always shows (brief, non-blocking) */}
       <ComboToast comboEvent={comboEvent} />
     </GamificationContext.Provider>
   );
