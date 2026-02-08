@@ -118,6 +118,19 @@ async function seedFeatures() {
       sortOrder: 4,
     },
 
+    // Global review — unlocks with Quick Actions
+    {
+      code: 'nav_review',
+      name: 'Review',
+      description: 'Review all tasks at once',
+      celebrationText: '\uD83D\uDD04 Review mode unlocked! Triage everything in one flow.',
+      icon: 'RefreshCw',
+      category: 'navigation',
+      isNavItem: true,
+      unlockTasksCompleted: 10,
+      sortOrder: 6.5,
+    },
+
     // After completing 10 tasks
     {
       code: 'nav_quick_actions',

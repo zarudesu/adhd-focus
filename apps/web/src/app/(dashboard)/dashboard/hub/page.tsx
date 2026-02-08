@@ -41,6 +41,7 @@ import {
   Lock,
   ListChecks,
   Zap,
+  RefreshCw,
   GripVertical,
 } from 'lucide-react';
 import { useGamificationEvents } from '@/components/gamification/GamificationProvider';
@@ -113,6 +114,14 @@ const NAV_CONFIG: Record<string, NavItemConfig> = {
     description: 'Daily habits',
     gradient: 'from-teal-500/20 to-teal-600/10',
   },
+  nav_review: {
+    code: 'nav_review',
+    href: '/dashboard/review',
+    icon: RefreshCw,
+    label: 'Review',
+    description: 'Triage all tasks',
+    gradient: 'from-violet-500/20 to-violet-600/10',
+  },
   nav_quick_actions: {
     code: 'nav_quick_actions',
     href: '/dashboard/quick-actions',
@@ -172,6 +181,7 @@ const DEFAULT_ORDER = [
   'nav_projects',
   'nav_completed',
   'nav_checklist',
+  'nav_review',
   'nav_quick_actions',
   'nav_focus',
   'nav_achievements',

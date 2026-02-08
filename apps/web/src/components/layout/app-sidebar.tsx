@@ -18,6 +18,7 @@ import {
   Zap,
   Ghost,
   Sparkles,
+  RefreshCw,
 } from "lucide-react";
 import { BeatLogo } from "@/components/brand/BeatLogo";
 
@@ -56,6 +57,7 @@ const NAV_CONFIG: Record<string, { url: string; icon: typeof Sun; group: 'tasks'
   nav_projects: { url: "/dashboard/projects", icon: Folder, group: 'tasks' },
   nav_completed: { url: "/dashboard/completed", icon: CheckCircle2, group: 'tasks' },
   nav_checklist: { url: "/dashboard/checklist", icon: ListChecks, group: 'tasks' },
+  nav_review: { url: "/dashboard/review", icon: RefreshCw, group: 'tools' },
   nav_quick_actions: { url: "/dashboard/quick-actions", icon: Zap, group: 'tools' },
   nav_focus: { url: "/dashboard/focus", icon: Timer, group: 'tools' },
   nav_achievements: { url: "/dashboard/achievements", icon: Trophy, group: 'tools' },
@@ -94,7 +96,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
   const toolItems = navFeatures
     .filter(f => NAV_CONFIG[f.code]?.group === 'tools')
     .sort((a, b) => {
-      const order = ['nav_quick_actions', 'nav_focus', 'nav_achievements', 'nav_creatures', 'nav_stats'];
+      const order = ['nav_review', 'nav_quick_actions', 'nav_focus', 'nav_achievements', 'nav_creatures', 'nav_stats'];
       return order.indexOf(a.code) - order.indexOf(b.code);
     });
 
@@ -140,7 +142,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
         <SidebarHeader className="p-4">
           <Link href="/dashboard/hub" className="flex items-center gap-2">
             <BeatLogo size="sm" />
-            <span className="font-semibold">beatyour8</span>
+            <span className="font-semibold logo-shimmer">beatyour8</span>
           </Link>
         </SidebarHeader>
         <SidebarContent>
@@ -169,7 +171,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
       <SidebarHeader className="p-4">
         <Link href="/dashboard/hub" className="flex items-center gap-2">
           <BeatLogo size="sm" />
-          <span className="font-semibold">beatyour8</span>
+          <span className="font-semibold logo-shimmer">beatyour8</span>
         </Link>
       </SidebarHeader>
 

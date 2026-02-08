@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTasks } from '@/hooks/useTasks';
 import { useProjects } from '@/hooks/useProjects';
 import { useGamificationEvents } from '@/components/gamification/GamificationProvider';
 import { ReviewMode, type ReviewAction, type ReviewStep } from '@/components/review/ReviewMode';
 import { SchedulePopover } from '@/components/review/SchedulePopover';
 import { AddTaskDialog } from '@/components/tasks';
+import { DecomposeDialog } from '@/components/tasks/DecomposeDialog';
+import { ProtectedRoute } from '@/components/gamification/ProtectedRoute';
 import {
   Select,
   SelectContent,
@@ -22,14 +24,15 @@ import {
   EyeOff,
   Trash2,
   Check,
+  Sparkles,
   FolderKanban,
   Plus,
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, differenceInDays, parseISO } from 'date-fns';
 
-export default function InboxProcessPage() {
+function GlobalReviewContent() {
   const {
-    inboxTasks,
+    tasks,
     loading,
     moveToToday,
     scheduleTask,
@@ -37,17 +40,86 @@ export default function InboxProcessPage() {
     deleteTask,
     complete,
     update,
+    create,
   } = useTasks();
   const { projects, create: createProject } = useProjects();
   const { handleTaskComplete, refreshAll } = useGamificationEvents();
 
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [decomposeTask, setDecomposeTask] = useState<Task | null>(null);
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [creatingProject, setCreatingProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
 
-  // Reset project selection when current task changes
-  const currentTask = inboxTasks[0];
+  // Build review task list: inbox + overdue today + stale scheduled + inbox w/ project
+  const today = useMemo(() => format(new Date(), 'yyyy-MM-dd'), []);
+
+  const reviewTasks = useMemo(() => {
+    const result: { task: Task; context: string; priority: number }[] = [];
+
+    for (const task of tasks) {
+      if (task.status === 'done' || task.status === 'archived') continue;
+
+      const scheduledDate = task.scheduledDate ? String(task.scheduledDate) : null;
+
+      // 1. Overdue today tasks
+      if (task.status === 'today' || task.status === 'in_progress') {
+        if (scheduledDate && scheduledDate < today) {
+          const days = differenceInDays(new Date(), parseISO(scheduledDate));
+          const projectName = task.projectId
+            ? projects.find((p) => p.id === task.projectId)?.name
+            : null;
+          const ctx = projectName
+            ? `${projectName} \u2014 Overdue ${days} day${days > 1 ? 's' : ''}`
+            : `Overdue ${days} day${days > 1 ? 's' : ''}`;
+          result.push({ task, context: ctx, priority: 0 });
+          continue;
+        }
+      }
+
+      // 2. Inbox tasks (no project)
+      if (task.status === 'inbox' && !task.projectId) {
+        result.push({ task, context: 'From Inbox', priority: 1 });
+        continue;
+      }
+
+      // 3. Inbox tasks with project (needs triage)
+      if (task.status === 'inbox' && task.projectId) {
+        const projectName = projects.find((p) => p.id === task.projectId)?.name || 'Project';
+        result.push({ task, context: `${projectName} \u2014 Needs triage`, priority: 3 });
+        continue;
+      }
+
+      // 4. Stale scheduled (3+ days past scheduled date)
+      if (task.status === 'scheduled' && scheduledDate) {
+        const days = differenceInDays(new Date(), parseISO(scheduledDate));
+        if (days >= 3) {
+          result.push({
+            task,
+            context: `Scheduled ${days} day${days > 1 ? 's' : ''} ago`,
+            priority: 2,
+          });
+          continue;
+        }
+      }
+    }
+
+    // Sort: overdue first, then inbox, then stale scheduled, then inbox w/ project
+    result.sort((a, b) => a.priority - b.priority);
+    return result;
+  }, [tasks, projects, today]);
+
+  const reviewTaskList = useMemo(() => reviewTasks.map((r) => r.task), [reviewTasks]);
+  const contextMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const r of reviewTasks) {
+      map.set(r.task.id, r.context);
+    }
+    return map;
+  }, [reviewTasks]);
+
+  // Reset project selector when task changes
+  const currentTask = reviewTaskList[0];
   const currentTaskId = currentTask?.id;
   useEffect(() => {
     if (currentTask) {
@@ -72,10 +144,24 @@ export default function InboxProcessPage() {
     }
   }, [newProjectName, createProject, refreshAll]);
 
-  // ── Actions ──
+  const handleCreateSubtasks = useCallback(
+    async (parentTaskId: string, subtasks: { title: string; estimatedMinutes: number; energyRequired: 'low' | 'medium' | 'high' }[]) => {
+      for (const subtask of subtasks) {
+        await create({
+          title: subtask.title,
+          estimatedMinutes: subtask.estimatedMinutes,
+          energyRequired: subtask.energyRequired,
+          parentTaskId,
+          status: 'inbox',
+        });
+      }
+      refreshAll();
+    },
+    [create, refreshAll]
+  );
 
   const actions: ReviewAction[] = [
-    // Secondary: Done + Delete
+    // Secondary
     {
       id: 'done',
       label: 'Done',
@@ -104,7 +190,17 @@ export default function InboxProcessPage() {
         return 'Deleted';
       },
     },
-    // Primary: Today + Schedule + Not Today
+    {
+      id: 'decompose',
+      label: 'Break down',
+      icon: Sparkles,
+      group: 'secondary',
+      handler: async (task) => {
+        setDecomposeTask(task);
+        return '';
+      },
+    },
+    // Primary
     {
       id: 'today',
       label: 'Today',
@@ -121,9 +217,9 @@ export default function InboxProcessPage() {
     {
       id: 'schedule',
       label: 'Schedule',
-      icon: Sun, // not used — popoverContent renders its own icon
+      icon: Sun,
       group: 'primary',
-      handler: async () => '', // never called directly
+      handler: async () => '',
       popoverContent: (task, triggerAction) => (
         <SchedulePopover
           onSchedule={async (date, label) => {
@@ -152,11 +248,10 @@ export default function InboxProcessPage() {
     },
   ];
 
-  // ── Steps (project selector) ──
-
+  // Steps: project selector (same as inbox process)
   const steps: ReviewStep[] = [
     {
-      label: 'Step 1 \u2014 Assign to a project',
+      label: 'Assign to a project',
       content: () => (
         <div className="flex items-center gap-2">
           <FolderKanban className="h-4 w-4 text-muted-foreground flex-shrink-0" />
@@ -216,34 +311,31 @@ export default function InboxProcessPage() {
   ];
 
   return (
-    <>
-      <ReviewMode
-        tasks={inboxTasks}
-        loading={loading}
-        actions={actions}
-        steps={steps}
-        tutorialFeatureCode="nav_process"
-        onExit="/dashboard/inbox"
-        exitMessage={{
-          title: 'Leave processing?',
-          description: (n) =>
-            `You still have ${n} task${n > 1 ? 's' : ''} to process. Leaving now means your inbox stays cluttered.`,
-          keepLabel: 'Keep processing',
-          leaveLabel: 'Leave anyway',
-        }}
-        completion={{
-          title: 'Inbox Clear!',
-          message: (n) =>
-            n > 0
-              ? `You processed ${n} task${n > 1 ? 's' : ''}. Great job!`
-              : 'Your inbox is empty. Nothing to process!',
-          primaryLabel: 'View Today',
-          primaryHref: '/dashboard',
-          secondaryLabel: 'Back to Inbox',
-          secondaryHref: '/dashboard/inbox',
-        }}
-        onTaskClick={setEditingTask}
-        extraDialogs={
+    <ReviewMode
+      tasks={reviewTaskList}
+      loading={loading}
+      actions={actions}
+      steps={steps}
+      getTaskContext={(task) => contextMap.get(task.id) || null}
+      onExit="/dashboard/hub"
+      exitMessage={{
+        title: 'Leave review?',
+        description: (n) => `You still have ${n} task${n > 1 ? 's' : ''} to review.`,
+      }}
+      completion={{
+        title: 'All Clear!',
+        message: (n) =>
+          n > 0
+            ? `You reviewed ${n} task${n > 1 ? 's' : ''}. Everything is sorted!`
+            : 'Nothing needed review. You\'re on top of it!',
+        primaryLabel: 'View Today',
+        primaryHref: '/dashboard',
+        secondaryLabel: 'Back to Hub',
+        secondaryHref: '/dashboard/hub',
+      }}
+      onTaskClick={setEditingTask}
+      extraDialogs={
+        <>
           <AddTaskDialog
             open={!!editingTask}
             onOpenChange={(open) => !open && setEditingTask(null)}
@@ -256,8 +348,22 @@ export default function InboxProcessPage() {
             task={editingTask}
             defaultStatus="inbox"
           />
-        }
-      />
-    </>
+          <DecomposeDialog
+            task={decomposeTask}
+            open={!!decomposeTask}
+            onOpenChange={(open) => !open && setDecomposeTask(null)}
+            onCreateSubtasks={handleCreateSubtasks}
+          />
+        </>
+      }
+    />
+  );
+}
+
+export default function GlobalReviewPage() {
+  return (
+    <ProtectedRoute featureCode="nav_review">
+      <GlobalReviewContent />
+    </ProtectedRoute>
   );
 }

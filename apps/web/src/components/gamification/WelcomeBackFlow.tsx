@@ -7,6 +7,7 @@
  */
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -39,6 +40,7 @@ function getWelcomeMessage(daysAway: number): { heading: string; body: string } 
 }
 
 export function WelcomeBackFlow({ daysAway, overdueCount, onDismiss, onFreshStart }: WelcomeBackFlowProps) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'welcome' | 'done'>('welcome');
   const message = getWelcomeMessage(daysAway);
@@ -91,11 +93,11 @@ export function WelcomeBackFlow({ daysAway, overdueCount, onDismiss, onFreshStar
 
               <div className="flex flex-col gap-2">
                 <Button
-                  onClick={onDismiss}
+                  onClick={() => { router.push('/dashboard/review'); onDismiss(); }}
                   className="w-full"
                 >
                   <ArrowRight className="h-4 w-4 mr-2" />
-                  Sort my tasks
+                  Review all tasks
                 </Button>
                 {overdueCount > 0 && (
                   <Button

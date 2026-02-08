@@ -16,7 +16,8 @@ import { useProjectWiki } from "@/hooks/useProjectWiki";
 import { useGamificationEvents } from "@/components/gamification/GamificationProvider";
 import type { Task } from "@/db/schema";
 import { TaskGroupSkeleton } from "@/components/ui/skeletons";
-import { Plus, Settings, ArrowLeft, FolderOpen, Eye, EyeOff, FileText, BookOpen, Pencil, Check } from "lucide-react";
+import { Plus, Settings, ArrowLeft, FolderOpen, Eye, EyeOff, FileText, BookOpen, Pencil, Check, RefreshCw } from "lucide-react";
+import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 
 const WikiEditor = dynamic(
@@ -124,6 +125,14 @@ function ProjectDetailContent() {
                     <span className="hidden sm:inline">Hide done</span>
                   </>
                 )}
+              </Button>
+            )}
+            {activeTasks.length > 0 && (
+              <Button size="sm" variant="outline" asChild>
+                <Link href={`/dashboard/projects/${projectId}/review`}>
+                  <RefreshCw className="h-4 w-4 mr-1" />
+                  <span className="hidden sm:inline">Review</span>
+                </Link>
               </Button>
             )}
             <Button size="sm" variant="outline">
