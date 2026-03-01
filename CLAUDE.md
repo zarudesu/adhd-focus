@@ -175,7 +175,9 @@ cd apps/web && npm run dev
 | Statistics | **DONE** | Streak, level, XP, pomodoros, focus time, weekly charts, achievements, habits |
 | Checklist | **DONE** | Daily habits with drag-drop reorder, time of day sections, streaks, yesterday review |
 | Hub | **DONE** | Central navigation hub |
-| Landing | **DONE** | Minimalist single input, localStorage tasks, celebration modal, registration flow |
+| Landing | **DONE** | Minimalist single input, localStorage tasks, celebration modal, registration flow, personalized view for logged-in users |
+| Terms | **DONE** | Terms of Service page (static) |
+| Privacy | **DONE** | Privacy Policy page (GDPR-compliant, static) |
 
 ### iOS App - Native SwiftUI (35+ screens)
 
@@ -257,6 +259,9 @@ open ADHDFocus.xcodeproj
 | POST /api/ai/suggest | **DONE** (auto-classify: priority, energy, time estimate) |
 | POST /api/ai/decompose | **DONE** (break task into subtasks) |
 | POST /api/ai/brain-dump | **DONE** (parse unstructured text → tasks) |
+| **API Keys** | |
+| GET/POST /api/keys | **DONE** (list + create API keys) |
+| DELETE /api/keys/[id] | **DONE** (revoke API key) |
 
 ### Key Files Changed Recently
 - `src/components/review/ReviewMode.tsx` - Multi-source review mode (525 lines)
@@ -304,6 +309,8 @@ apps/web/src/ (193 files)
 ├── app/
 │   ├── page.tsx                  # Landing page (minimalist input)
 │   ├── sync/page.tsx             # Sync localStorage tasks after registration
+│   ├── terms/page.tsx            # Terms of Service (static)
+│   ├── privacy/page.tsx          # Privacy Policy (static, GDPR)
 │   ├── (dashboard)/dashboard/    # Protected pages
 │   │   ├── page.tsx              # Today
 │   │   ├── inbox/
@@ -345,7 +352,8 @@ apps/web/src/ (193 files)
 │   ├── wiki/                     # WikiEditor, WikiPageList, wiki-editor.css
 │   ├── focus/                    # Timer UI, CalmReview
 │   ├── habits/                   # AddHabitDialog, SortableHabitItem, YesterdayReviewModal
-│   ├── landing/                  # UnlockModal
+│   ├── landing/                  # UnlockModal, PersonalizedLanding
+│   ├── consent/                  # CookieConsentBanner
 │   ├── layout/                   # AppSidebar, DashboardErrorBoundary, PageHeader
 │   ├── gamification/             # FeatureGate, ProtectedRoute, GamificationProvider, tutorials
 │   ├── brand/                    # BeatLogo
@@ -365,11 +373,12 @@ apps/web/src/ (193 files)
 │   ├── useGamification.ts        # XP/levels/rewards + calculateTaskXp
 │   ├── useQuests.ts              # Daily quests tracking
 │   ├── useWelcomeBack.ts         # Returning user detection (3+ days)
+│   ├── useCookieConsent.ts        # Cookie consent GDPR (read/write)
 │   ├── useAuth.ts                # Auth state
 │   └── use-mobile.ts             # Mobile viewport detection
 ├── db/
 │   ├── index.ts                  # Drizzle client
-│   ├── schema.ts                 # Database schema (26+ tables)
+│   ├── schema.ts                 # Database schema (27+ tables)
 │   ├── seed-gamification.ts      # Seed features/achievements/creatures
 │   └── generate-achievements.ts  # Auto-generated achievements
 ├── lib/
@@ -665,6 +674,7 @@ const result = await complete(id);
 | `focus_session` | Pomodoro sessions | durationMinutes, pomodoros, completed |
 | `daily_stat` | Denormalized daily snapshots | tasksCompleted, focusMinutes, xpEarned |
 | `project_wiki_page` | Rich-text wiki per project | content (JSONB, BlockNote format) |
+| `api_key` | API keys for programmatic access | keyHash, keyPrefix, revoked, expiresAt |
 
 ## Testing
 
@@ -870,6 +880,28 @@ docs: update CLAUDE.md
 ```
 
 ## Recent Changes (2026-03-01)
+
+### API Keys System ✅
+- **Full CRUD**: Create, list, revoke API keys via `/api/keys`
+- **Auth**: `Bearer byr8_xxx` tokens supported in all API routes via `mobile-auth.ts`
+- **Security**: Keys stored as bcrypt hashes, shown once at creation, prefix-based lookup
+- **UI**: Settings → Integrations page rewritten with key management
+
+### Cookie Consent (GDPR) ✅
+- **Banner**: Fixed bottom, Accept All / Manage / Necessary Only
+- **Categories**: Necessary (always on), Analytics, Preferences
+- **Hook**: `useCookieConsent.ts` — read/write cookie with 1-year max-age
+- **Global**: Mounted in root `layout.tsx`
+
+### Legal Pages ✅
+- **Terms of Service**: `/terms` — service description, acceptable use, API, AI, liability
+- **Privacy Policy**: `/privacy` — GDPR Art.6, cookie table, data rights, security measures
+- **Shared layout**: `LegalPageLayout.tsx` with logo, back link, footer
+
+### Personalized Landing ✅
+- **Logged-in users**: `useSession()` → `PersonalizedLanding` with direct inbox capture via API
+- **Guest users**: Original landing page preserved
+- **Footer**: Privacy Policy and Terms links on both views
 
 ### Multi-source Review Mode ✅
 - **Global triage**: Process all inbox tasks with 19+ actions (move, schedule, decompose, archive, etc.)
