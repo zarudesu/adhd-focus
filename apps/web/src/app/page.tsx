@@ -13,8 +13,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import { BeatLogo } from '@/components/brand/BeatLogo';
 import { UnlockModal } from '@/components/landing/UnlockModal';
+import { PersonalizedLanding } from '@/components/landing/PersonalizedLanding';
+import Link from 'next/link';
 import {
   addPendingTask,
   getPendingTasks,
@@ -22,6 +25,27 @@ import {
 } from '@/lib/pending-tasks';
 
 export default function Home() {
+  const { data: session, status } = useSession();
+
+  // If authenticated, show personalized landing
+  if (status === 'authenticated' && session?.user) {
+    return <PersonalizedLanding userName={session.user.name} />;
+  }
+
+  // If loading, show minimal placeholder
+  if (status === 'loading') {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#1A1A1A]">
+        <BeatLogo size="xl" />
+      </div>
+    );
+  }
+
+  // Unauthenticated: show regular landing
+  return <GuestLanding />;
+}
+
+function GuestLanding() {
   const [task, setTask] = useState('');
   // Use lazy initializer to load from localStorage
   const [tasks, setTasks] = useState<PendingTask[]>(() => {
@@ -240,6 +264,22 @@ export default function Home() {
           >
             Already have an account? Sign in
           </a>
+        </motion.div>
+
+        {/* Footer links */}
+        <motion.div
+          className="mt-8 flex justify-center gap-4 text-xs text-[#6B7280]/40"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 3.5, duration: 0.3 }}
+        >
+          <Link href="/privacy" className="hover:text-[#D9F968]/70 transition-colors">
+            Privacy Policy
+          </Link>
+          <span>&middot;</span>
+          <Link href="/terms" className="hover:text-[#D9F968]/70 transition-colors">
+            Terms of Service
+          </Link>
         </motion.div>
       </div>
 
