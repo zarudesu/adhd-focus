@@ -478,6 +478,29 @@ export const projectWikiPages = pgTable("project_wiki_page", {
 ]);
 
 // ===================
+// API Keys
+// ===================
+
+export const apiKeys = pgTable("api_key", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+
+  name: text("name").notNull(),
+  keyHash: text("key_hash").notNull(),
+  keyPrefix: text("key_prefix").notNull(), // First 8 chars for display (e.g. "byr8_abc1")
+  lastUsedAt: timestamp("last_used_at"),
+  revoked: boolean("revoked").default(false),
+
+  createdAt: timestamp("created_at").defaultNow(),
+  expiresAt: timestamp("expires_at"),
+}, (table) => [
+  index("api_key_user_id_idx").on(table.userId),
+  index("api_key_prefix_idx").on(table.keyPrefix),
+]);
+
+// ===================
 // Daily Checklist (Habits)
 // ===================
 
@@ -600,6 +623,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   habits: many(habits),
   habitChecks: many(habitChecks),
   dailyReviews: many(dailyReviews),
+  // API Keys
+  apiKeys: many(apiKeys),
 }));
 
 export const habitsRelations = relations(habits, ({ one, many }) => ({
@@ -725,6 +750,13 @@ export const userCreaturesRelations = relations(userCreatures, ({ one }) => ({
 export const rewardLogsRelations = relations(rewardLogs, ({ one }) => ({
   user: one(users, {
     fields: [rewardLogs.userId],
+    references: [users.id],
+  }),
+}));
+
+export const apiKeysRelations = relations(apiKeys, ({ one }) => ({
+  user: one(users, {
+    fields: [apiKeys.userId],
     references: [users.id],
   }),
 }));
@@ -866,6 +898,10 @@ export type NewDailyReview = typeof dailyReviews.$inferInsert;
 // Wiki types
 export type ProjectWikiPage = typeof projectWikiPages.$inferSelect;
 export type NewProjectWikiPage = typeof projectWikiPages.$inferInsert;
+
+// API Key types
+export type ApiKey = typeof apiKeys.$inferSelect;
+export type NewApiKey = typeof apiKeys.$inferInsert;
 
 // Feature codes as const for type safety
 export const FEATURE_CODES = {
