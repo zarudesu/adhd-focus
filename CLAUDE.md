@@ -175,7 +175,8 @@ cd apps/web && npm run dev
 | Statistics | **DONE** | Streak, level, XP, pomodoros, focus time, weekly charts, achievements, habits |
 | Checklist | **DONE** | Daily habits with drag-drop reorder, time of day sections, streaks, yesterday review |
 | Hub | **DONE** | Central navigation hub |
-| Landing | **DONE** | Minimalist single input, localStorage tasks, celebration modal, registration flow, personalized view for logged-in users |
+| Landing | **DONE** | Minimalist single input, localStorage tasks, celebration modal, registration flow, auto-redirect to /dashboard for logged-in users |
+| Wiki Hub | **DONE** | All wiki pages from all projects, inline editor, project tree sidebar |
 | Terms | **DONE** | Terms of Service page (static) |
 | Privacy | **DONE** | Privacy Policy page (GDPR-compliant, static) |
 
@@ -259,6 +260,8 @@ open ADHDFocus.xcodeproj
 | POST /api/ai/suggest | **DONE** (auto-classify: priority, energy, time estimate) |
 | POST /api/ai/decompose | **DONE** (break task into subtasks) |
 | POST /api/ai/brain-dump | **DONE** (parse unstructured text → tasks) |
+| **Wiki** | |
+| GET /api/wiki | **DONE** (all wiki pages grouped by project) |
 | **API Keys** | |
 | GET/POST /api/keys | **DONE** (list + create API keys) |
 | DELETE /api/keys/[id] | **DONE** (revoke API key) |
@@ -273,6 +276,7 @@ open ADHDFocus.xcodeproj
 - `src/hooks/useQuests.ts` - Daily quests tracking
 - `src/hooks/useMorningReview.ts` - Morning review flow
 - `src/hooks/useProjectWiki.ts` - Wiki pages CRUD
+- `src/hooks/useAllWikiPages.ts` - All wiki pages across projects
 - `src/hooks/useFeaturePageTutorial.ts` - Tutorial state per page
 
 ### Known Issues
@@ -323,6 +327,7 @@ apps/web/src/ (193 files)
 │   │   │   ├── page.tsx          # Projects list
 │   │   │   └── [id]/page.tsx     # Project detail (+ wiki)
 │   │   ├── completed/page.tsx    # Completed tasks
+│   │   ├── wiki/page.tsx         # Wiki hub (all projects)
 │   │   ├── checklist/page.tsx    # Daily habits
 │   │   ├── focus/page.tsx        # Focus Mode (Pomodoro)
 │   │   ├── hub/page.tsx          # Central hub
@@ -343,6 +348,7 @@ apps/web/src/ (193 files)
 │   │   ├── focus/sessions/       # Focus sessions
 │   │   ├── gamification/         # Stats, XP, achievements, creatures, rewards, quests
 │   │   ├── ai/                   # Gemini: suggest, decompose, brain-dump
+│   │   ├── wiki/                 # All wiki pages grouped by project
 │   │   └── stats/                # User statistics
 │   └── (public)/                 # Login, signup, etc.
 ├── components/
@@ -363,6 +369,7 @@ apps/web/src/ (193 files)
 │   ├── useTasks.ts               # Tasks CRUD + filters (optimistic updates)
 │   ├── useProjects.ts            # Projects CRUD
 │   ├── useProjectWiki.ts         # Wiki pages CRUD per project
+│   ├── useAllWikiPages.ts        # All wiki pages across projects
 │   ├── useHabits.ts              # Habits CRUD + check/reorder
 │   ├── useYesterdayReview.ts     # Habits review modal
 │   ├── useMorningReview.ts       # 3-step morning review (stale→tasks→habits)
@@ -880,6 +887,14 @@ docs: update CLAUDE.md
 ```
 
 ## Recent Changes (2026-03-01)
+
+### Dashboard Redirect + Wiki Hub + Sidebar Projects ✅
+- **Landing redirect**: Authenticated users auto-redirect to `/dashboard` (removed PersonalizedLanding)
+- **Sidebar projects**: Collapsible project list with expandable wiki pages per project
+- **Wiki hub**: `/dashboard/wiki` — all wiki pages from all projects with inline BlockNote editor
+- **API**: `GET /api/wiki` — all wiki pages grouped by project
+- **Hook**: `useAllWikiPages.ts` — fetch all wiki pages
+- **Key files**: `app-sidebar.tsx` (collapsible projects), `dashboard/wiki/page.tsx`, `api/wiki/route.ts`
 
 ### API Keys System ✅
 - **Full CRUD**: Create, list, revoke API keys via `/api/keys`
