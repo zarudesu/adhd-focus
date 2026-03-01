@@ -1,7 +1,7 @@
 # CLAUDE.md - AI Assistant Instructions
 
 > **READ THIS FILE FIRST** in every new session or after context compaction.
-> Last updated: 2026-02-05
+> Last updated: 2026-03-01
 
 ---
 
@@ -45,8 +45,8 @@
 | Key | Value |
 |-----|-------|
 | Status | Active development - Web + iOS apps |
-| Web Stack | Next.js 16 + Drizzle + NextAuth + PostgreSQL |
-| iOS Stack | SwiftUI + URLSession + Keychain |
+| Web Stack | Next.js 16 + Drizzle + NextAuth + PostgreSQL + Google Gemini |
+| iOS Stack | SwiftUI + URLSession + Keychain (35+ screens) |
 | Language | User: Russian, Code/Docs: English |
 | Repo | https://github.com/zarudesu/adhd-focus |
 | **Prod Server** | `23.134.216.230` |
@@ -136,23 +136,26 @@ cd apps/web && npm run dev
 
 | Page | Status | Features |
 |------|--------|----------|
-| Today | **DONE** | Tasks list, complete/uncomplete, add task, edit on click, completed section |
+| Today | **DONE** | Tasks list, complete/uncomplete, add task, edit on click, completed section, Just 1 Mode |
 | Inbox | **DONE** | Tasks WITHOUT project, Quick Add, move to today |
 | Inbox Process | **DONE** | Process All mode - one task at a time decision flow |
+| Review Mode | **DONE** | Multi-source triage: global inbox + per-project review with 19+ actions |
 | Quick Actions | **DONE** | Timer-based quick capture with 2-min countdown |
 | Scheduled | **DONE** | Tasks grouped by date, smart dates (Today/Tomorrow/etc), edit on click |
 | Projects | **DONE** | Clickable project cards, create with emoji/color, task count, progress bar |
-| Project Detail | **DONE** | Task list for project, add/edit tasks, completed section |
+| Project Detail | **DONE** | Task list for project, add/edit tasks, completed section, wiki pages |
+| Project Wiki | **DONE** | Rich-text wiki per project (BlockNote editor), CRUD pages |
 | Completed | **DONE** | All finished tasks grouped by date, uncomplete to return |
-| Settings | **DONE** | Profile, preferences (pomodoro, WIP limit, theme, notifications), logout |
-| Focus Mode | **DONE** | Pomodoro timer, work/break modes, task selection, session tracking, stats |
+| Settings | **DONE** | Profile, preferences (pomodoro, WIP limit, theme, notifications, Just 1 Mode), logout |
+| Focus Mode | **DONE** | Pomodoro timer, work/break modes, task selection, session tracking, stats, blur overlay |
 | Achievements | **DONE** | List of achievements with progress, unlocked status |
 | Creatures | **DONE** | Collection of creatures, spawn mechanics |
 | Statistics | **DONE** | Streak, level, XP, pomodoros, focus time, weekly charts, achievements, habits |
 | Checklist | **DONE** | Daily habits with drag-drop reorder, time of day sections, streaks, yesterday review |
+| Hub | **DONE** | Central navigation hub |
 | Landing | **DONE** | Minimalist single input, localStorage tasks, celebration modal, registration flow |
 
-### iOS App - Native SwiftUI
+### iOS App - Native SwiftUI (35+ screens)
 
 | Screen | Status | Features |
 |--------|--------|----------|
@@ -160,12 +163,23 @@ cd apps/web && npm run dev
 | Signup | **DONE** | Registration with auto-login |
 | Today | **DONE** | Today tasks, complete/uncomplete, add task |
 | Inbox | **DONE** | Inbox tasks, quick add bar |
+| Process Mode | **DONE** | One-by-one task triage |
+| Scheduled | **DONE** | Scheduled tasks view |
+| Projects | **DONE** | Project list + project detail |
+| Completed | **DONE** | Completed tasks view |
+| Checklist | **DONE** | Daily habits |
+| Focus | **DONE** | Pomodoro timer with circular UI |
+| Stats | **DONE** | User statistics |
+| Achievements | **DONE** | Achievements list |
+| Creatures | **DONE** | Creature collection + detail sheet |
+| Quick Actions | **DONE** | Quick capture |
 | Settings | **DONE** | User info, stats, logout |
 
 **Key Files:**
-- `apps/ios/ADHDFocus/` - Main app code
+- `apps/ios/ADHDFocus/` - Main app code (Models: 11, Services: 10, Views: 35+)
 - `apps/ios/project.yml` - XcodeGen config
 - `apps/ios/ADHDFocus.xcodeproj/` - Generated Xcode project
+- **Base URL**: `https://beatyour8.com/api` (hardcoded in APIClient.swift)
 
 **Build & Run:**
 ```bash
@@ -179,16 +193,25 @@ open ADHDFocus.xcodeproj
 
 | Route | Status |
 |-------|--------|
+| **Tasks** | |
 | GET/POST /api/tasks | **DONE** (+ mobile JWT auth) |
 | PATCH/DELETE /api/tasks/[id] | **DONE** (+ mobile JWT auth) |
+| **Auth** | |
 | Auth (register/login) | **DONE** (+ bot protection) |
 | POST /api/mobile/auth/login | **DONE** (JWT for iOS) |
+| POST /api/mobile/auth/refresh | **DONE** (token refresh) |
 | POST /api/auth/verify-credentials | **DONE** (re-auth for Projects) |
+| **Projects** | |
 | GET/POST /api/projects | **DONE** |
 | PATCH/DELETE /api/projects/[id] | **DONE** |
+| GET/POST /api/projects/[id]/wiki | **DONE** (wiki pages CRUD) |
+| GET/PATCH/DELETE /api/projects/[id]/wiki/[pageId] | **DONE** |
+| **Profile** | |
 | GET/PATCH /api/profile | **DONE** |
+| **Focus** | |
 | GET/POST /api/focus/sessions | **DONE** |
 | PATCH /api/focus/sessions/[id] | **DONE** |
+| **Gamification** | |
 | GET /api/gamification/stats | **DONE** |
 | POST /api/gamification/xp | **DONE** |
 | GET /api/gamification/achievements | **DONE** |
@@ -197,46 +220,44 @@ open ADHDFocus.xcodeproj
 | POST /api/gamification/creatures/spawn | **DONE** |
 | POST /api/gamification/rewards/log | **DONE** |
 | POST /api/gamification/day-surprise | **DONE** |
+| GET/POST /api/gamification/quests | **DONE** (daily quests) |
+| **Features** | |
+| GET /api/features | **DONE** (list with unlock status) |
+| POST /api/features/[code]/opened | **DONE** (mark opened, return tutorial) |
+| **Stats & Habits** | |
 | GET /api/stats | **DONE** |
 | GET/POST /api/habits | **DONE** |
 | PATCH/DELETE /api/habits/[id] | **DONE** |
 | POST /api/habits/[id]/check | **DONE** |
 | POST /api/habits/reorder | **DONE** |
 | GET/POST /api/habits/review | **DONE** |
+| **AI (Google Gemini)** | |
+| POST /api/ai/suggest | **DONE** (auto-classify: priority, energy, time estimate) |
+| POST /api/ai/decompose | **DONE** (break task into subtasks) |
+| POST /api/ai/brain-dump | **DONE** (parse unstructured text → tasks) |
 
 ### Key Files Changed Recently
-- `src/components/gamification/LevelProgress.tsx` - Shows "Mindfulness" without level number
-- `src/app/(dashboard)/dashboard/quick-actions/page.tsx` - Fixed Math.random, setState patterns
-- `src/components/gamification/*.tsx` - Fixed React strict mode issues (refs, setState in effects)
-- `src/hooks/useFocusTimer.ts` - Fixed setState in effect pattern
-- `src/app/(dashboard)/dashboard/hub/page.tsx` - Fixed lazy initializer, removed unused props
-- Multiple files - Fixed unescaped HTML entities (`'` → `&apos;`)
+- `src/components/review/ReviewMode.tsx` - Multi-source review mode (525 lines)
+- `src/components/review/SchedulePopover.tsx` - Smart date picker for review
+- `src/components/wiki/WikiEditor.tsx` - BlockNote rich-text editor
+- `src/components/focus/CalmReview.tsx` - End-of-day calm review
+- `src/lib/ai.ts` - Google Gemini integration
+- `src/lib/feature-tutorials.ts` - 20+ feature tutorials
+- `src/hooks/useQuests.ts` - Daily quests tracking
+- `src/hooks/useMorningReview.ts` - Morning review flow
+- `src/hooks/useProjectWiki.ts` - Wiki pages CRUD
+- `src/hooks/useFeaturePageTutorial.ts` - Tutorial state per page
 
-### Known Issues (Code Review 2026-01-20)
+### Known Issues
 
-**Security (High):**
-- [x] ~~No rate limiting on `/api/auth/register`~~ - FIXED (5 req/15 min)
-- [x] ~~Email logging in auth.ts~~ - FIXED (lib/logger.ts sanitizes PII in production)
-
-**Performance (Medium):**
-- [x] ~~No `useMemo` in useTasks.ts~~ - FIXED
-- [x] ~~N+1 queries in projects listing~~ - ALREADY FIXED (uses JOIN + GROUP BY)
-
-**Code Quality (Medium):**
-- [x] ~~State set during render in settings/page.tsx~~ - FIXED (lazy initializer + setTimeout pattern)
-- [x] ~~Math.random() in render~~ - FIXED (moved to effects or static values)
-- [x] ~~setState directly in effects~~ - FIXED (setTimeout pattern in all gamification components)
-- [x] ~~Ref access during render~~ - FIXED (moved to useEffect)
-- [x] ~~Unescaped HTML entities~~ - FIXED (`'` → `&apos;`)
-- [x] ~~Type duplication - not using @adhd-focus/shared~~ - RESOLVED (removed dead shared package, schema.ts is source of truth)
-- [x] ~~Self-HTTP-call in registration action~~ - ALREADY FIXED (imports registerUser directly)
-
-**Accessibility:**
-- [x] ~~Labels not associated with inputs in InboxProcessor~~ - FIXED (changed to <p> for button groups)
-- [x] ~~Color picker buttons missing aria-labels~~ - ALREADY FIXED (has aria-label)
-
-**Dependencies:**
+**Open:**
 - [ ] NextAuth beta in production
+- [ ] Phase 5 incomplete: FeatureGate not applied in all UI (progressive unlock)
+- [ ] React 18/19 conflict in monorepo (root hoists React 18, apps/web has React 19) — affects vitest only, mock shadcn/lucide via `src/test/ui-mocks.tsx`
+- [ ] Test coverage low (5 test files total)
+- [ ] iOS app hardcoded to production URL (no staging switch)
+
+**All Previously Fixed (2026-01-20 review):** Rate limiting, PII logging, useMemo, N+1 queries, setState in render, Math.random, ref access, HTML entities, type duplication, accessibility labels — all resolved.
 
 **ESLint Status:** 0 errors, ~50 warnings (unused variables only)
 
@@ -249,12 +270,15 @@ open ADHDFocus.xcodeproj
 | ORM | Drizzle | `npm run db:push` |
 | Auth | NextAuth v5 | JWT + Credentials |
 | UI | shadcn/ui + Tailwind | Use `shadcn` MCP |
-| Testing | Playwright | Use `playwright` MCP |
+| Rich Text | BlockNote 0.46 | Wiki pages in projects |
+| AI | Google Gemini (`@google/generative-ai`) | Task suggest/decompose/brain-dump |
+| Unit Testing | Vitest + happy-dom + Testing Library | `npm run test` in apps/web |
+| E2E Testing | Playwright | Use `playwright` MCP |
 
 ## Project Structure
 
 ```
-apps/web/src/
+apps/web/src/ (193 files)
 ├── app/
 │   ├── page.tsx                  # Landing page (minimalist input)
 │   ├── sync/page.tsx             # Sync localStorage tasks after registration
@@ -263,14 +287,16 @@ apps/web/src/
 │   │   ├── inbox/
 │   │   │   ├── page.tsx          # Inbox
 │   │   │   └── process/page.tsx  # Process All mode
+│   │   ├── review/page.tsx       # Global review/triage mode
 │   │   ├── quick-actions/page.tsx # Quick Actions (2-min timer)
 │   │   ├── scheduled/page.tsx    # Scheduled
 │   │   ├── projects/
 │   │   │   ├── page.tsx          # Projects list
-│   │   │   └── [id]/page.tsx     # Project detail
+│   │   │   └── [id]/page.tsx     # Project detail (+ wiki)
 │   │   ├── completed/page.tsx    # Completed tasks
 │   │   ├── checklist/page.tsx    # Daily habits
 │   │   ├── focus/page.tsx        # Focus Mode (Pomodoro)
+│   │   ├── hub/page.tsx          # Central hub
 │   │   ├── achievements/page.tsx # Achievements list
 │   │   ├── creatures/page.tsx    # Creatures collection
 │   │   ├── stats/page.tsx        # Statistics
@@ -279,62 +305,107 @@ apps/web/src/
 │   │       └── integrations/     # Integrations
 │   ├── api/
 │   │   ├── auth/                 # NextAuth + register
+│   │   ├── mobile/auth/          # JWT login + refresh for iOS
 │   │   ├── tasks/                # Tasks CRUD
-│   │   ├── projects/             # Projects CRUD
+│   │   ├── projects/             # Projects CRUD + wiki pages
 │   │   ├── habits/               # Habits CRUD + check + reorder + review
 │   │   ├── profile/              # Profile GET/PATCH
+│   │   ├── features/             # Feature unlock status + opened tracking
 │   │   ├── focus/sessions/       # Focus sessions
-│   │   └── gamification/         # Stats, XP, achievements, creatures, rewards
+│   │   ├── gamification/         # Stats, XP, achievements, creatures, rewards, quests
+│   │   ├── ai/                   # Gemini: suggest, decompose, brain-dump
+│   │   └── stats/                # User statistics
 │   └── (public)/                 # Login, signup, etc.
 ├── components/
-│   ├── tasks/                    # TaskCard, TaskList, AddTaskDialog
+│   ├── tasks/                    # TaskCard, TaskList, AddTaskDialog, MorningReviewModal
 │   ├── inbox/                    # InboxProcessor
+│   ├── review/                   # ReviewMode (525 lines), SchedulePopover
+│   ├── wiki/                     # WikiEditor, WikiPageList, wiki-editor.css
+│   ├── focus/                    # Timer UI, CalmReview
 │   ├── habits/                   # AddHabitDialog, SortableHabitItem, YesterdayReviewModal
 │   ├── landing/                  # UnlockModal
-│   ├── gamification/             # FeatureGate, ProtectedRoute, GamificationProvider
-│   └── ui/                       # shadcn components
+│   ├── layout/                   # AppSidebar, DashboardErrorBoundary, PageHeader
+│   ├── gamification/             # FeatureGate, ProtectedRoute, GamificationProvider, tutorials
+│   ├── brand/                    # BeatLogo
+│   ├── providers/                # SessionProvider, ThemeProvider
+│   └── ui/                       # 24 shadcn components
 ├── hooks/
-│   ├── useTasks.ts               # Tasks CRUD + filters
+│   ├── useTasks.ts               # Tasks CRUD + filters (optimistic updates)
 │   ├── useProjects.ts            # Projects CRUD
+│   ├── useProjectWiki.ts         # Wiki pages CRUD per project
 │   ├── useHabits.ts              # Habits CRUD + check/reorder
 │   ├── useYesterdayReview.ts     # Habits review modal
+│   ├── useMorningReview.ts       # 3-step morning review (stale→tasks→habits)
 │   ├── useProfile.ts             # User preferences
-│   ├── useFocusTimer.ts          # Pomodoro timer
-│   ├── useFeatures.ts            # Feature unlocks
-│   ├── useGamification.ts        # XP/levels/rewards
-│   ├── useWelcomeBack.ts         # Returning user detection
-│   └── useAuth.ts                # Auth state
+│   ├── useFocusTimer.ts          # Pomodoro timer state machine
+│   ├── useFeatures.ts            # Feature unlocks + shimmer
+│   ├── useFeaturePageTutorial.ts # Tutorial state per feature page
+│   ├── useGamification.ts        # XP/levels/rewards + calculateTaskXp
+│   ├── useQuests.ts              # Daily quests tracking
+│   ├── useWelcomeBack.ts         # Returning user detection (3+ days)
+│   ├── useAuth.ts                # Auth state
+│   └── use-mobile.ts             # Mobile viewport detection
 ├── db/
 │   ├── index.ts                  # Drizzle client
-│   └── schema.ts                 # Database schema (incl. gamification, habits)
-└── lib/
-    ├── auth.ts                   # NextAuth config
-    ├── mobile-auth.ts            # JWT verification for mobile
-    ├── pending-tasks.ts          # localStorage helpers
-    └── utils.ts                  # Utilities
+│   ├── schema.ts                 # Database schema (26+ tables)
+│   ├── seed-gamification.ts      # Seed features/achievements/creatures
+│   └── generate-achievements.ts  # Auto-generated achievements
+├── lib/
+│   ├── auth.ts                   # NextAuth config (JWT, 30-day sessions)
+│   ├── mobile-auth.ts            # JWT verification for mobile
+│   ├── ai.ts                     # Google Gemini client + rate limiting
+│   ├── gamification.ts           # Client-side XP/level calculations
+│   ├── gamification-server.ts    # Server-side XP awards
+│   ├── feature-tutorials.ts      # 20+ tutorial messages per feature
+│   ├── streak.ts                 # Streak calculation logic
+│   ├── rate-limit.ts             # Token bucket rate limiting
+│   ├── logger.ts                 # PII-sanitizing logger
+│   ├── pending-tasks.ts          # localStorage helpers
+│   ├── pending-progress.ts       # localStorage for morning review state
+│   └── utils.ts                  # Utilities (cn)
+└── test/
+    ├── setup.ts                  # Vitest globals setup
+    └── ui-mocks.tsx              # Mock shadcn/lucide for React 18/19 compat
 
-apps/ios/ADHDFocus/
+apps/ios/ADHDFocus/ (55+ files)
 ├── ADHDFocusApp.swift            # App entry point
 ├── ContentView.swift             # Main tab view + auth routing
-├── Models/
+├── Models/ (11 files)
 │   ├── Task.swift                # TaskItem, TaskStatus, enums
 │   ├── User.swift                # User, AuthResponse, LoginInput
-│   └── Project.swift             # Project model
-├── Services/
-│   ├── APIClient.swift           # HTTP client + Keychain storage
+│   ├── Project.swift             # Project model
+│   ├── Achievement.swift         # Achievement model
+│   ├── Creature.swift            # Creature model
+│   ├── Feature.swift             # Feature unlock model
+│   ├── FocusSession.swift        # Focus session model
+│   ├── Habit.swift               # Habit model
+│   └── UserStats.swift           # User stats model
+├── Services/ (10 files)
+│   ├── APIClient.swift           # HTTP client + Keychain (baseURL: beatyour8.com/api)
 │   ├── AuthManager.swift         # Auth state management
-│   └── TaskStore.swift           # Tasks state + CRUD
-└── Views/
-    ├── Auth/
-    │   ├── LoginView.swift       # Login screen
-    │   └── SignupView.swift      # Registration screen
-    ├── Today/
-    │   └── TodayView.swift       # Today tasks list
-    ├── Inbox/
-    │   └── InboxView.swift       # Inbox + quick add
-    └── Components/
-        ├── TaskRow.swift         # Single task row
-        └── AddTaskSheet.swift    # Add task modal
+│   ├── TaskStore.swift           # Tasks state + CRUD
+│   ├── ProjectStore.swift        # Projects state
+│   ├── FeatureStore.swift        # Feature unlock state
+│   ├── FocusStore.swift          # Focus session state
+│   ├── HabitStore.swift          # Habits state
+│   ├── AchievementStore.swift    # Achievements state
+│   ├── CreatureStore.swift       # Creatures state
+│   └── StatsStore.swift          # Stats state
+└── Views/ (35+ screens)
+    ├── Auth/ (Login, Signup)
+    ├── Today/TodayView.swift
+    ├── Inbox/ (InboxView, ProcessModeView)
+    ├── Projects/ (ProjectsView, ProjectDetailView, AddProjectSheet)
+    ├── Scheduled/ScheduledView.swift
+    ├── Completed/CompletedView.swift
+    ├── Checklist/ (ChecklistView, AddHabitSheet)
+    ├── Focus/ (FocusView, TimerCircle, TaskSelectorSheet)
+    ├── Stats/StatsView.swift
+    ├── Achievements/AchievementsView.swift
+    ├── Creatures/ (CreaturesView, CreatureDetailSheet)
+    ├── QuickActions/QuickActionsView.swift
+    ├── Gamification/FeatureUnlockModal.swift
+    └── Components/ (TaskRow, AddTaskSheet)
 ```
 
 ## Community Resources (CHECK THESE FIRST!)
@@ -365,8 +436,16 @@ cd apps/web && npm run dev
 npm run db:push     # Sync schema
 npm run db:studio   # Visual editor
 
+# Testing (in apps/web/)
+npm run test        # Watch mode
+npm run test:run    # Single run
+npm run test:coverage  # With coverage
+
 # Add component
 npx shadcn@latest add [component]
+
+# iOS
+cd apps/ios && xcodegen generate && open ADHDFocus.xcodeproj
 ```
 
 ## Environment Variables
@@ -376,6 +455,7 @@ npx shadcn@latest add [component]
 DATABASE_URL=postgres://postgres:testpassword123@localhost:5434/postgres
 AUTH_SECRET=your-secret-here
 AUTH_URL=http://localhost:3000
+GOOGLE_GENERATIVE_AI_API_KEY=your-gemini-key  # Optional: enables AI features (suggest/decompose/brain-dump)
 ```
 
 ## Production & Staging Environments
@@ -527,14 +607,55 @@ docker compose restart caddy
 
 ```typescript
 // Hook usage
-const { tasks, todayTasks, inboxTasks, scheduledTasks,
-        complete, uncomplete, deleteTask, moveToToday, create } = useTasks();
+const { tasks, todayTasks, inboxTasks, scheduledTasks, overdueTasks,
+        complete, uncomplete, deleteTask, moveToToday, create,
+        archive, scheduleTask, snoozeTask } = useTasks();
 
-// Filter helper already in hook:
+// Filter helpers (memoized):
 // todayTasks - status: today/in_progress + done with today's date
 // inboxTasks - status: inbox
 // scheduledTasks - status: scheduled
+// overdueTasks - past due date, not completed
+
+// Task completion flow (with gamification chain):
+const result = await complete(id);
+// Returns: { task, xpAwarded, wasBonus, levelUp, newLevel, newAchievements[], creature }
+
+// XP calculation: base 10 + priority mult + energy bonus + streak mult + ±20% variation + 10% 2x bonus
 ```
+
+## Database Schema (Key Tables)
+
+**26+ tables** in `src/db/schema.ts`. Key ones:
+
+| Table | Purpose | Key Fields |
+|-------|---------|------------|
+| `user` | Users + preferences + gamification stats | xp, level, streak, tasksAdded/Completed/Scheduled |
+| `task` | Tasks with ADHD metadata | status, energyRequired, priority, estimatedMinutes, parentTaskId |
+| `project` | Task containers | name, color, emoji, archived |
+| `feature` | Progressive unlock definitions | unlockLevel, unlockTasksAdded, unlockTasksCompleted, etc. |
+| `user_feature` | User's unlocked features | featureCode, unlockedAt, firstOpenedAt (null = shimmer) |
+| `achievement` | Achievement definitions (JSONB conditions) | conditionType, conditionValue, visibility |
+| `creature` | Collectibles with spawn mechanics | rarity, spawnConditions (JSONB), spawnChance |
+| `daily_quest` | Auto-generated daily quests | questType, target, progress, xpReward |
+| `habit` | Daily habits | frequency, timeOfDay, currentStreak |
+| `habit_check` | Daily completion records | date, skipped, reflection, xpAwarded |
+| `focus_session` | Pomodoro sessions | durationMinutes, pomodoros, completed |
+| `daily_stat` | Denormalized daily snapshots | tasksCompleted, focusMinutes, xpEarned |
+| `project_wiki_page` | Rich-text wiki per project | content (JSONB, BlockNote format) |
+
+## Testing
+
+**Framework:** Vitest + happy-dom + @testing-library/react
+
+**Test files (5):**
+- `components/tasks/AddTaskDialog.test.tsx`
+- `components/tasks/MorningReviewModal.test.tsx`
+- `hooks/useGamification.test.ts`
+- `lib/gamification.test.ts`
+- `lib/rate-limit.test.ts`
+
+**Known issue:** React 18/19 conflict (see MEMORY.md). Mock shadcn/lucide via `src/test/ui-mocks.tsx`.
 
 ## ADHD UX Principles
 
@@ -596,26 +717,60 @@ XP_to_level = floor(100 × (level ^ 1.5))
 // L1→2: 100 XP, L2→3: 283 XP, L5→6: 1118 XP
 ```
 
+### Additional Systems
+
+#### Daily Quests
+- Auto-generated based on user level (12 quest templates)
+- L1+: Complete 1 task, Add 2 tasks
+- L2+: Complete 3, Check all habits
+- L3+: Complete 5, Do 1 pomodoro
+- L5+: Do 3 pomodoros, Focus sessions
+- Hook: `useQuests.ts`, API: `/api/gamification/quests`
+
+#### Feature Tutorials
+- 20+ context-aware tutorials shown on first feature open
+- ADHD-friendly: max 3 bullet points per tutorial
+- Library: `lib/feature-tutorials.ts`
+- Hook: `useFeaturePageTutorial.ts`
+
+#### Morning Review
+- 3-step flow: stale tasks (14+ days) → active tasks → habits
+- Hook: `useMorningReview.ts`
+- Component: `MorningReviewModal.tsx`
+
 ### Files Structure
 ```
 src/
 ├── hooks/
-│   ├── useFeatures.ts        # Feature unlock checking
-│   ├── useGamification.ts    # XP, levels, rewards
-│   └── useWelcomeBack.ts     # Returning user detection (3+ days away)
+│   ├── useFeatures.ts            # Feature unlock checking + shimmer
+│   ├── useFeaturePageTutorial.ts # Tutorial state per page
+│   ├── useGamification.ts        # XP, levels, rewards, calculateTaskXp
+│   ├── useQuests.ts              # Daily quests
+│   ├── useWelcomeBack.ts         # Returning user detection (3+ days away)
+│   └── useMorningReview.ts       # Morning review flow
 ├── components/gamification/
-│   ├── FeatureGate.tsx       # Gates UI behind features
-│   └── WelcomeBackFlow.tsx   # Returning user welcome modal
+│   ├── FeatureGate.tsx           # Gates UI behind features
+│   ├── GamificationProvider.tsx  # Visual reward effects
+│   └── WelcomeBackFlow.tsx       # Returning user welcome modal
+├── components/review/
+│   ├── ReviewMode.tsx            # Multi-source triage (525 lines)
+│   └── SchedulePopover.tsx       # Smart date picker
 ├── app/api/gamification/
-│   ├── stats/route.ts        # GET user stats
-│   ├── xp/route.ts           # POST award XP
-│   ├── achievements/check/   # POST check achievements
-│   ├── creatures/spawn/      # POST spawn creature
-│   ├── rewards/log/          # POST log visual effect
-│   └── day-surprise/         # POST day 3-5 surprise achievement
+│   ├── stats/route.ts            # GET user stats
+│   ├── xp/route.ts              # POST award XP
+│   ├── achievements/check/       # POST check achievements
+│   ├── creatures/spawn/          # POST spawn creature
+│   ├── rewards/log/              # POST log visual effect
+│   ├── day-surprise/             # POST day 3-5 surprise achievement
+│   └── quests/route.ts           # GET/POST daily quests
+├── lib/
+│   ├── gamification.ts           # Client-side XP/level calculations
+│   ├── gamification-server.ts    # Server-side XP awards
+│   └── feature-tutorials.ts     # Tutorial content (225 lines)
 └── db/
-    ├── schema.ts             # Gamification tables
-    └── seed-gamification.ts  # Seed features/achievements/creatures
+    ├── schema.ts                 # Gamification tables (26+ total)
+    ├── seed-gamification.ts      # Seed features/achievements/creatures
+    └── generate-achievements.ts  # Auto-generated achievements
 ```
 
 ### Usage Example
@@ -642,7 +797,24 @@ await checkAchievements();
 - **Phase 3**: ✅ Achievements UI - /dashboard/achievements page
 - **Phase 4**: ✅ Creatures collection - /dashboard/creatures page
 - **Phase 5**: TODO - FeatureGate in all UI (progressive unlock)
-- **Phase 6**: ✅ ADHD Retention features (see below)
+- **Phase 6**: ✅ ADHD Retention features (welcome back, task amnesty, XP variation, Just 1 Mode)
+- **Phase 7**: ✅ AI features (Gemini: suggest, decompose, brain-dump)
+- **Phase 8**: ✅ Review Mode (multi-source triage)
+- **Phase 9**: ✅ Daily Quests + Feature Tutorials + Morning Review
+- **Phase 10**: ✅ Project Wiki (BlockNote rich-text)
+
+## AI Features (Google Gemini)
+
+Uses `@google/generative-ai` package. Requires `GOOGLE_GENERATIVE_AI_API_KEY` env var.
+
+| Endpoint | Purpose | Input | Output |
+|----------|---------|-------|--------|
+| POST /api/ai/suggest | Auto-classify task | `{ title, description? }` | `{ priority, energy, estimatedMinutes }` |
+| POST /api/ai/decompose | Break into subtasks | `{ title, description? }` | `{ subtasks: [{title, estimatedMinutes}] }` |
+| POST /api/ai/brain-dump | Parse free text | `{ text }` | `{ tasks: [{title, priority, energy}] }` |
+
+**Key files:** `lib/ai.ts` (client + rate limiting), `app/api/ai/` (3 routes)
+**Check if enabled:** `isAIEnabled()` helper in `lib/ai.ts`
 
 ## Troubleshooting
 
@@ -675,99 +847,86 @@ fix(auth): fix bug
 docs: update CLAUDE.md
 ```
 
-## Recent Changes (2026-02-05)
+## Recent Changes (2026-03-01)
 
-### ADHD Retention Features (Phase 6) ✅
-Based on behavioral science research (docs/RETENTION_RESEARCH.md). No DB migrations needed.
+### Multi-source Review Mode ✅
+- **Global triage**: Process all inbox tasks with 19+ actions (move, schedule, decompose, archive, etc.)
+- **Project triage**: Review tasks for specific project
+- **Key files**: `components/review/ReviewMode.tsx` (525 lines), `SchedulePopover.tsx`
 
-**Features implemented:**
-1. **Welcome Back Flow** — Warm modal for users returning after 3+ days. "Hey. You're back." with Fresh Start option (bulk archive overdue)
-2. **Task Amnesty** — "Let go" (archive) button throughout app. Stale task review step in morning review for tasks 14+ days old (batch archive)
-3. **XP Variation** — ±20% random variation + 10% chance of 2x bonus (variable ratio reinforcement)
-4. **Just 1 Mode** — Show only 1 active task on Today page (toggle in Settings, off by default)
-5. **Day 3-5 Surprise** — Hidden "Still Here" + "Comeback" achievements for early retention
+### Focus Mode Enhancements ✅
+- **Full blur overlay**: Step-by-step flow with process blur
+- **Calm Review**: End-of-day review component (`components/focus/CalmReview.tsx`)
 
-**Key files:**
-- `hooks/useWelcomeBack.ts` — returning user detection
-- `components/gamification/WelcomeBackFlow.tsx` — welcome back modal
-- `components/tasks/MorningReviewModal.tsx` — stale task step (14+ days), batch archive
-- `hooks/useGamification.ts` — calculateTaskXp with variable rewards
-- `app/api/gamification/day-surprise/route.ts` — day 3-5 achievement check
-- `db/generate-achievements.ts` — retention achievements (still_here, comeback)
-- `app/(dashboard)/dashboard/page.tsx` — Just 1 mode, overdue archive button
-- `app/(dashboard)/dashboard/settings/page.tsx` — Just 1 mode toggle
+### AI Features (Gemini) ✅
+- **Auto-classify**: POST /api/ai/suggest → priority, energy, time estimate
+- **Decompose**: POST /api/ai/decompose → subtasks
+- **Brain Dump**: POST /api/ai/brain-dump → parse free text into tasks
+- **Key files**: `lib/ai.ts`, `app/api/ai/` (3 routes)
+
+### Daily Quests ✅
+- Auto-generated based on user level, 12 quest templates
+- Hook: `useQuests.ts`, API: `/api/gamification/quests`
+
+### Project Wiki ✅
+- Rich-text wiki pages per project using BlockNote editor
+- API: `/api/projects/[id]/wiki`, hook: `useProjectWiki.ts`
+- Components: `WikiEditor.tsx`, `WikiPageList.tsx`
+
+### Feature Tutorials ✅
+- 20+ context-aware tutorials, shown on first feature open
+- Library: `lib/feature-tutorials.ts` (225 lines)
+- Hook: `useFeaturePageTutorial.ts`
+
+### Morning Review ✅
+- 3-step flow: stale tasks (14+ days) → active tasks → habits
+- Hook: `useMorningReview.ts`, Component: `MorningReviewModal.tsx`
+
+### UX Fixes ✅
+- Prevented modal stacking, batch achievements, tutorial timing
+- Lint fixes: tutorial return after hooks, ref mutation warnings
+- Wiki dark theme polish
+
+### Previous (2026-02-05)
+- **ADHD Retention (Phase 6)**: Welcome Back Flow, Task Amnesty, XP Variation (±20% + 10% 2x), Just 1 Mode, Day 3-5 Surprise
+- **Key files**: `useWelcomeBack.ts`, `WelcomeBackFlow.tsx`, `MorningReviewModal.tsx`, `calculateTaskXp`
 
 ### Previous (2026-01-22)
-
-### Staging Environment - LIVE ✅
-- **Production**: https://beatyour8.com (main branch)
-- **Staging**: https://adhdrenaline.com (staging branch)
-- Separate databases, same server
-- See "Production & Staging Environments" section above for full details
-
-### Security Improvements
-- **Bot protection for registration**: Honeypot field + timing check (forms < 3 seconds = bot)
-- **Re-auth modal for Projects**: When Projects feature unlocks, user must re-enter password (prep for email verification)
-
-**Key files changed:**
-- `docker/docker-compose.staging.yml` - Staging services (web-staging, db-staging)
-- `docker/Caddyfile` - Multi-domain routing (beatyour8.com + adhdrenaline.com)
-- `.github/workflows/deploy-staging.yml` - Staging branch → adhdrenaline.com
-- `src/app/actions/auth.ts` - Bot detection in registration
-- `src/components/gamification/ReAuthModal.tsx` - Password verification modal
-- `src/app/api/auth/verify-credentials/route.ts` - Re-auth endpoint
-
-### iOS App - Native SwiftUI
-- **Full iOS app skeleton**: Login, Signup, Today, Inbox, Settings tabs
-- **JWT authentication**: Mobile auth endpoint `/api/mobile/auth/login` returns JWT tokens
-- **Keychain storage**: Secure token storage using iOS Security framework
-- **Shared TaskStore**: Single source of truth for tasks across views
-- **Mobile-aware API**: Tasks endpoints now accept both NextAuth sessions (web) and Bearer tokens (mobile)
-
-**Key technical decisions:**
-- Renamed `Task` model to `TaskItem` to avoid Swift async/await conflict
-- Used `@ObservedObject` for shared state instead of `@StateObject` per view
-- API returns camelCase (no snake_case conversion needed)
-- `lib/mobile-auth.ts` helper verifies JWT for mobile requests
+- **Staging**: adhdrenaline.com (staging branch), separate DB
+- **Security**: Bot protection (honeypot + timing), Re-auth modal for Projects
+- **iOS App**: 35+ screens, JWT auth, Keychain, all major features
 
 ### Previous (2026-01-20)
+- **ESLint**: 0 errors (was 24), strict mode compliance
+- **Focus Mode**: Pomodoro timer complete
+- **Gamification Phase 0**: Progressive unlock, XP, achievements, creatures
 
-### ESLint Strict Mode Compliance
-- **0 errors** (was 24 errors)
-- Fixed Math.random() in render (achievements, sidebar, quick-actions)
-- Fixed setState in useEffect (setTimeout pattern in all gamification components)
-- Fixed ref access during render (moved to useEffect)
-- Fixed unescaped HTML entities across multiple files
-- Fixed TypeScript null checks in settings page
-- Hidden level number from sidebar - shows just "Mindfulness"
 
-### Previous (2026-01-17)
+---
 
-#### Focus Mode - Pomodoro Timer Complete
-- **useFocusTimer hook**: Full timer with work/short break/long break modes
-- **Circular timer UI**: SVG progress ring, animated countdown
-- **Task selection**: Pick from today's tasks to focus on
-- **Session tracking**: API saves sessions, updates user/task stats
-- **Today's Progress**: Shows pomodoros, minutes, all-time stats
-- **Notifications**: Sound + browser notifications on timer complete
-- **User preferences**: Timer durations from Settings
+## Context OS — Session State Management
 
-### Gamification System - Phase 0 Complete
-- **Progressive Feature Unlocking**: Core concept - app starts with only Inbox, features unlock via levels
-- **DB Schema**: New tables for features, achievements, creatures, rewards
-- **useFeatures hook**: Check unlocked features, get next unlock
-- **useGamification hook**: XP/level system, reward effects, creature spawning
-- **FeatureGate component**: Gate UI behind feature unlocks
-- **API endpoints**: 5 new gamification endpoints
-- **Seed data**: 15 features, 30 achievements, 16 creatures
+### Rules
 
-### Previous (2026-01-16)
-- **Completed Page**: `/dashboard/completed` with tasks grouped by date
-- **Project Selector**: In AddTaskDialog "More options"
-- **Clickable Projects**: Navigate to project detail
-- **Task Editing Everywhere**: Click any task to edit
+1. Write state to disk, not conversation. After completing meaningful work, write a summary to docs/summaries/ using templates from templates/claude-templates.md. Include: decisions with rationale, exact numbers, file paths, open items.
+2. Before compaction or session end, write to disk: every number, every decision with rationale, every open question, every file path, exact next action.
+3. When switching work types (research → writing → review), write a handoff to docs/summaries/handoff-[date]-[topic].md and suggest a new session.
+4. Do not silently resolve open questions. Mark them OPEN or ASSUMED.
+5. Do not bulk-read documents. Process one at a time: read, summarize to disk, release from context before reading next.
+6. Sub-agent returns must be structured, not free-form prose. Use output contracts from templates/claude-templates.md.
 
-### Previous (2026-01-15)
-- **Responsive AddTaskDialog**: Form stacks vertically on mobile (320px+)
-- **Security**: Rate limiting on `/api/auth/register` (5 req/15 min)
-- **Performance**: `useMemo` for filtered task lists in `useTasks.ts`
+### Where Things Live (Context OS)
+
+- templates/claude-templates.md — summary, handoff, decision, analysis, task, output contract templates (read on demand)
+- docs/summaries/ — active session state (latest handoff + decision records + source summaries)
+- docs/context/ — reusable domain knowledge, loaded only when relevant to the current task
+- docs/archive/ — processed raw files. Do not read unless explicitly told.
+- output/deliverables/ — final outputs
+
+### Error Recovery
+
+If context degrades or auto-compact fires unexpectedly: write current state to docs/summaries/recovery-[date].md, tell the user what may have been lost, suggest a fresh session.
+
+### Before Delivering Output
+
+Verify: exact numbers preserved, open questions marked OPEN, output matches what was requested (not assumed), claims backed by specific data, summary written to disk for this session's work.
