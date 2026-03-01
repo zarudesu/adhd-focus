@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { CookieConsentBanner } from "@/components/consent/CookieConsentBanner";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -33,6 +34,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <SessionProvider>{children}</SessionProvider>
+          <CookieConsentBanner />
           <Toaster />
         </ThemeProvider>
       </body>
