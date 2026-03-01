@@ -10,7 +10,7 @@ export function CookieConsentBanner() {
     useCookieConsent();
   const [expanded, setExpanded] = useState(false);
   const [analytics, setAnalytics] = useState(false);
-  const [preferences, setPreferences] = useState(true);
+  const [preferences, setPreferences] = useState(false);
 
   // Don't render until client-side check is done, or if already consented
   if (!loaded || hasConsent) return null;

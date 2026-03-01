@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useState } from 'react';
 
 const COOKIE_NAME = 'cookie-consent';
 const COOKIE_VERSION = '1';
@@ -30,17 +30,13 @@ function parseCookie(): CookieConsent | null {
 
 function writeCookie(consent: CookieConsent) {
   const value = encodeURIComponent(JSON.stringify(consent));
-  document.cookie = `${COOKIE_NAME}=${value}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax`;
+  const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+  document.cookie = `${COOKIE_NAME}=${value}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax${secure}`;
 }
 
 export function useCookieConsent() {
-  const [consent, setConsent] = useState<CookieConsent | null>(null);
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    setConsent(parseCookie());
-    setLoaded(true);
-  }, []);
+  const [consent, setConsent] = useState<CookieConsent | null>(() => parseCookie());
+  const loaded = typeof document !== 'undefined';
 
   const acceptAll = useCallback(() => {
     const c: CookieConsent = {

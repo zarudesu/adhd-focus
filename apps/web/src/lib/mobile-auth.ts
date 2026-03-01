@@ -58,25 +58,36 @@ export async function getAuthUser(
   return null;
 }
 
+// Dummy hash for constant-time comparison when no candidates found
+const DUMMY_HASH = "$2a$10$abcdefghijklmnopqrstuuABCDEFGHIJKLMNOPQRSTUVWXYZ012";
+
 async function verifyApiKey(
   rawKey: string
 ): Promise<{ id: string; email: string } | null> {
   const prefix = rawKey.slice(0, 13);
 
-  // Find keys matching the prefix that aren't revoked
+  // Join user table to avoid TOCTOU and extra query
   const candidates = await db
     .select({
       id: apiKeys.id,
       keyHash: apiKeys.keyHash,
       userId: apiKeys.userId,
       expiresAt: apiKeys.expiresAt,
+      userEmail: users.email,
     })
     .from(apiKeys)
+    .innerJoin(users, eq(apiKeys.userId, users.id))
     .where(and(eq(apiKeys.keyPrefix, prefix), eq(apiKeys.revoked, false)));
 
+  // Always run bcrypt to prevent timing attacks that reveal prefix validity
+  if (candidates.length === 0) {
+    await bcrypt.compare(rawKey, DUMMY_HASH);
+    return null;
+  }
+
   for (const candidate of candidates) {
-    // Check expiration
     if (candidate.expiresAt && candidate.expiresAt < new Date()) {
+      await bcrypt.compare(rawKey, DUMMY_HASH);
       continue;
     }
 
@@ -86,17 +97,9 @@ async function verifyApiKey(
       db.update(apiKeys)
         .set({ lastUsedAt: new Date() })
         .where(eq(apiKeys.id, candidate.id))
-        .then(() => {});
+        .catch(() => {});
 
-      // Get user email
-      const [user] = await db
-        .select({ id: users.id, email: users.email })
-        .from(users)
-        .where(eq(users.id, candidate.userId));
-
-      if (user) {
-        return { id: user.id, email: user.email! };
-      }
+      return { id: candidate.userId, email: candidate.userEmail! };
     }
   }
 
