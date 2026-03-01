@@ -1,6 +1,6 @@
 # AI Features Plan — ADHD Focus
 
-> Last updated: 2026-02-05
+> Last updated: 2026-03-01
 > Based on research: ADHD apps (Goblin Tools, Neurolist, Tiimo, Lifestack, Mindflow), AI coaching (CBT/DBT RCTs), LLM integration patterns.
 
 ## Key Principles
@@ -23,35 +23,34 @@
 
 ---
 
-## Tier 1: Quick Wins (High Impact, Low Effort)
+## Tier 1: Quick Wins ✅ IMPLEMENTED
 
-### 1. Smart Auto-Fill (Task Creation)
+> All Tier 1 features are live. API: `/api/ai/*`, Library: `lib/ai.ts`
+> Model: Google Gemini (`@google/generative-ai`), gated by `GOOGLE_GENERATIVE_AI_API_KEY` env var.
 
-User types task title → AI auto-fills priority, energy, time estimate as pre-filled defaults.
+### 1. Smart Auto-Fill (Task Creation) ✅
 
-- Show as suggestions user can override with one tap
-- ~$0.00004/call (Gemini Flash), essentially free
-- Cache common patterns locally (60-70% hit rate)
-- Fits existing `CreateTaskInput` schema perfectly
+`POST /api/ai/suggest` — User types task title → AI auto-fills priority, energy, time estimate.
 
-### 2. Task Breakdown (Decomposition)
+- Returns `{ priority, energy, estimatedMinutes }`
+- Rate limited per user
+- Fits existing `CreateTaskInput` schema
 
-Button "Break down" on any task → AI splits into 5-minute micro-steps.
+### 2. Task Breakdown (Decomposition) ✅
 
+`POST /api/ai/decompose` — Button "Break down" on any task → AI splits into subtasks.
+
+- Returns `{ subtasks: [{title, estimatedMinutes}] }`
 - Max 7 subtasks (anti-overwhelm)
-- Each with: title, estimatedMinutes, energyRequired
-- Adjustable granularity slider (like Goblin Tools "spiciness")
-- ~$0.0017/call (Haiku), ~$0.00014 (Gemini Flash)
 - #1 most requested ADHD feature across all apps
 
-### 3. Brain Dump → Tasks
+### 3. Brain Dump → Tasks ✅
 
-Text area: user dumps everything from head, AI categorizes into tasks/ideas/reminders.
+`POST /api/ai/brain-dump` — Text area: user dumps everything, AI categorizes into tasks.
 
-- Assigns priority and energy automatically
+- Returns `{ tasks: [{title, priority, energy}] }`
 - Import to inbox with one tap
 - Neurolist and Saner.AI validate this pattern
-- ~$0.003/call
 
 ---
 

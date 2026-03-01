@@ -1,6 +1,7 @@
 # Feature Unlock System
 
 > Progressive disclosure for ADHD brains - reveal features as users build habits
+> Last updated: 2026-03-01
 
 ## Design Philosophy
 
@@ -33,18 +34,25 @@ Day 1-2: Capture & Triage
 ├── INBOX (always available) - Capture everything
 ├── Unlock: Add 3 tasks → ACHIEVEMENTS appears (see progress)
 ├── Unlock: Move task to today → TODAY appears
-└── Unlock: Complete task → COMPLETED appears
+├── Unlock: Complete task → COMPLETED appears
+└── Feature tutorials appear on first open of each page
 
 Day 3-7: Building Habits
 ├── Unlock: Complete 3 tasks → DAILY CHECKLIST appears
 ├── Unlock: Schedule for tomorrow → SCHEDULED appears
 ├── Unlock: Complete 5 tasks → FOCUS MODE appears
-├── Unlock: Add 10 tasks → PROJECTS appears
-└── Unlock: Reach Level 5 → CREATURES appears
+├── Unlock: Add 10 tasks → PROJECTS appears (+ wiki pages)
+├── Unlock: Reach Level 5 → CREATURES appears
+├── Day 3-5 surprise achievements ("Still Here", "Comeback")
+└── Morning Review starts showing (stale tasks → habits)
 
 Week 2+: Power User
 ├── Unlock: Complete 10 tasks → QUICK ACTIONS appears
-└── Unlock: 7-day streak → STATISTICS appears
+├── Unlock: 7-day streak → STATISTICS appears
+├── REVIEW MODE available for inbox/project triage
+├── DAILY QUESTS auto-generated based on level
+├── AI features: suggest, decompose, brain-dump
+└── PROJECT WIKI for documentation per project
 ```
 
 ## Feature Definitions

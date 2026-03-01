@@ -1,7 +1,7 @@
 # ADHD Focus - Gamification System
 
 > **Документация для разработки геймификации**
-> Последнее обновление: 2026-01-19
+> Последнее обновление: 2026-03-01
 
 ## Концепция
 
@@ -142,21 +142,37 @@ const XP_CONFIG = {
   taskComplete: 10,           // Базовый XP за задачу
   quickTaskBonus: 5,          // Бонус за quick task (<5 мин)
   priorityMultiplier: {
-    must: 1.5,
+    must: 2.0,                // Обновлено
     should: 1.0,
     want: 0.8,
     someday: 0.5,
   },
   energyBonus: {
-    low: 0,
-    medium: 2,
-    high: 5,
+    low: 2,                   // Обновлено
+    medium: 0,
+    high: 3,
   },
   streakMultiplier: 0.1,      // +10% за каждый день streak
   maxStreakMultiplier: 2.0,   // Макс 200%
   deadlineBonus: 5,           // За выполнение до дедлайна
 };
 ```
+
+### XP Вариация (ADHD Retention)
+
+Каждый XP награда имеет случайную вариацию для variable ratio reinforcement:
+
+```typescript
+// ±20% random variation
+variation = 0.8 + Math.random() * 0.4
+
+// 10% chance of 2x bonus
+if (Math.random() < 0.1) multiplier *= 2
+
+// calculateTaskXp returns { xp: number, wasBonus: boolean }
+```
+
+Это предотвращает habituation к наградам (см. docs/RETENTION_RESEARCH.md).
 
 ---
 
@@ -218,11 +234,15 @@ const XP_CONFIG = {
 ## API Endpoints
 
 ```
-GET  /api/gamification/stats          # Все данные пользователя
-POST /api/gamification/xp             # Начислить XP
+GET  /api/gamification/stats               # Все данные пользователя
+POST /api/gamification/xp                  # Начислить XP
 POST /api/gamification/achievements/check  # Проверить достижения
 POST /api/gamification/creatures/spawn     # Попробовать spawn существо
 POST /api/gamification/rewards/log         # Залогировать эффект
+POST /api/gamification/day-surprise        # Day 3-5 surprise achievements
+GET/POST /api/gamification/quests          # Daily quests (auto-generated)
+GET  /api/features                         # List features with unlock status
+POST /api/features/[code]/opened           # Mark feature opened (returns tutorial)
 ```
 
 ---
@@ -247,7 +267,7 @@ POST /api/gamification/rewards/log         # Залогировать эффек
 
 ```tsx
 // Проверка фич
-const { isUnlocked, getNextUnlock } = useFeatures();
+const { isUnlocked, getNextUnlock, navFeatures, isNewlyUnlocked } = useFeatures();
 
 // Геймификация
 const {
@@ -257,6 +277,18 @@ const {
   checkAchievements,
   spawnCreature,
 } = useGamification();
+
+// Daily quests
+const { quests, refreshQuests } = useQuests();
+
+// Feature tutorials
+const { tutorial, dismissTutorial } = useFeaturePageTutorial('inbox');
+
+// Welcome back (returning users 3+ days)
+const { showWelcomeBack, dismiss } = useWelcomeBack();
+
+// Morning review (stale tasks → habits)
+const { showReview, step, next } = useMorningReview();
 ```
 
 ---
@@ -266,14 +298,22 @@ const {
 ```
 src/
 ├── db/
-│   ├── schema.ts                    # Gamification tables
+│   ├── schema.ts                    # Gamification tables (26+ total)
 │   ├── seed-gamification.ts         # Seed data
 │   └── generate-achievements.ts     # Achievement generator (1000+)
 ├── hooks/
-│   ├── useFeatures.ts               # Feature unlocking
-│   ├── useGamification.ts           # XP, achievements, creatures
+│   ├── useFeatures.ts               # Feature unlocking + shimmer
+│   ├── useFeaturePageTutorial.ts    # Tutorial state per feature page
+│   ├── useGamification.ts           # XP, achievements, creatures, calculateTaskXp
+│   ├── useQuests.ts                 # Daily quests tracking
+│   ├── useWelcomeBack.ts            # Returning user detection (3+ days)
+│   ├── useMorningReview.ts          # Morning review flow
 │   ├── useHabits.ts                 # Daily checklist habits
 │   └── useTasks.ts                  # Task completion with XP integration
+├── lib/
+│   ├── gamification.ts              # Client-side XP/level calculations
+│   ├── gamification-server.ts       # Server-side XP awards
+│   └── feature-tutorials.ts         # 20+ tutorial messages per feature
 ├── components/gamification/
 │   ├── FeatureGate.tsx              # Feature gating component
 │   ├── ProtectedRoute.tsx           # Page-level feature protection
@@ -282,11 +322,20 @@ src/
 │   ├── RewardAnimation.tsx          # Sci-Fi visual reward effects
 │   ├── AchievementToast.tsx         # Achievement unlock toast with shimmer
 │   ├── CreatureCaughtToast.tsx      # Creature caught toast with rarity effects
-│   └── GamificationProvider.tsx     # Context for gamification events
+│   ├── GamificationProvider.tsx     # Context for gamification events
+│   ├── WelcomeBackFlow.tsx          # Returning user welcome modal
+│   └── ReAuthModal.tsx              # Re-auth for Projects unlock
+├── components/review/
+│   ├── ReviewMode.tsx               # Multi-source triage (525 lines)
+│   └── SchedulePopover.tsx          # Smart date picker for review
+├── components/focus/
+│   └── CalmReview.tsx               # End-of-day calm review
 ├── app/(dashboard)/dashboard/
 │   ├── achievements/page.tsx        # Achievements list UI
 │   ├── creatures/page.tsx           # Creature collection UI
-│   └── checklist/page.tsx           # Daily habits checklist
+│   ├── checklist/page.tsx           # Daily habits checklist
+│   ├── review/page.tsx              # Global triage/review mode
+│   └── stats/page.tsx               # Statistics + heatmap
 └── app/api/gamification/
     ├── stats/route.ts
     ├── xp/route.ts
@@ -296,7 +345,9 @@ src/
     ├── creatures/
     │   ├── route.ts                 # GET creatures
     │   └── spawn/route.ts           # POST spawn creature
-    └── rewards/log/route.ts
+    ├── rewards/log/route.ts
+    ├── day-surprise/route.ts        # Day 3-5 surprise achievements
+    └── quests/route.ts              # Daily quests (auto-generated)
 ```
 
 ---
@@ -304,42 +355,55 @@ src/
 ## Roadmap
 
 ### Phase 0: Skeleton ✅
-- [x] DB schema
-- [x] FeatureGate component
-- [x] useFeatures hook
-- [x] useGamification hook
-- [x] API endpoints
-- [x] Seed data
+- [x] DB schema, FeatureGate, useFeatures, useGamification, API, seed data
 
 ### Phase 1: Basic Progression ✅
-- [x] XP за задачи (интеграция в useTasks)
-- [x] Level progress bar в sidebar
-- [x] Level up modal
-- [x] GamificationProvider для событий
+- [x] XP за задачи, level bar в sidebar, level up modal, GamificationProvider
 
 ### Phase 2: Visual Rewards ✅
-- [x] Reward animation system (RewardAnimation component)
-- [x] 12 Sci-Fi/High-Tech анимаций (Sparkle, Glitch, Portal, Warp, DataStream, HexGrid, Circuit, EnergyWave, Hologram, Plasma, Quantum, Takeover)
-- [x] Rarity roll при завершении задачи
-- [x] Интеграция в GamificationProvider
-- [x] CSS анимации в globals.css (700+ lines)
+- [x] 12 Sci-Fi анимаций, rarity roll, CSS анимации (700+ lines)
 
 ### Phase 3: Achievements ✅
-- [x] Achievement check при событиях
-- [x] Achievement unlock toast (max 2 per action)
-- [x] Achievements page UI (/dashboard/achievements)
-- [x] AchievementToast component с shimmer анимациями
+- [x] Achievement check, unlock toast (max 2 per action), page UI, shimmer
 
 ### Phase 4: Creatures ✅
-- [x] Creature spawn при задачах
-- [x] Creature collection UI (/dashboard/creatures)
-- [x] CreatureCaughtToast с rarity-based анимациями
+- [x] Spawn при задачах, collection UI, rarity-based тосты
 
 ### Phase 5: Feature Gates ✅
-- [x] ProtectedRoute для навигации
-- [x] FeatureGate для UI элементов
-- [x] Feature unlock celebration modal
-- [x] Progressive sidebar (скрытые пункты до unlock)
+- [x] ProtectedRoute, FeatureGate, unlock celebration modal, progressive sidebar
+
+### Phase 6: ADHD Retention ✅
+- [x] Welcome Back Flow (3+ дней отсутствия → тёплый modal)
+- [x] Task Amnesty (archive кнопка, stale tasks 14+ дней)
+- [x] XP Variation (±20% + 10% шанс 2x bonus)
+- [x] Just 1 Mode (один таск на Today, toggle в Settings)
+- [x] Day 3-5 Surprise (скрытые "Still Here" + "Comeback" ачивки)
+
+### Phase 7: AI Features ✅
+- [x] Smart Auto-Fill (POST /api/ai/suggest) — Gemini классифицирует priority/energy/time
+- [x] Task Decomposition (POST /api/ai/decompose) — разбивка на подзадачи
+- [x] Brain Dump (POST /api/ai/brain-dump) — парсинг текста в задачи
+
+### Phase 8: Review Mode ✅
+- [x] Global triage — обработка всех inbox задач (19+ действий)
+- [x] Project triage — обработка задач конкретного проекта
+- [x] Smart scheduling (SchedulePopover с smart dates)
+
+### Phase 9: Daily Quests + Tutorials ✅
+- [x] Daily Quests — 12 шаблонов, auto-generated по уровню
+- [x] Feature Tutorials — 20+ контекстных туториалов при первом открытии
+- [x] Morning Review — 3-step flow (stale→tasks→habits)
+
+### Phase 10: Project Wiki ✅
+- [x] Rich-text wiki pages (BlockNote editor)
+- [x] CRUD per project (/api/projects/[id]/wiki)
+
+### Phase 11: TODO
+- [ ] FeatureGate coverage — применить ко ВСЕМ UI элементам
+- [ ] Tier 2 AI (Morning Day Plan, "Stuck?" Helper, Evening Reflection)
+- [ ] Pause Mode (freeze streak без штрафа)
+- [ ] "Make It Tiny" button
+- [ ] Avoidance Detector
 
 ---
 

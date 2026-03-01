@@ -336,35 +336,47 @@ Sources: Atlassian, Ahead App, Inflow, ADD Resource Center
 
 ## Part 4: Priority Implementation Roadmap
 
+> Updated: 2026-03-01
+
 ### Tier 1 — Highest Impact, Strong Evidence
 
-| # | Feature | Research Basis | Effort |
+| # | Feature | Research Basis | Status |
 |---|---------|---------------|--------|
-| 1 | **Welcome Back Flow** | Fresh Start Effect, Compassion-Focused Therapy | Medium |
-| 2 | **Task Amnesty / Auto-archive** | Zeigarnik Effect, Task Bankruptcy | Medium |
-| 3 | **Variable Rewards Enhancement** | Dopamine habituation, Variable ratio reinforcement | Medium |
-| 4 | **"Just 1" Mode** | Tiny Habits, Micro-commitments | Small |
-| 5 | **Compassionate Copy Overhaul** | CFT, Shame spiral prevention | Small |
+| 1 | **Welcome Back Flow** | Fresh Start Effect, CFT | ✅ DONE (`useWelcomeBack.ts`, `WelcomeBackFlow.tsx`) |
+| 2 | **Task Amnesty / Auto-archive** | Zeigarnik Effect, Task Bankruptcy | ✅ DONE (`MorningReviewModal.tsx`, stale 14+ days) |
+| 3 | **Variable Rewards Enhancement** | Dopamine habituation, Variable ratio | ✅ DONE (`calculateTaskXp`: ±20% + 10% 2x bonus) |
+| 4 | **"Just 1" Mode** | Tiny Habits, Micro-commitments | ✅ DONE (toggle `showOnlyOneTask` in Settings) |
+| 5 | **Compassionate Copy Overhaul** | CFT, Shame spiral prevention | ✅ DONE (throughout app copy) |
 
 ### Tier 2 — High Impact, Good Evidence
 
-| # | Feature | Research Basis | Effort |
+| # | Feature | Research Basis | Status |
 |---|---------|---------------|--------|
-| 6 | **Pause Mode** | Finch pattern, Streak forgiveness | Small |
-| 7 | **Day 3-5 Surprise Unlock** | Novelty cliff bridge | Small |
-| 8 | **"Make It Tiny" Button** | BJ Fogg, 2-minute rule | Small |
-| 9 | **Evening Shutdown Ritual** | Zeigarnik, CBT | Medium |
-| 10 | **Avoidance Detector** | CBT, Wall of Awful | Medium |
+| 6 | **Pause Mode** | Finch pattern, Streak forgiveness | TODO |
+| 7 | **Day 3-5 Surprise Unlock** | Novelty cliff bridge | ✅ DONE (`/api/gamification/day-surprise`) |
+| 8 | **"Make It Tiny" Button** | BJ Fogg, 2-minute rule | TODO |
+| 9 | **Evening Shutdown Ritual** | Zeigarnik, CBT | ✅ PARTIAL (`CalmReview.tsx`, Morning Review) |
+| 10 | **Avoidance Detector** | CBT, Wall of Awful | TODO |
 
 ### Tier 3 — Medium Impact, Emerging Evidence
 
-| # | Feature | Research Basis | Effort |
+| # | Feature | Research Basis | Status |
 |---|---------|---------------|--------|
-| 11 | **Values Tagging** | ACT framework | Medium |
-| 12 | **Body Doubling Indicator** | Social facilitation | Large |
-| 13 | **Monthly Theme Rotation** | Habituation prevention | Large |
-| 14 | **If-Then Plan Builder** | Implementation Intentions | Medium |
-| 15 | **Temptation Bundling UI** | Milkman's research | Medium |
+| 11 | **Values Tagging** | ACT framework | TODO |
+| 12 | **Body Doubling Indicator** | Social facilitation | TODO |
+| 13 | **Monthly Theme Rotation** | Habituation prevention | TODO |
+| 14 | **If-Then Plan Builder** | Implementation Intentions | TODO |
+| 15 | **Temptation Bundling UI** | Milkman's research | TODO |
+
+### Additional Features Implemented (beyond original roadmap)
+
+| Feature | Research Basis | Status |
+|---------|---------------|--------|
+| **Daily Quests** | Goal gradient, micro-goals | ✅ DONE (12 templates, level-gated) |
+| **Feature Tutorials** | Progressive disclosure, scaffolding | ✅ DONE (20+ tutorials) |
+| **Morning Review** | External scaffolding, habit stacking | ✅ DONE (3-step flow) |
+| **AI Task Assist** | External scaffolding theory | ✅ DONE (Gemini: suggest/decompose/brain-dump) |
+| **Review Mode** | Reduce decision fatigue, batch processing | ✅ DONE (global + project triage) |
 
 ---
 

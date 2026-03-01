@@ -103,13 +103,32 @@ cd apps/web && npm run dev
 - Guess solutions without researching
 - Keep trying after 3 failures
 
-### 5. End of Session
-- **Update this file** if anything changed:
-  - Новые домены/URLs → добавь в таблицу в начале файла
-  - Новые команды/пути → добавь в соответствующую секцию
-  - Новые фичи/страницы → обнови "Current State"
-- **Update "Current State" section** below
-- Commit with conventional commits
+### 5. Commits & Documentation (MANDATORY)
+
+**Коммиты — часто и без спроса:**
+- Коммить после каждого логического шага (новый компонент, фикс бага, рефакторинг)
+- НЕ НАКАПЛИВАЙ изменения — максимум 15-30 минут между коммитами
+- Используй conventional commits: `feat(scope):`, `fix(scope):`, `docs:`, `refactor:`
+- Не жди разрешения на коммит — это обязательная часть workflow
+
+**Документация — обновляй СРАЗУ при изменениях:**
+
+| Что изменилось | Какой файл обновить |
+|----------------|---------------------|
+| Новая страница/фича | CLAUDE.md → "Current State" таблица |
+| Новый API endpoint | CLAUDE.md → "Backend - API Routes" таблица |
+| Изменения геймификации | `apps/web/docs/GAMIFICATION.md` |
+| Изменения unlock условий | `docs/FEATURE_UNLOCKS.md` |
+| Новая AI фича | `docs/AI_FEATURES.md` |
+| Retention/UX изменения | `docs/RETENTION_RESEARCH.md` |
+| Новые домены/URLs | CLAUDE.md → таблица доменов в начале |
+| Новые env vars | CLAUDE.md → "Environment Variables" |
+| Новые хуки/компоненты | CLAUDE.md → "Project Structure" |
+
+**Конец сессии:**
+- Обнови "Current State" + "Recent Changes" в CLAUDE.md
+- Обнови `Last updated` дату в каждом изменённом доке
+- Закоммить все изменения
 - Note any blockers
 
 **⚠️ Если ты узнал что-то новое (домен, путь, команду) - ЗАПИШИ СЮДА. Следующий Claude скажет тебе спасибо.**
@@ -122,6 +141,8 @@ cd apps/web && npm run dev
 - **Use MCP tools** - context7, playwright, shadcn, github
 - **Keep this file updated** - especially Current State section
 - **Test with real data** - via Playwright MCP
+- **Commit often** - после каждого логического шага (новый файл, фикс, рефакторинг). НЕ ЖДИ разрешения, коммить сам
+- **Update docs with every change** - при добавлении/изменении фич обновляй соответствующие доки (см. секцию ниже)
 
 ### DON'T
 - Write from scratch what already exists
@@ -129,6 +150,7 @@ cd apps/web && npm run dev
 - Add unnecessary complexity
 - Skip testing
 - Forget to update documentation
+- Accumulate uncommitted changes — коммить каждые 15-30 минут работы или после каждого завершённого шага
 
 ## Current State (UPDATE THIS!)
 
