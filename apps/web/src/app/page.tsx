@@ -14,9 +14,9 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { BeatLogo } from '@/components/brand/BeatLogo';
 import { UnlockModal } from '@/components/landing/UnlockModal';
-import { PersonalizedLanding } from '@/components/landing/PersonalizedLanding';
 import Link from 'next/link';
 import {
   addPendingTask,
@@ -26,14 +26,17 @@ import {
 
 export default function Home() {
   const { data: session, status } = useSession();
+  const router = useRouter();
 
-  // If authenticated, show personalized landing
-  if (status === 'authenticated' && session?.user) {
-    return <PersonalizedLanding userName={session.user.name} />;
-  }
+  // Redirect authenticated users to dashboard
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user) {
+      router.replace('/dashboard');
+    }
+  }, [status, session, router]);
 
-  // If loading, show minimal placeholder
-  if (status === 'loading') {
+  // If loading or authenticated (redirecting), show minimal placeholder
+  if (status === 'loading' || status === 'authenticated') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#1A1A1A]">
         <BeatLogo size="xl" />
