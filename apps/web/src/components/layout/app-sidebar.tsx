@@ -7,7 +7,10 @@ import {
   Calendar,
   ChartBar,
   CheckCircle2,
+  ChevronRight,
+  FileText,
   Folder,
+  BookOpen,
   Inbox,
   ListChecks,
   Settings,
@@ -33,9 +36,15 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarRail,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useProjects } from "@/hooks/useProjects";
+import { useAllWikiPages } from "@/hooks/useAllWikiPages";
 import { LevelProgress } from "@/components/gamification/LevelProgress";
 import { useGamificationEvents } from "@/components/gamification/GamificationProvider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -76,6 +85,8 @@ interface AppSidebarProps {
 export function AppSidebar({ user }: AppSidebarProps) {
   const pathname = usePathname();
   const { navFeatures, featuresLoading: loading, isNewlyUnlocked, markFeatureOpened } = useGamificationEvents();
+  const { projects: userProjects } = useProjects();
+  const { projectsWithPages } = useAllWikiPages();
 
   const isActive = (url: string) => {
     if (url === "/dashboard") {
@@ -84,12 +95,20 @@ export function AppSidebar({ user }: AppSidebarProps) {
     return pathname.startsWith(url);
   };
 
-  // Separate nav features by group
+  // Check if projects feature is unlocked
+  const projectsFeature = navFeatures.find(f => f.code === 'nav_projects');
+  const projectsUnlocked = projectsFeature?.isUnlocked ?? false;
+
+  // Build a map of projectId -> wiki pages for sidebar
+  const wikiByProject = new Map(
+    projectsWithPages.map(p => [p.projectId, p.pages])
+  );
+
+  // Separate nav features by group, excluding nav_projects (handled separately)
   const taskItems = navFeatures
-    .filter(f => NAV_CONFIG[f.code]?.group === 'tasks')
+    .filter(f => NAV_CONFIG[f.code]?.group === 'tasks' && f.code !== 'nav_projects')
     .sort((a, b) => {
-      // Sort by predefined order
-      const order = ['nav_inbox', 'nav_process', 'nav_today', 'nav_scheduled', 'nav_projects', 'nav_completed', 'nav_checklist'];
+      const order = ['nav_inbox', 'nav_process', 'nav_today', 'nav_scheduled', 'nav_completed', 'nav_checklist'];
       return order.indexOf(a.code) - order.indexOf(b.code);
     });
 
@@ -185,6 +204,102 @@ export function AppSidebar({ user }: AppSidebarProps) {
             <SidebarGroupContent>
               <SidebarMenu>
                 {taskItems.map((item) => renderNavItem(item))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {projectsUnlocked && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Projects</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {/* All Projects link */}
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === "/dashboard/projects"}
+                    className={cn(
+                      projectsFeature && isNewlyUnlocked(projectsFeature.code) && "animate-feature-shimmer"
+                    )}
+                  >
+                    <Link
+                      href="/dashboard/projects"
+                      onClick={() => {
+                        if (projectsFeature && isNewlyUnlocked(projectsFeature.code)) {
+                          markFeatureOpened(projectsFeature.code);
+                        }
+                      }}
+                    >
+                      <Folder className="h-4 w-4" />
+                      <span>All Projects</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                {/* Individual projects with wiki pages */}
+                {userProjects.filter(p => !p.archived).map((project) => {
+                  const wikiPages = wikiByProject.get(project.id) || [];
+                  const projectUrl = `/dashboard/projects/${project.id}`;
+                  const isProjectActive = pathname.startsWith(projectUrl);
+
+                  if (wikiPages.length === 0) {
+                    return (
+                      <SidebarMenuItem key={project.id}>
+                        <SidebarMenuButton asChild isActive={isProjectActive}>
+                          <Link href={projectUrl}>
+                            <span className="text-sm">{project.emoji || '📁'}</span>
+                            <span className="truncate">{project.name}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  }
+
+                  return (
+                    <Collapsible key={project.id} defaultOpen={isProjectActive} className="group/collapsible">
+                      <SidebarMenuItem className="relative">
+                        <SidebarMenuButton asChild isActive={isProjectActive}>
+                          <Link href={projectUrl}>
+                            <span className="text-sm">{project.emoji || '📁'}</span>
+                            <span className="truncate">{project.name}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                        <CollapsibleTrigger asChild>
+                          <button
+                            className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded-sm hover:bg-sidebar-accent"
+                          >
+                            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                          </button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <SidebarMenuSub>
+                            {wikiPages.map((page) => (
+                              <SidebarMenuSubItem key={page.id}>
+                                <SidebarMenuSubButton asChild>
+                                  <Link href={`${projectUrl}?wiki=${page.id}`}>
+                                    <FileText className="h-3.5 w-3.5" />
+                                    <span className="truncate">{page.title}</span>
+                                  </Link>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            ))}
+                          </SidebarMenuSub>
+                        </CollapsibleContent>
+                      </SidebarMenuItem>
+                    </Collapsible>
+                  );
+                })}
+
+                {/* Wiki hub link */}
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={pathname === "/dashboard/wiki"}>
+                    <Link href="/dashboard/wiki">
+                      <BookOpen className="h-4 w-4" />
+                      <span>Wiki</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
