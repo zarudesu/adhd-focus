@@ -76,11 +76,12 @@ export function useProjectWiki(projectId: string) {
       });
       if (!res.ok) throw new Error('Failed to update page');
       const updated = await res.json();
-      // Update active page if it's the one we edited
-      if (activePage?.id === pageId) {
-        setActivePage(updated);
+      // Only update activePage for title changes — content-only saves would
+      // trigger a replaceBlocks loop in WikiEditor via the content prop change
+      if (data.title && activePage?.id === pageId) {
+        setActivePage(prev => prev ? { ...prev, title: updated.title, updatedAt: updated.updatedAt } : prev);
       }
-      // Update title in list if changed
+      // Update title in page list if changed
       if (data.title) {
         setPages(prev => prev.map(p => p.id === pageId ? { ...p, title: data.title!, updatedAt: updated.updatedAt } : p));
       }

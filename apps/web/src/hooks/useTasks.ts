@@ -73,6 +73,7 @@ interface UseTasksOptions {
   filters?: TaskFilters;
   autoFetch?: boolean;
   showSnoozed?: boolean; // Include snoozed tasks in inboxTasks
+  currentStreak?: number; // From GamificationProvider, avoids extra API call
 }
 
 interface UseTasksReturn {
@@ -121,12 +122,15 @@ async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
 }
 
 export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
-  const { filters = {}, autoFetch = true, showSnoozed = false } = options;
+  const { filters = {}, autoFetch = true, showSnoozed = false, currentStreak = 0 } = options;
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const completingIdsRef = useRef<Set<string>>(new Set());
+  // Keep streak in ref so complete() callback doesn't need to re-create on streak changes
+  const streakRef = useRef(currentStreak);
+  streakRef.current = currentStreak;
 
   const fetch = useCallback(async () => {
     setLoading(true);
@@ -210,14 +214,13 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
     // Find task before completing
     const task = tasks.find((t) => t.id === id);
 
-    // 1. Complete the task
+    // 1. Complete the task (optimistic update happens inside update())
     const updatedTask = await update(id, {
       status: 'done',
       completedAt: new Date().toISOString(),
     });
 
-    // Default result (for unauthenticated users or errors)
-    // beatyour8: No visual reward - just track progress silently
+    // Default result
     const result: CompleteResult = {
       task: updatedTask,
       xpAwarded: 0,
@@ -228,88 +231,82 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
       creature: null,
     };
 
-    try {
-      // Get current streak for XP calculation
-      let currentStreak = 0;
+    // Fire gamification chain in background — don't block the UI
+    const gamificationPromise = (async () => {
       try {
-        const statsRes = await window.fetch('/api/gamification/stats');
-        if (statsRes.ok) {
-          const stats = await statsRes.json();
-          currentStreak = stats.currentStreak || 0;
+        // Use streak from GamificationProvider state (passed via streakRef) instead of extra API call
+        const currentStreak = streakRef.current;
+
+        // Calculate XP
+        const completedAtStr = updatedTask.completedAt
+          ? typeof updatedTask.completedAt === 'string'
+            ? updatedTask.completedAt
+            : updatedTask.completedAt.toISOString()
+          : null;
+
+        const { xp: xpAmount, wasBonus } = calculateTaskXp(
+          {
+            priority: task?.priority,
+            energyRequired: task?.energyRequired,
+            estimatedMinutes: task?.estimatedMinutes,
+            dueDate: task?.dueDate,
+            completedAt: completedAtStr,
+          },
+          currentStreak
+        );
+
+        // Award XP first (needed for level up info), then achievements + creatures in parallel
+        const xpRes = await window.fetch('/api/gamification/xp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: xpAmount, reason: 'task_complete' }),
+        });
+
+        if (xpRes.ok) {
+          const xpData = await xpRes.json();
+          result.xpAwarded = xpAmount;
+          result.wasBonus = wasBonus;
+          result.levelUp = xpData.leveledUp || false;
+          result.newLevel = xpData.newLevel || 1;
         }
-      } catch {
-        // Ignore - use 0 streak
-      }
 
-      // 2. Calculate and award XP
-      const completedAtStr = updatedTask.completedAt
-        ? typeof updatedTask.completedAt === 'string'
-          ? updatedTask.completedAt
-          : updatedTask.completedAt.toISOString()
-        : null;
+        // Run achievements + creatures in parallel
+        const [achieveRes, creatureRes] = await Promise.all([
+          window.fetch('/api/gamification/achievements/check', { method: 'POST' }),
+          window.fetch('/api/gamification/creatures/spawn', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              onTaskComplete: true,
+              isQuickTask: (task?.estimatedMinutes || 0) <= 5,
+            }),
+          }),
+        ]);
 
-      const { xp: xpAmount, wasBonus } = calculateTaskXp(
-        {
-          priority: task?.priority,
-          energyRequired: task?.energyRequired,
-          estimatedMinutes: task?.estimatedMinutes,
-          dueDate: task?.dueDate,
-          completedAt: completedAtStr,
-        },
-        currentStreak
-      );
-
-      const xpRes = await window.fetch('/api/gamification/xp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: xpAmount, reason: 'task_complete' }),
-      });
-
-      if (xpRes.ok) {
-        const xpData = await xpRes.json();
-        result.xpAwarded = xpAmount;
-        result.wasBonus = wasBonus;
-        result.levelUp = xpData.leveledUp || false;
-        result.newLevel = xpData.newLevel || 1;
-      }
-
-      // beatyour8: No visual reward on task completion
-      // Progress is tracked silently, reflection happens at meaningful moments
-
-      // 3. Check achievements
-      const achieveRes = await window.fetch('/api/gamification/achievements/check', {
-        method: 'POST',
-      });
-      if (achieveRes.ok) {
-        const achieveData = await achieveRes.json();
-        result.newAchievements = achieveData.newAchievements || [];
-      }
-
-      // 5. Try to spawn creature
-      const creatureRes = await window.fetch('/api/gamification/creatures/spawn', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          onTaskComplete: true,
-          isQuickTask: (task?.estimatedMinutes || 0) <= 5,
-        }),
-      });
-      if (creatureRes.ok) {
-        const creatureData = await creatureRes.json();
-        if (creatureData.creature) {
-          result.creature = {
-            creature: creatureData.creature,
-            isNew: creatureData.isNew ?? true,
-            newCount: creatureData.newCount ?? 1,
-          };
+        if (achieveRes.ok) {
+          const achieveData = await achieveRes.json();
+          result.newAchievements = achieveData.newAchievements || [];
         }
+
+        if (creatureRes.ok) {
+          const creatureData = await creatureRes.json();
+          if (creatureData.creature) {
+            result.creature = {
+              creature: creatureData.creature,
+              isNew: creatureData.isNew ?? true,
+              newCount: creatureData.newCount ?? 1,
+            };
+          }
+        }
+      } catch (err) {
+        console.error('Gamification error:', err);
+      } finally {
+        completingIdsRef.current.delete(id);
       }
-    } catch (err) {
-      // Gamification errors should not break task completion
-      console.error('Gamification error:', err);
-    } finally {
-      completingIdsRef.current.delete(id);
-    }
+    })();
+
+    // Wait for gamification to complete so callers get the full result
+    await gamificationPromise;
 
     return result;
   }, [tasks, update]);

@@ -17,6 +17,8 @@ export function WikiEditor({ content, onChange }: WikiEditorProps) {
   const { resolvedTheme } = useTheme();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastContentRef = useRef<unknown>(null);
+  // Track whether content change came from our own edits (skip replaceBlocks)
+  const isOwnEditRef = useRef(false);
 
   const [initialBlocks] = useState(() =>
     Array.isArray(content) && content.length > 0 ? (content as Block[]) : undefined
@@ -33,9 +35,15 @@ export function WikiEditor({ content, onChange }: WikiEditorProps) {
     }
   }, [content]);
 
-  // Replace content when switching pages
+  // Replace content when switching pages (external content change only)
   useEffect(() => {
     if (content !== lastContentRef.current && editor) {
+      // Skip replaceBlocks if this content change was triggered by our own edit
+      if (isOwnEditRef.current) {
+        isOwnEditRef.current = false;
+        lastContentRef.current = content;
+        return;
+      }
       try {
         if (Array.isArray(content) && content.length > 0) {
           editor.replaceBlocks(editor.document, content as Block[]);
@@ -52,6 +60,7 @@ export function WikiEditor({ content, onChange }: WikiEditorProps) {
   const handleChange = useCallback(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
+      isOwnEditRef.current = true;
       onChange(editor.document);
     }, 1000);
   }, [editor, onChange]);

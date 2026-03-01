@@ -37,6 +37,7 @@ function TodayContent() {
     focusMinutes: 0,
     streakDays: 0,
   });
+  const { handleTaskComplete, showCalmReview, state, refreshAll, showDeferredAchievements } = useGamificationEvents();
   const {
     todayTasks,
     overdueTasks,
@@ -50,8 +51,7 @@ function TodayContent() {
     create,
     rescheduleToToday,
     archive,
-  } = useTasks();
-  const { handleTaskComplete, showCalmReview, state, refreshAll, showDeferredAchievements } = useGamificationEvents();
+  } = useTasks({ currentStreak: state?.currentStreak ?? 0 });
   const { quests, loading: questsLoading, updateProgress: updateQuestProgress } = useQuests();
   const { profile } = useProfile();
   const justOneMode = profile?.preferences?.showOnlyOneTask ?? false;
@@ -127,11 +127,13 @@ function TodayContent() {
       creature: result.creature,
     });
 
-    // Update quest progress for task completion quests
-    updateQuestProgress('complete_tasks');
-    updateQuestProgress('complete_tasks_3');
-    updateQuestProgress('complete_tasks_5');
-    updateQuestProgress('complete_tasks_7');
+    // Update quest progress for task completion quests (batch in parallel)
+    Promise.all([
+      updateQuestProgress('complete_tasks'),
+      updateQuestProgress('complete_tasks_3'),
+      updateQuestProgress('complete_tasks_5'),
+      updateQuestProgress('complete_tasks_7'),
+    ]);
   }, [complete, handleTaskComplete, updateQuestProgress]);
 
   // Handle creating subtasks from decomposition
