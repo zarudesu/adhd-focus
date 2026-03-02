@@ -83,7 +83,7 @@ interface UseTasksReturn {
   fetch: () => Promise<void>;
   create: (input: CreateTaskInput) => Promise<Task>;
   update: (id: string, input: UpdateTaskInput) => Promise<Task>;
-  complete: (id: string) => Promise<CompleteResult>;
+  complete: (id: string, opts?: { skipChecks?: boolean }) => Promise<CompleteResult>;
   uncomplete: (id: string) => Promise<Task>;
   deleteTask: (id: string) => Promise<void>;
   moveToToday: (id: string) => Promise<Task>;
@@ -204,7 +204,7 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
     }
   }, [fetch]);
 
-  const complete = useCallback(async (id: string): Promise<CompleteResult> => {
+  const complete = useCallback(async (id: string, opts?: { skipChecks?: boolean }): Promise<CompleteResult> => {
     // Prevent rapid double-clicks from awarding XP twice
     if (completingIdsRef.current.has(id)) {
       return { task: tasks.find((t) => t.id === id) as Task, xpAwarded: 0, wasBonus: false, levelUp: false, newLevel: 1, newAchievements: [], creature: null };
@@ -270,32 +270,34 @@ export function useTasks(options: UseTasksOptions = {}): UseTasksReturn {
           result.newLevel = xpData.newLevel || 1;
         }
 
-        // Run achievements + creatures in parallel
-        const [achieveRes, creatureRes] = await Promise.all([
-          window.fetch('/api/gamification/achievements/check', { method: 'POST' }),
-          window.fetch('/api/gamification/creatures/spawn', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              onTaskComplete: true,
-              isQuickTask: (task?.estimatedMinutes || 0) <= 5,
+        // Run achievements + creatures in parallel (skip during burst mode)
+        if (!opts?.skipChecks) {
+          const [achieveRes, creatureRes] = await Promise.all([
+            window.fetch('/api/gamification/achievements/check', { method: 'POST' }),
+            window.fetch('/api/gamification/creatures/spawn', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                onTaskComplete: true,
+                isQuickTask: (task?.estimatedMinutes || 0) <= 5,
+              }),
             }),
-          }),
-        ]);
+          ]);
 
-        if (achieveRes.ok) {
-          const achieveData = await achieveRes.json();
-          result.newAchievements = achieveData.newAchievements || [];
-        }
+          if (achieveRes.ok) {
+            const achieveData = await achieveRes.json();
+            result.newAchievements = achieveData.newAchievements || [];
+          }
 
-        if (creatureRes.ok) {
-          const creatureData = await creatureRes.json();
-          if (creatureData.creature) {
-            result.creature = {
-              creature: creatureData.creature,
-              isNew: creatureData.isNew ?? true,
-              newCount: creatureData.newCount ?? 1,
-            };
+          if (creatureRes.ok) {
+            const creatureData = await creatureRes.json();
+            if (creatureData.creature) {
+              result.creature = {
+                creature: creatureData.creature,
+                isNew: creatureData.isNew ?? true,
+                newCount: creatureData.newCount ?? 1,
+              };
+            }
           }
         }
       } catch (err) {

@@ -365,6 +365,24 @@ async function getTaskCompletionStats(userId: string, userTimezone: string = 'UT
   return { stats, completions };
 }
 
+// Server-side throttle: prevent checking more than once per 30s per user
+const achievementCheckTimes = new Map<string, number>();
+let throttleCleanupCounter = 0;
+
+function isThrottled(userId: string): boolean {
+  const now = Date.now();
+  const lastCheck = achievementCheckTimes.get(userId) || 0;
+  if (now - lastCheck < 30_000) return true;
+  achievementCheckTimes.set(userId, now);
+  // Clean stale entries every 100 checks
+  if (++throttleCleanupCounter % 100 === 0) {
+    for (const [id, time] of achievementCheckTimes) {
+      if (now - time > 300_000) achievementCheckTimes.delete(id);
+    }
+  }
+  return false;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const user = await getAuthUser(request);
@@ -373,6 +391,10 @@ export async function POST(request: NextRequest) {
     }
 
     const userId = user.id;
+
+    if (isThrottled(userId)) {
+      return NextResponse.json({ checked: 0, newAchievements: [], throttled: true });
+    }
 
     // Get user stats and preferences (for timezone)
     const [dbUser] = await db

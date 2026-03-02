@@ -1,5 +1,26 @@
 import { describe, it, expect } from 'vitest';
-import { xpForLevel, levelFromXp, rollReward, XP_CONFIG } from './gamification';
+import { xpForLevel, xpForNextLevel, levelFromXp, rollReward, XP_CONFIG } from './gamification';
+
+describe('xpForNextLevel', () => {
+  it('returns 100 for level 1', () => {
+    expect(xpForNextLevel(1)).toBe(100);
+  });
+
+  it('returns increasing values for higher levels', () => {
+    let prev = 0;
+    for (let level = 1; level <= 20; level++) {
+      const needed = xpForNextLevel(level);
+      expect(needed).toBeGreaterThan(prev);
+      prev = needed;
+    }
+  });
+
+  it('follows floor(100 * level^0.7) formula', () => {
+    expect(xpForNextLevel(1)).toBe(Math.floor(100 * Math.pow(1, 0.7)));
+    expect(xpForNextLevel(5)).toBe(Math.floor(100 * Math.pow(5, 0.7)));
+    expect(xpForNextLevel(10)).toBe(Math.floor(100 * Math.pow(10, 0.7)));
+  });
+});
 
 describe('xpForLevel', () => {
   it('returns 0 XP for level 1', () => {
@@ -10,8 +31,14 @@ describe('xpForLevel', () => {
     expect(xpForLevel(2)).toBe(100);
   });
 
-  it('returns 900 XP for level 10', () => {
-    expect(xpForLevel(10)).toBe(900);
+  it('returns sum of xpForNextLevel(1..N-1) for level N', () => {
+    for (let level = 2; level <= 10; level++) {
+      let expected = 0;
+      for (let i = 1; i < level; i++) {
+        expected += xpForNextLevel(i);
+      }
+      expect(xpForLevel(level)).toBe(expected);
+    }
   });
 
   it('returns 0 for level 0 or negative', () => {
@@ -19,10 +46,9 @@ describe('xpForLevel', () => {
     expect(xpForLevel(-1)).toBe(0);
   });
 
-  it('scales linearly (100 XP per level)', () => {
-    for (let level = 1; level <= 20; level++) {
-      expect(xpForLevel(level)).toBe(Math.max(0, (level - 1) * 100));
-    }
+  it('grows faster than linear (soft exponential)', () => {
+    // Level 10 should require significantly more total XP than 9 * 100
+    expect(xpForLevel(10)).toBeGreaterThan(900);
   });
 });
 
@@ -39,12 +65,11 @@ describe('levelFromXp', () => {
     expect(levelFromXp(100)).toBe(2);
   });
 
-  it('returns level 3 for 250 XP', () => {
-    expect(levelFromXp(250)).toBe(3);
-  });
-
-  it('handles large XP values', () => {
-    expect(levelFromXp(10000)).toBe(101);
+  it('handles large XP values without exceeding reasonable levels', () => {
+    // With new curve, 10000 XP should be much less than 101
+    const level = levelFromXp(10000);
+    expect(level).toBeGreaterThan(10);
+    expect(level).toBeLessThan(50);
   });
 });
 

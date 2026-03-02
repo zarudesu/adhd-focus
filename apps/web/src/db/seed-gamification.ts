@@ -49,7 +49,7 @@ async function seedFeatures() {
       icon: 'Trophy',
       category: 'navigation',
       isNavItem: true,
-      unlockTasksAdded: 3,
+      unlockTasksAdded: 5,
       sortOrder: 11,
     },
 
@@ -127,7 +127,7 @@ async function seedFeatures() {
       icon: 'RefreshCw',
       category: 'navigation',
       isNavItem: true,
-      unlockTasksCompleted: 10,
+      unlockTasksCompleted: 15,
       sortOrder: 6.5,
     },
 
@@ -140,7 +140,7 @@ async function seedFeatures() {
       icon: 'Zap',
       category: 'navigation',
       isNavItem: true,
-      unlockTasksCompleted: 10,
+      unlockTasksCompleted: 15,
       sortOrder: 7,
     },
 
@@ -153,7 +153,7 @@ async function seedFeatures() {
       icon: 'Timer',
       category: 'navigation',
       isNavItem: true,
-      unlockTasksCompleted: 5,
+      unlockTasksCompleted: 7,
       sortOrder: 8,
     },
 
@@ -166,7 +166,7 @@ async function seedFeatures() {
       icon: 'Ghost',
       category: 'navigation',
       isNavItem: true,
-      unlockLevel: 5,
+      unlockLevel: 8,
       sortOrder: 10,
     },
 

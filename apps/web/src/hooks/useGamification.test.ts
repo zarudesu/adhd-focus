@@ -197,15 +197,15 @@ describe('xpToNextLevel', () => {
     const result = xpToNextLevel(175);
     expect(result.currentLevel).toBe(2);
     expect(result.xpInLevel).toBe(75);
-    expect(result.xpNeeded).toBe(100);
-    expect(result.progress).toBe(75);
+    expect(result.xpNeeded).toBe(162); // Soft exponential: level 2 needs 162 XP
+    expect(result.progress).toBeCloseTo(46.3, 0);
   });
 
   it('handles high XP values', () => {
     const result = xpToNextLevel(1050);
-    expect(result.currentLevel).toBe(11);
-    expect(result.xpInLevel).toBe(50);
-    expect(result.xpNeeded).toBe(100);
-    expect(result.progress).toBe(50);
+    expect(result.currentLevel).toBe(6); // Soft exponential: 1048 for level 6
+    expect(result.xpInLevel).toBe(2);
+    expect(result.xpNeeded).toBe(350); // Level 6 needs 350 XP
+    expect(result.progress).toBeCloseTo(0.57, 0);
   });
 });

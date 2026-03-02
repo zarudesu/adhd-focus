@@ -30,6 +30,7 @@ import { useTasks } from '@/hooks/useTasks';
 import { useYesterdayReview } from '@/hooks/useYesterdayReview';
 import { useMorningReview } from '@/hooks/useMorningReview';
 import { useWelcomeBack } from '@/hooks/useWelcomeBack';
+import { useVelocity, type VelocityMode } from '@/hooks/useVelocity';
 import { WelcomeBackFlow } from './WelcomeBackFlow';
 import { useSession } from 'next-auth/react';
 import type { Achievement, Creature } from '@/db/schema';
@@ -109,6 +110,10 @@ interface GamificationContextType {
   // Dialog registry — prevents gamification modals from popping over open dialogs
   registerDialog: () => void;
   unregisterDialog: () => void;
+  // Velocity — adaptive pacing based on user's work speed
+  velocityMode: VelocityMode;
+  isBurst: boolean;
+  recordCompletion: () => VelocityMode;
 }
 
 const GamificationContext = createContext<GamificationContextType | null>(null);
@@ -268,6 +273,82 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
   const COMBO_THRESHOLD = 3; // Minimum for combo activation
   const [comboEvent, setComboEvent] = useState<{ count: number; bonusXp: number; timestamp: number } | null>(null);
 
+  // Velocity detection — adaptive pacing
+  const velocity = useVelocity();
+
+  // Burst accumulator — collects events during rapid task completion
+  const burstAccumulatorRef = useRef({
+    xpTotal: 0,
+    tasksCompleted: 0,
+    levelUps: [] as number[],
+    needsDeferredCheck: false,
+  });
+
+  // Ref for flush to access showLevelUp without circular dependency
+  const showLevelUpRef = useRef<(level: number) => void>(() => {});
+  const showDeferredAchievementsInnerRef = useRef<() => void>(() => {});
+
+  // Flush burst accumulator when pace slows down
+  const flushBurstAccumulator = useCallback(() => {
+    const acc = burstAccumulatorRef.current;
+    if (acc.tasksCompleted === 0) return;
+
+    // Show summary XP gain for progress bar animation
+    if (acc.xpTotal > 0) {
+      setXpGainEvent({ amount: acc.xpTotal, timestamp: Date.now() });
+    }
+
+    // Show highest level reached (not every intermediate level)
+    if (acc.levelUps.length > 0) {
+      const highestLevel = Math.max(...acc.levelUps);
+      showLevelUpRef.current(highestLevel);
+    }
+
+    // Fire deferred achievement + creature checks
+    if (acc.needsDeferredCheck) {
+      Promise.all([
+        window.fetch('/api/gamification/achievements/check', { method: 'POST' }),
+        window.fetch('/api/gamification/creatures/spawn', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ onTaskComplete: true }),
+        }),
+      ]).then(async ([achieveRes, creatureRes]) => {
+        if (achieveRes.ok) {
+          const data = await achieveRes.json();
+          if (data.newAchievements?.length > 0) {
+            deferredAchievementsRef.current.push(...data.newAchievements);
+            showDeferredAchievementsInnerRef.current();
+          }
+        }
+        if (creatureRes.ok) {
+          const data = await creatureRes.json();
+          if (data.creature) {
+            setPendingCreatures(prev => [...prev, {
+              creature: data.creature,
+              isNew: data.isNew ?? true,
+              count: data.newCount ?? 1,
+            }]);
+          }
+        }
+        refreshAll();
+      }).catch(() => {});
+    }
+
+    // Reset accumulator
+    burstAccumulatorRef.current = {
+      xpTotal: 0,
+      tasksCompleted: 0,
+      levelUps: [],
+      needsDeferredCheck: false,
+    };
+  }, [refreshAll]);
+
+  // Wire velocity idle callback to flush burst accumulator
+  useEffect(() => {
+    velocity.setOnIdleCallback(flushBurstAccumulator);
+  }, [velocity.setOnIdleCallback, flushBurstAccumulator]);
+
   // Deferred achievements - stored until user navigates to main page
   const deferredAchievementsRef = useRef<Achievement[]>([]);
 
@@ -328,6 +409,7 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
       unlockedFeatures,
     });
   }, []);
+  showLevelUpRef.current = showLevelUp;
 
   // Show Calm Review at meaningful moments
   const showCalmReview = useCallback((trigger: ReviewTrigger, context?: ReviewContext) => {
@@ -379,7 +461,30 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
   }, [pendingLevelUp, showLevelUp, refreshAll]);
 
   const handleTaskComplete = useCallback((event: GamificationEvent) => {
-    // Track if we need to refresh features (for menu updates)
+    // Record completion for velocity tracking
+    const currentMode = velocity.recordCompletion();
+
+    // BURST MODE — accumulate silently, defer all notifications
+    if (currentMode === 'burst') {
+      const acc = burstAccumulatorRef.current;
+      acc.tasksCompleted += 1;
+      acc.xpTotal += event.xpAwarded || 0;
+      if (event.levelUp) {
+        acc.levelUps.push(event.levelUp.newLevel);
+      }
+      acc.needsDeferredCheck = true;
+
+      // Still defer achievements if any came through (server throttle might miss some)
+      if (event.newAchievements && event.newAchievements.length > 0) {
+        deferredAchievementsRef.current.push(...event.newAchievements);
+      }
+
+      // Silently refresh features (no notifications)
+      refreshAll();
+      return;
+    }
+
+    // STEADY/IDLE MODE — normal notification flow
     let needsRefresh = false;
 
     // Combo tracking — consecutive task completions within timeout
@@ -397,7 +502,7 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
         const bonusXp = 5 * comboRef.current.count; // 15, 20, 25, ...
         setComboEvent({ count: comboRef.current.count, bonusXp, timestamp: now });
         // Award combo bonus XP silently
-        fetch('/api/gamification/xp', {
+        window.fetch('/api/gamification/xp', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ amount: bonusXp, reason: 'combo_bonus' }),
@@ -471,12 +576,24 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
     }
 
     // Always refresh features after task completion events (updates menu)
-    // Features can unlock based on: tasks completed, level up, achievements
-    // This ensures newly unlocked features appear in sidebar without page reload
     if (needsRefresh || event.xpAwarded) {
       refreshAll();
     }
-  }, [showLevelUp, refreshAll]);
+  }, [showLevelUp, refreshAll, velocity]);
+
+  // Internal: show deferred achievements immediately (used by burst flush)
+  const showDeferredAchievementsInner = useCallback(() => {
+    if (deferredAchievementsRef.current.length === 0) return;
+    const all = [...deferredAchievementsRef.current];
+    deferredAchievementsRef.current = [];
+    if (all.length <= 2) {
+      setPendingAchievements(prev => [...prev, ...all]);
+    } else {
+      setPendingAchievements(prev => [...prev, all[0]]);
+      setAchievementBatchCount(all.length - 1);
+    }
+  }, []);
+  showDeferredAchievementsInnerRef.current = showDeferredAchievementsInner;
 
   // Show deferred achievements - called when user navigates to main page
   // Batched: max 2 individual toasts, rest collapsed into summary
@@ -526,7 +643,7 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
   }, []);
 
   return (
-    <GamificationContext.Provider value={{ showLevelUp, handleTaskComplete, showCalmReview, state, loading, levelProgress, refresh, refreshAll, navFeatures, featuresLoading, isNewlyUnlocked, markFeatureOpened, showDeferredAchievements, xpGainEvent, comboEvent, registerDialog, unregisterDialog }}>
+    <GamificationContext.Provider value={{ showLevelUp, handleTaskComplete, showCalmReview, state, loading, levelProgress, refresh, refreshAll, navFeatures, featuresLoading, isNewlyUnlocked, markFeatureOpened, showDeferredAchievements, xpGainEvent, comboEvent, registerDialog, unregisterDialog, velocityMode: velocity.mode, isBurst: velocity.isBurst, recordCompletion: velocity.recordCompletion }}>
       {children}
 
       {/* Welcome Back Flow — shown BEFORE morning review for returning users */}

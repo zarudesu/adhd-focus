@@ -101,9 +101,15 @@ export async function POST(request: NextRequest) {
       0
     );
 
-    // Roll for spawn (base 30% chance that ANY creature spawns)
+    // Spawn chance decreases as collection grows (prevents early spam)
+    const totalOwned = dbUser.totalCreatures || 0;
+    const spawnChance =
+      totalOwned <= 3 ? 0.20 :
+      totalOwned <= 8 ? 0.12 :
+      totalOwned <= 15 ? 0.08 : 0.05;
+
     const spawnRoll = Math.random();
-    if (spawnRoll > 0.3) {
+    if (spawnRoll > spawnChance) {
       return NextResponse.json({ creature: null, reason: 'Spawn roll failed' });
     }
 
