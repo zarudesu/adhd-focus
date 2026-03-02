@@ -31,6 +31,14 @@ import { useYesterdayReview } from '@/hooks/useYesterdayReview';
 import { useMorningReview } from '@/hooks/useMorningReview';
 import { useWelcomeBack } from '@/hooks/useWelcomeBack';
 import { useVelocity, type VelocityMode } from '@/hooks/useVelocity';
+import {
+  canShowAchievement,
+  canShowCreature,
+  recordAchievementShown,
+  recordCreatureShown,
+  deferReward,
+  popDeferredRewards,
+} from '@/lib/notification-budget';
 import { WelcomeBackFlow } from './WelcomeBackFlow';
 import { useSession } from 'next-auth/react';
 import type { Achievement, Creature } from '@/db/schema';
@@ -200,6 +208,25 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
     }
   }, [refresh, refreshFeatures]);
 
+  // Session-start drip — show 1 deferred reward from previous session
+  useEffect(() => {
+    if (loading || !session?.user?.id) return;
+    const dripKey = 'notification-drip-done';
+    if (sessionStorage.getItem(dripKey)) return;
+    sessionStorage.setItem(dripKey, '1');
+
+    const userId = session.user.id;
+    const deferred = popDeferredRewards(userId);
+    for (const reward of deferred) {
+      if (reward.type === 'achievement') {
+        deferredAchievementsRef.current.push(reward.data as Achievement);
+      } else if (reward.type === 'creature') {
+        const cd = reward.data as CaughtCreatureData;
+        setPendingCreatures(prev => [...prev, cd]);
+      }
+    }
+  }, [loading, session?.user?.id]);
+
   // Day 3-5 Surprise — bridge the novelty cliff
   useEffect(() => {
     if (loading || !state) return;
@@ -324,11 +351,14 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
         if (creatureRes.ok) {
           const data = await creatureRes.json();
           if (data.creature) {
-            setPendingCreatures(prev => [...prev, {
-              creature: data.creature,
-              isNew: data.isNew ?? true,
-              count: data.newCount ?? 1,
-            }]);
+            const creatureData = { creature: data.creature, isNew: data.isNew ?? true, count: data.newCount ?? 1 };
+            const uid = session?.user?.id;
+            if (canShowCreature()) {
+              recordCreatureShown();
+              setPendingCreatures(prev => [...prev, creatureData]);
+            } else if (uid) {
+              deferReward(uid, 'creature', creatureData);
+            }
           }
         }
         refreshAll();
@@ -394,10 +424,19 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
     // Update previous set
     previousUnlockedRef.current = currentUnlocked;
 
-    // Show subtle toasts for mid-session unlocks
-    if (newToasts.length > 0) {
+    // Show subtle toasts for mid-session unlocks — batch if multiple
+    if (newToasts.length === 1) {
       setTimeout(() => {
         setPendingFeatureToasts(prev => [...prev, ...newToasts]);
+      }, 0);
+    } else if (newToasts.length > 1) {
+      // Batch into single toast: "5 features unlocked"
+      const names = newToasts.map(t => t.name).join(', ');
+      setTimeout(() => {
+        setPendingFeatureToasts(prev => [...prev, {
+          code: '__batch__',
+          name: `${newToasts.length} features: ${names}`,
+        }]);
       }, 0);
     }
   }, [navFeatures, featuresLoading, session?.user?.id]);
@@ -561,13 +600,20 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
       needsRefresh = true; // Achievements can unlock features
     }
 
-    // Phase 4: Queue creature caught for toast display
+    // Phase 4: Queue creature caught — budget-gated
     if (event.creature) {
-      setPendingCreatures((prev) => [...prev, {
-        creature: event.creature!.creature,
-        isNew: event.creature!.isNew,
-        count: event.creature!.newCount,
-      }]);
+      const creatureData = {
+        creature: event.creature.creature,
+        isNew: event.creature.isNew,
+        count: event.creature.newCount,
+      };
+      const uid = session?.user?.id;
+      if (canShowCreature()) {
+        recordCreatureShown();
+        setPendingCreatures((prev) => [...prev, creatureData]);
+      } else if (uid) {
+        deferReward(uid, 'creature', creatureData);
+      }
     }
 
     // Fire XP gain event for progress bar animation
@@ -581,51 +627,52 @@ export function GamificationProvider({ children }: GamificationProviderProps) {
     }
   }, [showLevelUp, refreshAll, velocity]);
 
-  // Internal: show deferred achievements immediately (used by burst flush)
+  // Budget-aware achievement display — shows within session limit, defers rest
   const showDeferredAchievementsInner = useCallback(() => {
     if (deferredAchievementsRef.current.length === 0) return;
-    const all = [...deferredAchievementsRef.current];
-    deferredAchievementsRef.current = [];
-    if (all.length <= 2) {
-      setPendingAchievements(prev => [...prev, ...all]);
-    } else {
-      setPendingAchievements(prev => [...prev, all[0]]);
-      setAchievementBatchCount(all.length - 1);
-    }
-  }, []);
-  showDeferredAchievementsInnerRef.current = showDeferredAchievementsInner;
-
-  // Show deferred achievements - called when user navigates to main page
-  // Batched: max 2 individual toasts, rest collapsed into summary
-  const MAX_INDIVIDUAL_TOASTS = 2;
-
-  const showDeferredAchievements = useCallback(() => {
-    if (deferredAchievementsRef.current.length === 0) return;
+    const userId = session?.user?.id;
 
     const all = [...deferredAchievementsRef.current];
-    // eslint-disable-next-line react-hooks/immutability -- intentional ref buffer clear
     deferredAchievementsRef.current = [];
 
     const priorityOrder: Record<string, number> = {
-      ultra_secret: 6,
-      secret: 5,
-      mastery: 4,
-      hidden: 3,
-      streak: 2,
-      progress: 1,
+      ultra_secret: 6, secret: 5, mastery: 4, hidden: 3, streak: 2, progress: 1,
     };
     all.sort((a, b) => (priorityOrder[b.category] || 0) - (priorityOrder[a.category] || 0));
 
-    if (all.length <= MAX_INDIVIDUAL_TOASTS) {
-      // Show all individually
-      setPendingAchievements((prev) => [...prev, ...all]);
-      setAchievementBatchCount(0);
-    } else {
-      // Show top 1 individually + batch summary for the rest
-      setPendingAchievements((prev) => [...prev, all[0]]);
-      setAchievementBatchCount(all.length - 1);
+    // Show only what the session budget allows
+    const toShow: Achievement[] = [];
+    const toDefer: Achievement[] = [];
+
+    for (const achievement of all) {
+      if (canShowAchievement()) {
+        toShow.push(achievement);
+        recordAchievementShown();
+      } else {
+        toDefer.push(achievement);
+      }
     }
-  }, []);
+
+    // Defer overflow to next session
+    if (userId && toDefer.length > 0) {
+      for (const a of toDefer) {
+        deferReward(userId, 'achievement', a);
+      }
+    }
+
+    if (toShow.length > 0) {
+      setPendingAchievements(prev => [...prev, toShow[0]]);
+      if (toShow.length > 1) {
+        setAchievementBatchCount(toShow.length - 1);
+      }
+    }
+  }, [session?.user?.id]);
+  showDeferredAchievementsInnerRef.current = showDeferredAchievementsInner;
+
+  // Public: show deferred achievements (called from Today page)
+  const showDeferredAchievements = useCallback(() => {
+    showDeferredAchievementsInner();
+  }, [showDeferredAchievementsInner]);
 
   // Dismiss achievement from queue — when last individual one dismissed, batch count shows
   const dismissAchievement = useCallback((code: string) => {
