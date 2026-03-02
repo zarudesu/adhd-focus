@@ -228,104 +228,128 @@ export function AppSidebar({ user }: AppSidebarProps) {
         )}
 
         {projectsUnlocked && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Projects</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {/* All Projects link */}
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname === "/dashboard/projects"}
+          <Collapsible defaultOpen={pathname.startsWith("/dashboard/projects")} className="group/projects">
+            <SidebarGroup>
+              <SidebarGroupLabel asChild>
+                <div className="flex items-center justify-between w-full">
+                  <Link
+                    href="/dashboard/projects"
                     className={cn(
+                      "flex-1 hover:text-foreground transition-colors",
                       projectsFeature && isNewlyUnlocked(projectsFeature.code) && "animate-feature-shimmer"
                     )}
+                    onClick={() => {
+                      if (projectsFeature && isNewlyUnlocked(projectsFeature.code)) {
+                        markFeatureOpened(projectsFeature.code);
+                      }
+                    }}
                   >
-                    <Link
-                      href="/dashboard/projects"
-                      onClick={() => {
-                        if (projectsFeature && isNewlyUnlocked(projectsFeature.code)) {
-                          markFeatureOpened(projectsFeature.code);
-                        }
-                      }}
-                    >
-                      <Folder className="h-4 w-4" />
-                      <span>All Projects</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                    Projects
+                  </Link>
+                  <CollapsibleTrigger asChild>
+                    <button className="p-0.5 rounded-sm hover:bg-sidebar-accent">
+                      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 group-data-[state=open]/projects:rotate-90" />
+                    </button>
+                  </CollapsibleTrigger>
+                </div>
+              </SidebarGroupLabel>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {userProjects.filter(p => !p.archived).map((project) => {
+                      const wikiPages = wikiByProject.get(project.id) || [];
+                      const projectUrl = `/dashboard/projects/${project.id}`;
+                      const isProjectActive = pathname.startsWith(projectUrl);
+                      const taskCount = project.taskCount;
+                      const hasSubmenu = wikiPages.length > 0;
 
-                {/* Individual projects with wiki pages */}
-                {userProjects.filter(p => !p.archived).map((project) => {
-                  const wikiPages = wikiByProject.get(project.id) || [];
-                  const projectUrl = `/dashboard/projects/${project.id}`;
-                  const isProjectActive = pathname.startsWith(projectUrl);
-                  const taskCount = project.taskCount;
-                  const hasSubmenu = wikiPages.length > 0;
+                      if (!hasSubmenu) {
+                        return (
+                          <SidebarMenuItem key={project.id}>
+                            <SidebarMenuButton asChild isActive={isProjectActive}>
+                              <Link href={projectUrl}>
+                                <span className="text-sm">{project.emoji || '📁'}</span>
+                                <span className="truncate flex-1">{project.name}</span>
+                                {taskCount != null && taskCount > 0 && (
+                                  <span className="text-[10px] text-muted-foreground tabular-nums">{taskCount}</span>
+                                )}
+                              </Link>
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
+                        );
+                      }
 
-                  if (!hasSubmenu) {
-                    return (
-                      <SidebarMenuItem key={project.id}>
-                        <SidebarMenuButton asChild isActive={isProjectActive}>
-                          <Link href={projectUrl}>
-                            <span className="text-sm">{project.emoji || '📁'}</span>
-                            <span className="truncate flex-1">{project.name}</span>
-                            {taskCount != null && taskCount > 0 && (
-                              <span className="text-[10px] text-muted-foreground tabular-nums">{taskCount}</span>
-                            )}
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    );
-                  }
+                      return (
+                        <Collapsible key={project.id} defaultOpen={isProjectActive} className="group/collapsible">
+                          <SidebarMenuItem className="relative">
+                            <SidebarMenuButton asChild isActive={isProjectActive}>
+                              <Link href={projectUrl}>
+                                <span className="text-sm">{project.emoji || '📁'}</span>
+                                <span className="truncate flex-1">{project.name}</span>
+                                {taskCount != null && taskCount > 0 && (
+                                  <span className="text-[10px] text-muted-foreground tabular-nums mr-5">{taskCount}</span>
+                                )}
+                              </Link>
+                            </SidebarMenuButton>
+                            <CollapsibleTrigger asChild>
+                              <button
+                                className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded-sm hover:bg-sidebar-accent"
+                              >
+                                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                              </button>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                              <SidebarMenuSub>
+                                {wikiPages.map((page) => (
+                                  <SidebarMenuSubItem key={page.id}>
+                                    <SidebarMenuSubButton asChild>
+                                      <Link href={`${projectUrl}?wiki=${page.id}`}>
+                                        <FileText className="h-3.5 w-3.5" />
+                                        <span className="truncate">{page.title}</span>
+                                      </Link>
+                                    </SidebarMenuSubButton>
+                                  </SidebarMenuSubItem>
+                                ))}
+                              </SidebarMenuSub>
+                            </CollapsibleContent>
+                          </SidebarMenuItem>
+                        </Collapsible>
+                      );
+                    })}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
+          </Collapsible>
+        )}
 
-                  return (
-                    <Collapsible key={project.id} defaultOpen={isProjectActive} className="group/collapsible">
-                      <SidebarMenuItem className="relative">
-                        <SidebarMenuButton asChild isActive={isProjectActive}>
-                          <Link href={projectUrl}>
-                            <span className="text-sm">{project.emoji || '📁'}</span>
-                            <span className="truncate flex-1">{project.name}</span>
-                            {taskCount != null && taskCount > 0 && (
-                              <span className="text-[10px] text-muted-foreground tabular-nums mr-5">{taskCount}</span>
-                            )}
-                          </Link>
-                        </SidebarMenuButton>
-                        <CollapsibleTrigger asChild>
-                          <button
-                            className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded-sm hover:bg-sidebar-accent"
-                          >
-                            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                          </button>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <SidebarMenuSub>
-                            {wikiPages.map((page) => (
-                              <SidebarMenuSubItem key={page.id}>
-                                <SidebarMenuSubButton asChild>
-                                  <Link href={`${projectUrl}?wiki=${page.id}`}>
-                                    <FileText className="h-3.5 w-3.5" />
-                                    <span className="truncate">{page.title}</span>
-                                  </Link>
-                                </SidebarMenuSubButton>
-                              </SidebarMenuSubItem>
-                            ))}
-                          </SidebarMenuSub>
-                        </CollapsibleContent>
-                      </SidebarMenuItem>
-                    </Collapsible>
-                  );
-                })}
-
-                {/* Wiki hub link */}
+        {/* Wiki — separate section */}
+        {projectsUnlocked && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Wiki</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={pathname === "/dashboard/wiki"}>
                     <Link href="/dashboard/wiki">
                       <BookOpen className="h-4 w-4" />
-                      <span>Wiki</span>
+                      <span>All Pages</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+                {projectsWithPages.filter(p => p.pages.length > 0).map((project) => {
+                  const projectUrl = `/dashboard/projects/${project.projectId}`;
+                  return project.pages.map((page) => (
+                    <SidebarMenuItem key={page.id}>
+                      <SidebarMenuButton asChild isActive={pathname === projectUrl && false}>
+                        <Link href={`${projectUrl}?wiki=${page.id}`}>
+                          <FileText className="h-4 w-4" />
+                          <span className="truncate">{page.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ));
+                }).flat()}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
