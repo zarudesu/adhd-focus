@@ -1,7 +1,7 @@
 # Feature Unlock System
 
 > Progressive disclosure for ADHD brains - reveal features as users build habits
-> Last updated: 2026-03-01
+> Last updated: 2026-03-02
 
 ## Design Philosophy
 
@@ -21,10 +21,11 @@ ADHD users can be overwhelmed by too many options at once. We use **progressive 
 | **Projects** | 10 tasks added | `tasksAdded >= 10` | Enough tasks to organize |
 | **Completed** | 1 task completed | `totalTasksCompleted >= 1` | First win |
 | **Daily Checklist** | 3 tasks completed | `totalTasksCompleted >= 3` | Ready for habits |
-| **Quick Actions** | 10 tasks completed | `totalTasksCompleted >= 10` | Power user emerging |
-| **Focus Mode** | 5 tasks completed | `totalTasksCompleted >= 5` | Ready for deep work |
-| **Achievements** | 3 tasks added | `tasksAdded >= 3` | Show gamification early |
-| **Creatures** | Level 5 | `level >= 5` | Earned through XP |
+| **Quick Actions** | 15 tasks completed | `totalTasksCompleted >= 15` | Power user proven |
+| **Review** | 15 tasks completed | `totalTasksCompleted >= 15` | Enough tasks to triage |
+| **Focus Mode** | 7 tasks completed | `totalTasksCompleted >= 7` | Ready for deep work |
+| **Achievements** | 5 tasks added | `tasksAdded >= 5` | Show gamification after engagement |
+| **Creatures** | Level 8 | `level >= 8` | Requires real effort with new XP curve |
 | **Statistics** | 7-day streak | `currentStreak >= 7` | Consistent habit formed |
 
 ## User Journey Map
@@ -32,7 +33,7 @@ ADHD users can be overwhelmed by too many options at once. We use **progressive 
 ```
 Day 1-2: Capture & Triage
 ├── INBOX (always available) - Capture everything
-├── Unlock: Add 3 tasks → ACHIEVEMENTS appears (see progress)
+├── Unlock: Add 5 tasks → ACHIEVEMENTS appears (see progress)
 ├── Unlock: Move task to today → TODAY appears
 ├── Unlock: Complete task → COMPLETED appears
 └── Feature tutorials appear on first open of each page
@@ -40,16 +41,15 @@ Day 1-2: Capture & Triage
 Day 3-7: Building Habits
 ├── Unlock: Complete 3 tasks → DAILY CHECKLIST appears
 ├── Unlock: Schedule for tomorrow → SCHEDULED appears
-├── Unlock: Complete 5 tasks → FOCUS MODE appears
+├── Unlock: Complete 7 tasks → FOCUS MODE appears
 ├── Unlock: Add 10 tasks → PROJECTS appears (+ wiki pages)
-├── Unlock: Reach Level 5 → CREATURES appears
 ├── Day 3-5 surprise achievements ("Still Here", "Comeback")
 └── Morning Review starts showing (stale tasks → habits)
 
 Week 2+: Power User
-├── Unlock: Complete 10 tasks → QUICK ACTIONS appears
+├── Unlock: Complete 15 tasks → QUICK ACTIONS + REVIEW appears
 ├── Unlock: 7-day streak → STATISTICS appears
-├── REVIEW MODE available for inbox/project triage
+├── Unlock: Reach Level 8 → CREATURES appears (requires real effort)
 ├── DAILY QUESTS auto-generated based on level
 ├── AI features: suggest, decompose, brain-dump
 └── PROJECT WIKI for documentation per project
@@ -63,19 +63,20 @@ Week 2+: Power User
 ### Tier 2: Early Unlocks (Day 1)
 - **Today**: Focus on what matters NOW. Unlocks immediately when user assigns first task to today.
 - **Completed**: See your wins. Unlocks on first task completion.
-- **Achievements**: Early gamification hook. Unlocks after 3 tasks added.
+- **Achievements**: Gamification hook. Unlocks after 5 tasks added (was 3).
 
 ### Tier 3: Planning Features (Day 2-3)
 - **Daily Checklist**: Build habits. Unlocks after 3 tasks completed.
 - **Scheduled**: Future planning. Unlocks when user schedules a task for a FUTURE date (not today).
-- **Focus Mode**: Deep work timer. Unlocks after 5 completions show readiness.
+- **Focus Mode**: Deep work timer. Unlocks after 7 completions (was 5).
 
 ### Tier 4: Organization (Week 1)
 - **Projects**: Group related tasks. Unlocks at 10 tasks when organization becomes necessary.
-- **Quick Actions**: Power user shortcuts. Unlocks at 10 completions.
+- **Quick Actions**: Power user shortcuts. Unlocks at 15 completions (was 10).
+- **Review**: Multi-source triage. Unlocks at 15 completions (was 10).
 
 ### Tier 5: Long-term (Week 2+)
-- **Creatures**: Virtual companions. Unlocks at Level 5 (earned through XP).
+- **Creatures**: Virtual companions. Unlocks at Level 8 (was 5). With soft exponential XP curve, requires real effort.
 - **Statistics**: Data for data lovers. Unlocks at 7-day streak (proves consistent usage).
 
 ## Technical Implementation
@@ -175,10 +176,11 @@ const features = [
   { code: 'nav_projects', name: 'Projects', unlockTasksAdded: 10 },
   { code: 'nav_completed', name: 'Completed', unlockTasksCompleted: 1 },
   { code: 'nav_checklist', name: 'Daily Checklist', unlockTasksCompleted: 3 },
-  { code: 'nav_quick_actions', name: 'Quick Actions', unlockTasksCompleted: 10 },
-  { code: 'nav_focus', name: 'Focus Mode', unlockTasksCompleted: 5 },
-  { code: 'nav_achievements', name: 'Achievements', unlockTasksAdded: 3 },
-  { code: 'nav_creatures', name: 'Creatures', unlockLevel: 5 },
+  { code: 'nav_quick_actions', name: 'Quick Actions', unlockTasksCompleted: 15 },
+  { code: 'nav_review', name: 'Review', unlockTasksCompleted: 15 },
+  { code: 'nav_focus', name: 'Focus Mode', unlockTasksCompleted: 7 },
+  { code: 'nav_achievements', name: 'Achievements', unlockTasksAdded: 5 },
+  { code: 'nav_creatures', name: 'Creatures', unlockLevel: 8 },
   { code: 'nav_stats', name: 'Statistics', unlockStreakDays: 7 },
 ];
 ```

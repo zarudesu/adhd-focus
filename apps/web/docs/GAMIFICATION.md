@@ -1,7 +1,7 @@
 # ADHD Focus - Gamification System
 
 > **Документация для разработки геймификации**
-> Последнее обновление: 2026-03-01
+> Последнее обновление: 2026-03-02
 
 ## Концепция
 
@@ -113,27 +113,31 @@ reward_logs
 | Scheduled | 1 task scheduled for **future** date |
 | Completed | 1 task completed |
 | Daily Checklist | 3 tasks completed |
-| Achievements | 3 tasks added |
-| Focus Mode | 5 tasks completed |
+| Achievements | 5 tasks added |
+| Focus Mode | 7 tasks completed |
 | Projects | 10 tasks added |
-| Quick Actions | 10 tasks completed |
-| Creatures | Level 5 |
+| Quick Actions | 15 tasks completed |
+| Review | 15 tasks completed |
+| Creatures | Level 8 |
 | Statistics | 7-day streak |
 
 ---
 
 ## XP Система
 
-### Формула уровня
+### Формула уровня (Soft Exponential)
 
 ```typescript
-XP_to_level = floor(100 × (level ^ 1.5))
+xpForNextLevel(level) = floor(100 × level^0.7)
 
-Level 1 → 2:   100 XP
-Level 2 → 3:   283 XP
-Level 5 → 6:  1118 XP
-Level 10→11:  3162 XP
+Level 1 → 2:   100 XP   (~7 задач)
+Level 2 → 3:   162 XP   (~18 задач cumulative)
+Level 3 → 4:   219 XP   (~33 задач)
+Level 5 → 6:   322 XP   (~74 задач)
+Level 10→11:   501 XP   (~240 задач)
 ```
+
+> Заменена линейная формула (100 XP/уровень) на мягкую экспоненту для предотвращения спама уровней.
 
 ### XP за действия
 
@@ -214,9 +218,16 @@ if (Math.random() < 0.1) multiplier *= 2
 
 ### Spawn механика
 
-1. При завершении задачи - 30% шанс попытки spawn
+1. При завершении задачи — шанс spawn зависит от размера коллекции:
+   - 0-3 существ: 20%
+   - 4-8: 12%
+   - 9-15: 8%
+   - 16+: 5%
 2. Проверяются условия существ (время, streak, уровень)
 3. Из подходящих выбирается по весам (spawnChance)
+4. Cooldown: 2 задачи после успешного spawn — не проверять
+
+> Заменён фиксированный 30% шанс на адаптивный по размеру коллекции.
 
 ### Редкости
 
@@ -228,6 +239,48 @@ if (Math.random() < 0.1) multiplier *= 2
 | Legendary | 10-20 |
 | Mythic | 3-5 |
 | Secret | 10 (но особые условия) |
+
+---
+
+## Velocity Detection & Anti-Spam
+
+### Velocity Modes (useVelocity.ts)
+
+Клиентский скользящий window трекает timestamps завершённых задач:
+
+| Mode | Условие | Поведение |
+|------|---------|-----------|
+| **burst** | 3+ задач за 5 мин ИЛИ 5+ за 15 мин | Подавление уведомлений, накопление в аккумулятор |
+| **steady** | Есть активность, но не burst | Нормальные награды |
+| **idle** | 60 сек без новых завершений | Flush аккумулятора → сводка |
+
+### Burst Accumulator (GamificationProvider.tsx)
+
+При burst режиме:
+- XP начисляется полностью
+- Achievement check **пропускается** (deferred)
+- Creature spawn **пропускается** (deferred)
+- Уведомления **накапливаются**
+
+При переходе burst → idle:
+1. Запускается deferred achievement check + creature spawn
+2. Показывается ОДНА сводка: "8 задач! +127 XP"
+3. Если было несколько level-up — только последний: "Level 4!"
+
+### Notification Budget (notification-budget.ts)
+
+Контроль частоты НЕЗАВИСИМО от velocity mode:
+
+| Тип | Лимит за сессию | Overflow |
+|-----|-----------------|----------|
+| Achievements | 2 | → localStorage (3 дня) |
+| Creatures | 1 | → localStorage (3 дня) |
+| Session start drip | 1 deferred | Из прошлой сессии |
+
+### Achievement Throttle (server-side)
+
+Server-side in-memory Map: `userId → lastCheckTimestamp`.
+Если < 30 сек с последней проверки → return `{ throttled: true }`.
 
 ---
 
@@ -305,14 +358,16 @@ src/
 │   ├── useFeatures.ts               # Feature unlocking + shimmer
 │   ├── useFeaturePageTutorial.ts    # Tutorial state per feature page
 │   ├── useGamification.ts           # XP, achievements, creatures, calculateTaskXp
+│   ├── useVelocity.ts               # Burst/steady/idle velocity detection
 │   ├── useQuests.ts                 # Daily quests tracking
 │   ├── useWelcomeBack.ts            # Returning user detection (3+ days)
 │   ├── useMorningReview.ts          # Morning review flow
 │   ├── useHabits.ts                 # Daily checklist habits
-│   └── useTasks.ts                  # Task completion with XP integration
+│   └── useTasks.ts                  # Task completion with XP + velocity integration
 ├── lib/
-│   ├── gamification.ts              # Client-side XP/level calculations
+│   ├── gamification.ts              # Client-side XP/level (soft exponential curve)
 │   ├── gamification-server.ts       # Server-side XP awards
+│   ├── notification-budget.ts       # Session + cross-session notification throttling
 │   └── feature-tutorials.ts         # 20+ tutorial messages per feature
 ├── components/gamification/
 │   ├── FeatureGate.tsx              # Feature gating component
@@ -398,8 +453,18 @@ src/
 - [x] Rich-text wiki pages (BlockNote editor)
 - [x] CRUD per project (/api/projects/[id]/wiki)
 
-### Phase 11: TODO
+### Phase 11: Adaptive Scoring ✅
+- [x] Soft exponential XP curve (`floor(100 * level^0.7)`)
+- [x] Velocity detection (burst/steady/idle modes)
+- [x] Burst accumulator — suppress notifications during rapid input
+- [x] Notification budget — 2 achievements + 1 creature per session, overflow deferred
+- [x] Creature spawn rebalance — collection-size based rates (20% → 5%)
+- [x] Achievement throttle — 30s server-side cooldown
+- [x] Updated feature unlock thresholds
+
+### Phase 12: TODO
 - [ ] FeatureGate coverage — применить ко ВСЕМ UI элементам
+- [ ] Craft system (shards/fragments)
 - [ ] Tier 2 AI (Morning Day Plan, "Stuck?" Helper, Evening Reflection)
 - [ ] Pause Mode (freeze streak без штрафа)
 - [ ] "Make It Tiny" button

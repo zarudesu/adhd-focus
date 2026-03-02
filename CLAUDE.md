@@ -1,7 +1,7 @@
 # CLAUDE.md - AI Assistant Instructions
 
 > **READ THIS FILE FIRST** in every new session or after context compaction.
-> Last updated: 2026-03-01
+> Last updated: 2026-03-02
 
 ---
 
@@ -267,17 +267,15 @@ open ADHDFocus.xcodeproj
 | DELETE /api/keys/[id] | **DONE** (revoke API key) |
 
 ### Key Files Changed Recently
-- `src/components/review/ReviewMode.tsx` - Multi-source review mode (525 lines)
-- `src/components/review/SchedulePopover.tsx` - Smart date picker for review
-- `src/components/wiki/WikiEditor.tsx` - BlockNote rich-text editor
-- `src/components/focus/CalmReview.tsx` - End-of-day calm review
-- `src/lib/ai.ts` - Google Gemini integration
-- `src/lib/feature-tutorials.ts` - 20+ feature tutorials
-- `src/hooks/useQuests.ts` - Daily quests tracking
-- `src/hooks/useMorningReview.ts` - Morning review flow
-- `src/hooks/useProjectWiki.ts` - Wiki pages CRUD
-- `src/hooks/useAllWikiPages.ts` - All wiki pages across projects
-- `src/hooks/useFeaturePageTutorial.ts` - Tutorial state per page
+- `src/lib/gamification.ts` - Soft exponential XP curve (replaced linear)
+- `src/lib/notification-budget.ts` - Session + cross-session notification throttling
+- `src/hooks/useVelocity.ts` - Burst/steady/idle velocity detection
+- `src/hooks/useTasks.ts` - Velocity-aware gamification chain
+- `src/components/gamification/GamificationProvider.tsx` - Burst accumulator, notification budget
+- `src/components/layout/app-sidebar.tsx` - Collapsible projects, separate wiki section, gradient header
+- `src/app/api/gamification/creatures/spawn/route.ts` - Collection-size spawn rates
+- `src/app/api/gamification/achievements/check/route.ts` - 30s server-side throttle
+- `src/db/seed-gamification.ts` - Updated unlock thresholds
 
 ### Known Issues
 
@@ -741,19 +739,20 @@ ADHD brain overwhelms from too many options. Solution:
 | Scheduled | 1 task scheduled for **future** date |
 | Completed | 1 task completed |
 | Checklist | 3 tasks completed |
-| Achievements | 3 tasks added |
-| Focus Mode | 5 tasks completed |
+| Achievements | 5 tasks added |
+| Focus Mode | 7 tasks completed |
 | Projects | 10 tasks added |
-| Quick Actions | 10 tasks completed |
-| Creatures | Level 5 |
+| Quick Actions | 15 tasks completed |
+| Review | 15 tasks completed |
+| Creatures | Level 8 |
 | Statistics | 7-day streak |
 
 See **[docs/FEATURE_UNLOCKS.md](docs/FEATURE_UNLOCKS.md)** for full details and rationale.
 
 ### XP Formula
 ```typescript
-XP_to_level = floor(100 × (level ^ 1.5))
-// L1→2: 100 XP, L2→3: 283 XP, L5→6: 1118 XP
+xpForNextLevel(level) = floor(100 × level^0.7)
+// L1→2: 100 XP, L2→3: 162 XP, L5→6: 322 XP, L10→11: 501 XP
 ```
 
 ### Additional Systems
@@ -784,12 +783,13 @@ src/
 │   ├── useFeatures.ts            # Feature unlock checking + shimmer
 │   ├── useFeaturePageTutorial.ts # Tutorial state per page
 │   ├── useGamification.ts        # XP, levels, rewards, calculateTaskXp
+│   ├── useVelocity.ts            # Burst/steady/idle velocity detection
 │   ├── useQuests.ts              # Daily quests
 │   ├── useWelcomeBack.ts         # Returning user detection (3+ days away)
 │   └── useMorningReview.ts       # Morning review flow
 ├── components/gamification/
 │   ├── FeatureGate.tsx           # Gates UI behind features
-│   ├── GamificationProvider.tsx  # Visual reward effects
+│   ├── GamificationProvider.tsx  # Velocity-aware rewards, burst accumulator, notification budget
 │   └── WelcomeBackFlow.tsx       # Returning user welcome modal
 ├── components/review/
 │   ├── ReviewMode.tsx            # Multi-source triage (525 lines)
@@ -797,14 +797,15 @@ src/
 ├── app/api/gamification/
 │   ├── stats/route.ts            # GET user stats
 │   ├── xp/route.ts              # POST award XP
-│   ├── achievements/check/       # POST check achievements
-│   ├── creatures/spawn/          # POST spawn creature
+│   ├── achievements/check/       # POST check achievements (30s throttle)
+│   ├── creatures/spawn/          # POST spawn creature (collection-size rates)
 │   ├── rewards/log/              # POST log visual effect
 │   ├── day-surprise/             # POST day 3-5 surprise achievement
 │   └── quests/route.ts           # GET/POST daily quests
 ├── lib/
-│   ├── gamification.ts           # Client-side XP/level calculations
+│   ├── gamification.ts           # Client-side XP/level (soft exponential curve)
 │   ├── gamification-server.ts    # Server-side XP awards
+│   ├── notification-budget.ts    # Session + cross-session notification throttling
 │   └── feature-tutorials.ts     # Tutorial content (225 lines)
 └── db/
     ├── schema.ts                 # Gamification tables (26+ total)
@@ -886,15 +887,32 @@ fix(auth): fix bug
 docs: update CLAUDE.md
 ```
 
-## Recent Changes (2026-03-01)
+## Recent Changes (2026-03-02)
 
-### Dashboard Redirect + Wiki Hub + Sidebar Projects ✅
+### Adaptive Gamification System ✅
+- **Soft exponential XP curve**: `floor(100 * level^0.7)` — L1→2: 100, L5→6: 322, L10→11: 501
+- **Velocity detection**: `useVelocity.ts` — burst (3+ in 5min), steady, idle modes
+- **Burst accumulator**: During rapid input, suppress individual notifications → show single summary on idle
+- **Notification budget**: Max 2 achievements + 1 creature per session, overflow deferred to next session via localStorage
+- **Creature spawn rebalance**: Collection-size based (20% at 0-3 owned → 5% at 16+)
+- **Achievement throttle**: Server-side 30s cooldown per user
+- **Updated unlock thresholds**: Achievements 3→5, Focus 5→7, Creatures L5→L8, Quick Actions 10→15, Review 10→15
+- **Key files**: `gamification.ts`, `useVelocity.ts`, `notification-budget.ts`, `GamificationProvider.tsx`, spawn/check routes
+
+### Sidebar Redesign ✅
+- **Gradient header**: Dashboard/Hub link with gradient, glow on hover, "Dashboard" subtitle
+- **Collapsible projects**: "Projects" group label toggles expand/collapse of all projects
+- **Separate wiki section**: Own sidebar group with "All Pages" link + all wiki pages listed
+- **Task count badges**: Each project shows task count in sidebar
+- **Key files**: `app-sidebar.tsx`
+
+### Previous (2026-03-01)
+
+### Dashboard Redirect + Wiki Hub ✅
 - **Landing redirect**: Authenticated users auto-redirect to `/dashboard` (removed PersonalizedLanding)
-- **Sidebar projects**: Collapsible project list with expandable wiki pages per project
 - **Wiki hub**: `/dashboard/wiki` — all wiki pages from all projects with inline BlockNote editor
 - **API**: `GET /api/wiki` — all wiki pages grouped by project
 - **Hook**: `useAllWikiPages.ts` — fetch all wiki pages
-- **Key files**: `app-sidebar.tsx` (collapsible projects), `dashboard/wiki/page.tsx`, `api/wiki/route.ts`
 
 ### API Keys System ✅
 - **Full CRUD**: Create, list, revoke API keys via `/api/keys`
