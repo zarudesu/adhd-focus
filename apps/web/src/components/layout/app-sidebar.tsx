@@ -158,10 +158,13 @@ export function AppSidebar({ user }: AppSidebarProps) {
   if (loading) {
     return (
       <Sidebar>
-        <SidebarHeader className="p-4">
-          <Link href="/dashboard/hub" className="flex items-center gap-2">
+        <SidebarHeader className="p-3">
+          <Link href="/dashboard/hub" className="flex items-center gap-3 rounded-xl p-3 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
             <BeatLogo size="sm" />
-            <span className="font-semibold logo-shimmer">beatyour8</span>
+            <div className="flex flex-col min-w-0">
+              <span className="font-bold text-sm logo-shimmer leading-tight">beatyour8</span>
+              <span className="text-[10px] text-muted-foreground leading-tight">Dashboard</span>
+            </div>
           </Link>
         </SidebarHeader>
         <SidebarContent>
@@ -187,14 +190,29 @@ export function AppSidebar({ user }: AppSidebarProps) {
 
   return (
     <Sidebar>
-      <SidebarHeader className="p-4">
-        <Link href="/dashboard/hub" className="flex items-center gap-2">
-          <BeatLogo size="sm" />
-          <span className="font-semibold logo-shimmer">beatyour8</span>
+      <SidebarHeader className="p-3">
+        <Link
+          href="/dashboard/hub"
+          className={cn(
+            "group flex items-center gap-3 rounded-xl p-3 transition-all",
+            "bg-gradient-to-r from-primary/10 via-primary/5 to-transparent",
+            "hover:from-primary/20 hover:via-primary/10 hover:to-primary/5",
+            "hover:shadow-md hover:shadow-primary/5",
+            "border border-transparent hover:border-primary/20",
+            pathname === "/dashboard/hub" && "from-primary/20 via-primary/10 to-primary/5 border-primary/20 shadow-sm shadow-primary/10"
+          )}
+        >
+          <div className="relative">
+            <BeatLogo size="sm" />
+            <div className="absolute inset-0 rounded-xl bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity blur-sm" />
+          </div>
+          <div className="flex flex-col min-w-0">
+            <span className="font-bold text-sm logo-shimmer leading-tight">beatyour8</span>
+            <span className="text-[10px] text-muted-foreground leading-tight">Dashboard</span>
+          </div>
         </Link>
+        <LevelProgress />
       </SidebarHeader>
-
-      <LevelProgress />
       <SidebarSeparator />
 
       <SidebarContent>
@@ -242,14 +260,19 @@ export function AppSidebar({ user }: AppSidebarProps) {
                   const wikiPages = wikiByProject.get(project.id) || [];
                   const projectUrl = `/dashboard/projects/${project.id}`;
                   const isProjectActive = pathname.startsWith(projectUrl);
+                  const taskCount = project.taskCount;
+                  const hasSubmenu = wikiPages.length > 0;
 
-                  if (wikiPages.length === 0) {
+                  if (!hasSubmenu) {
                     return (
                       <SidebarMenuItem key={project.id}>
                         <SidebarMenuButton asChild isActive={isProjectActive}>
                           <Link href={projectUrl}>
                             <span className="text-sm">{project.emoji || '📁'}</span>
-                            <span className="truncate">{project.name}</span>
+                            <span className="truncate flex-1">{project.name}</span>
+                            {taskCount != null && taskCount > 0 && (
+                              <span className="text-[10px] text-muted-foreground tabular-nums">{taskCount}</span>
+                            )}
                           </Link>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
@@ -262,7 +285,10 @@ export function AppSidebar({ user }: AppSidebarProps) {
                         <SidebarMenuButton asChild isActive={isProjectActive}>
                           <Link href={projectUrl}>
                             <span className="text-sm">{project.emoji || '📁'}</span>
-                            <span className="truncate">{project.name}</span>
+                            <span className="truncate flex-1">{project.name}</span>
+                            {taskCount != null && taskCount > 0 && (
+                              <span className="text-[10px] text-muted-foreground tabular-nums mr-5">{taskCount}</span>
+                            )}
                           </Link>
                         </SidebarMenuButton>
                         <CollapsibleTrigger asChild>
